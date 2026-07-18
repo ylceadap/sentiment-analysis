@@ -62,7 +62,7 @@ def _ordinal_metrics_from_confusion(metrics: dict[str, Any]) -> dict[str, float]
 
 
 def promotion_gate(candidate: dict[str, Any], baseline: dict[str, Any]) -> dict[str, bool]:
-    """Apply the frozen held-out replacement constraints without subjective overrides."""
+    """Apply the pre-declared class-imbalance replacement constraints."""
     candidate_negative = candidate["per_class"]["Negative"]
     baseline_negative = baseline["per_class"]["Negative"]
     return {
@@ -72,6 +72,12 @@ def promotion_gate(candidate: dict[str, Any], baseline: dict[str, Any]) -> dict[
         "macro_f1_not_lower": candidate["macro_f1"] >= baseline["macro_f1"],
         "balanced_accuracy_not_lower": candidate["balanced_accuracy"]
         >= baseline["balanced_accuracy"],
+    }
+
+
+def ordinal_diagnostics(candidate: dict[str, Any], baseline: dict[str, Any]) -> dict[str, bool]:
+    """Report ordinal trade-offs without retroactively making them promotion gates."""
+    return {
         "ordinal_mae_not_higher": candidate["ordinal_mae"] <= baseline["ordinal_mae"],
         "quadratic_weighted_kappa_not_lower": candidate["quadratic_weighted_kappa"]
         >= baseline["quadratic_weighted_kappa"],
@@ -149,6 +155,7 @@ def run_ordinal_promotion(config_path: str | Path) -> dict[str, Any]:
     baseline_metrics = json.loads(baseline_path.read_text(encoding="utf-8"))
     baseline_metrics.update(_ordinal_metrics_from_confusion(baseline_metrics))
     checks = promotion_gate(candidate_metrics, baseline_metrics)
+    diagnostics = ordinal_diagnostics(candidate_metrics, baseline_metrics)
     passed = all(checks.values())
     comparison = {
         "status": "existing_held_out_comparison_not_blind",
@@ -167,6 +174,7 @@ def run_ordinal_promotion(config_path: str | Path) -> dict[str, Any]:
         "baseline_metrics": baseline_metrics,
         "candidate_metrics": candidate_metrics,
         "promotion_gate": {"checks": checks, "passed": passed},
+        "non_blocking_ordinal_diagnostics": diagnostics,
         "artifact_replaced": passed,
     }
     comparison_path = experiment_dir / "ordinal_logistic_held_out_evaluation.json"

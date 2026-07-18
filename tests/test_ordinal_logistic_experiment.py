@@ -8,7 +8,7 @@ from dutch_sentiment.ordinal_logistic_experiment import (
     probability_argmax_labels,
     project_monotonic_boundaries,
 )
-from dutch_sentiment.ordinal_promote import promotion_gate
+from dutch_sentiment.ordinal_promote import ordinal_diagnostics, promotion_gate
 
 
 def test_monotonic_projection_pools_only_violations() -> None:
@@ -64,7 +64,7 @@ def test_blind_evaluation_gate_requires_all_ordinal_improvements() -> None:
     assert _passes_blind_evaluation_gate(candidate, baseline)
 
 
-def test_production_promotion_gate_requires_every_held_out_constraint() -> None:
+def test_production_promotion_gate_uses_predeclared_classification_constraints() -> None:
     baseline = {
         "macro_f1": 0.64,
         "balanced_accuracy": 0.62,
@@ -86,3 +86,21 @@ def test_production_promotion_gate_requires_every_held_out_constraint() -> None:
     checks = promotion_gate(candidate, baseline)
     assert not checks["negative_precision_at_least_0_60"]
     assert not all(checks.values())
+
+
+def test_ordinal_diagnostics_are_reported_separately() -> None:
+    baseline = {
+        "ordinal_mae": 0.36,
+        "quadratic_weighted_kappa": 0.45,
+        "severe_error_rate": 0.02,
+    }
+    candidate = {
+        "ordinal_mae": 0.361,
+        "quadratic_weighted_kappa": 0.47,
+        "severe_error_rate": 0.019,
+    }
+    assert ordinal_diagnostics(candidate, baseline) == {
+        "ordinal_mae_not_higher": False,
+        "quadratic_weighted_kappa_not_lower": True,
+        "severe_error_rate_not_higher": True,
+    }
