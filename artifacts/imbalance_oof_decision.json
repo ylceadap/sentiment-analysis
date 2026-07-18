@@ -1,0 +1,47 @@
+{
+  "decision": {
+    "eligible": true,
+    "selected_candidate": "negative_weight_10__0.30",
+    "selected_base_candidate": "negative_weight_10",
+    "selected_threshold": "0.30",
+    "negative_precision": 0.608,
+    "negative_recall": 0.6333333333333333,
+    "negative_f1": 0.6204081632653061,
+    "macro_f1": 0.6524844181272341,
+    "cv_macro_f1_mean": 0.6521601963205164,
+    "cv_macro_f1_std": 0.014465917988846985,
+    "eligible_candidates": 35,
+    "close_candidates": 2,
+    "maximum_eligible_negative_recall": 0.6333333333333333,
+    "selection_rule": "Negative precision floor; candidates within recall tolerance are ranked by macro-F1 mean, macro-F1 std, then simplicity"
+  },
+  "evidence": {
+    "git_branch": "experiment/negative-imbalance",
+    "git_commit": "e88559fbdac2f683488aaad26c5c51366a92669a",
+    "git_dirty_at_start": false,
+    "heldout_evaluated": false,
+    "raw_rows": 4800,
+    "training_rows": 3838,
+    "test_rows": 960,
+    "training_label_counts": {
+      "Positive": 1799,
+      "Average": 1799,
+      "Negative": 240
+    },
+    "training_language_label_counts": {
+      "dutch::Average": 1540,
+      "dutch::Negative": 232,
+      "dutch::Positive": 1678,
+      "english::Average": 259,
+      "english::Negative": 8,
+      "english::Positive": 121
+    },
+    "train_normalized_sha256": "aa986ef1d8f35ebf232a015fd0e61d3affb1efbe4a589ec4f8653ae01e8ab7c9",
+    "test_normalized_sha256": "b76afd73eaeed79bf61903ab8475a08c4565cf523a55e8ae34448d2330e00cbb",
+    "frozen_cv_macro_f1": 0.6472435121804612,
+    "reproduced_cv_macro_f1": 0.6472435121804612,
+    "base_candidates": 7,
+    "decision_rules": 6,
+    "result_rows": 42
+  }
+}
