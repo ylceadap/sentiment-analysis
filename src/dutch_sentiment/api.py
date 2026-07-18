@@ -24,9 +24,31 @@ Label = Literal["Positive", "Average", "Negative"]
 
 
 class ClassifyRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    review: Annotated[str, Field(min_length=1, max_length=MAX_REVIEW_CHARACTERS)]
-    explain: bool = False
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "examples": [
+                {
+                    "review": (
+                        "Deze film was verrassend goed, met sterke acteurs en een mooi einde."
+                    ),
+                    "explain": False,
+                }
+            ]
+        },
+    )
+    review: Annotated[
+        str,
+        Field(
+            min_length=1,
+            max_length=MAX_REVIEW_CHARACTERS,
+            description="One Dutch or English movie review to classify.",
+        ),
+    ]
+    explain: bool = Field(
+        default=False,
+        description="Include local linear feature contributions in the response.",
+    )
 
     @field_validator("review")
     @classmethod
@@ -37,13 +59,39 @@ class ClassifyRequest(BaseModel):
 
 
 class ClassifyResponse(BaseModel):
-    label: Label
-    model_version: str
-    detected_language: str
-    probabilities: dict[Label, float]
-    latency_ms: float
-    warnings: tuple[str, ...] = ()
-    explanation: dict[str, Any] | None = None
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "label": "Average",
+                    "model_version": "0.1.0+240b3fc",
+                    "detected_language": "dutch",
+                    "probabilities": {
+                        "Positive": 0.319,
+                        "Average": 0.547,
+                        "Negative": 0.134,
+                    },
+                    "latency_ms": 5.32,
+                    "warnings": [],
+                    "explanation": None,
+                }
+            ]
+        }
+    )
+    label: Label = Field(description="The predicted sentiment label.")
+    model_version: str = Field(description="The version of the loaded model artifact.")
+    detected_language: str = Field(description="The language detected for the submitted review.")
+    probabilities: dict[Label, float] = Field(
+        description="Native Logistic Regression probabilities for all supported labels."
+    )
+    latency_ms: float = Field(description="End-to-end service inference latency in milliseconds.")
+    warnings: tuple[str, ...] = Field(
+        default=(), description="Reliability or input-policy warnings."
+    )
+    explanation: dict[str, Any] | None = Field(
+        default=None,
+        description="Optional local linear feature contributions when explain is true.",
+    )
 
 
 class HealthResponse(BaseModel):
@@ -86,7 +134,16 @@ def create_app(
             status="ok", model_version=request.app.state.service.model_version, model_ready=True
         )
 
-    @app.post("/classify", response_model=ClassifyResponse)
+    @app.post(
+        "/classify",
+        response_model=ClassifyResponse,
+        summary="Classify one movie review",
+        description=(
+            "Apply language detection, the fitted text transformations, and the sentiment model "
+            "to one Dutch or English movie review."
+        ),
+        response_description="The predicted label and supporting inference metadata.",
+    )
     async def classify(payload: ClassifyRequest, request: Request) -> ClassifyResponse:
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
         try:

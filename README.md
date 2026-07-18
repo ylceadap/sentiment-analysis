@@ -224,6 +224,12 @@ Start the API:
 make serve
 ```
 
+Interactive OpenAPI documentation, including English field descriptions and runnable request/response examples, is available at:
+
+```text
+http://localhost:8000/docs
+```
+
 Health:
 
 ```bash

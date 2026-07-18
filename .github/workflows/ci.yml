@@ -50,14 +50,23 @@ jobs:
       - name: Build serving image
         run: docker build --tag dutch-sentiment:ci .
 
-      - name: Verify container health
+      - name: Verify container API
         run: |
           docker run --detach --name dutch-sentiment-ci --publish 8000:8000 dutch-sentiment:ci
           trap 'docker logs dutch-sentiment-ci; docker rm --force dutch-sentiment-ci' EXIT
+          healthy=false
           for attempt in {1..30}; do
-            if curl --fail --silent http://127.0.0.1:8000/health; then
-              exit 0
+            if curl --fail --silent --output /dev/null http://127.0.0.1:8000/health; then
+              healthy=true
+              break
             fi
             sleep 1
           done
-          exit 1
+          if [[ "$healthy" != "true" ]]; then
+            exit 1
+          fi
+          curl --fail --silent --show-error \
+            --request POST http://127.0.0.1:8000/classify \
+            --header 'Content-Type: application/json' \
+            --data '{"review":"Deze film was verrassend goed, met sterke acteurs.","explain":false}' \
+            | python -c 'import json, sys; result = json.load(sys.stdin); assert result["label"] in {"Positive", "Average", "Negative"}; assert set(result["probabilities"]) == {"Positive", "Average", "Negative"}; assert abs(sum(result["probabilities"].values()) - 1.0) < 1e-6; assert result["detected_language"] == "dutch"'
