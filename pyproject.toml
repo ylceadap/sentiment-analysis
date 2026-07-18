@@ -43,6 +43,9 @@ sentiment-serve = "dutch_sentiment.api:run"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+dutch_sentiment = ["static/*"]
+
 [tool.pytest.ini_options]
 addopts = "-ra"
 testpaths = ["tests"]
