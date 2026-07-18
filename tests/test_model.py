@@ -1,7 +1,16 @@
 from pathlib import Path
 
+import pytest
+
 from dutch_sentiment.constants import LABELS
-from dutch_sentiment.model import ModelSpec, SentimentModel, build_pipeline
+from dutch_sentiment.model import (
+    ModelSpec,
+    OrdinalSentimentModel,
+    SentimentModel,
+    build_ordinal_model,
+    build_pipeline,
+    load_sentiment_model,
+)
 
 
 def _model() -> SentimentModel:
@@ -60,3 +69,48 @@ def test_model_is_deterministic_and_survives_round_trip(tmp_path: Path) -> None:
     loaded = SentimentModel.load(path)
     assert loaded.version == "test-v1"
     assert loaded.predict(reviews) == before
+
+
+def test_ordinal_model_preserves_serving_contract_and_round_trip(tmp_path: Path) -> None:
+    config = {
+        "min_df": 1,
+        "max_df": 1.0,
+        "word_max_features": 500,
+        "char_max_features": 500,
+        "max_iter": 500,
+        "random_seed": 11,
+    }
+    reviews = [
+        "prachtige film en geweldig gespeeld",
+        "fantastisch verhaal en heel mooi",
+        "goede acteurs en een sterk einde",
+        "de film was gewoon gemiddeld",
+        "redelijk maar niet bijzonder",
+        "sommige scènes goed andere matig",
+        "verschrikkelijke film en slecht gespeeld",
+        "saai verhaal en een waardeloos einde",
+        "heel slecht en absoluut niet boeiend",
+    ]
+    labels = ["Positive"] * 3 + ["Average"] * 3 + ["Negative"] * 3
+    model = build_ordinal_model(
+        config,
+        c_value=1.0,
+        calibration_folds=2,
+        lower_threshold=0.75,
+        upper_threshold=0.55,
+        version="ordinal-test-v1",
+    ).fit(reviews, labels)
+    review = "Een prachtige film met goede acteurs"
+    inference = model.infer(review, explain=True)
+    assert inference.label in LABELS
+    assert set(inference.probabilities) == set(LABELS)
+    assert sum(inference.probabilities.values()) == pytest.approx(1.0)
+    assert inference.explanation is not None
+    assert "active_ordinal_boundary" in inference.explanation
+
+    path = tmp_path / "ordinal.joblib"
+    model.save(path)
+    loaded = load_sentiment_model(path)
+    assert isinstance(loaded, OrdinalSentimentModel)
+    assert loaded.version == "ordinal-test-v1"
+    assert loaded.predict([review]) == model.predict([review])

@@ -8,7 +8,7 @@ from typing import Any
 
 from .constants import ENGLISH_RELIABILITY_WARNING
 from .language import DutchLanguageDetector, LanguageStatus
-from .model import SentimentModel
+from .model import SupportedSentimentModel
 
 
 class NonDutchReviewError(ValueError):
@@ -29,7 +29,7 @@ class PredictionResult:
 class InferenceService:
     """Apply language policy and one loaded immutable model per request."""
 
-    def __init__(self, model: SentimentModel, detector: DutchLanguageDetector) -> None:
+    def __init__(self, model: SupportedSentimentModel, detector: DutchLanguageDetector) -> None:
         self.model = model
         self.detector = detector
 

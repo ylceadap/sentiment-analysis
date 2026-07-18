@@ -19,7 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from .constants import LABELS, MAX_REVIEW_CHARACTERS
 from .language import DutchLanguageDetector
 from .llm_recommender import LLMRecommendationResult, LLMRecommender
-from .model import SentimentModel
+from .model import load_sentiment_model
 from .service import InferenceService, NonDutchReviewError
 
 LOGGER = logging.getLogger(__name__)
@@ -85,7 +85,8 @@ class ClassifyResponse(BaseModel):
     model_version: str = Field(description="The version of the loaded model artifact.")
     detected_language: str = Field(description="The language detected for the submitted review.")
     probabilities: dict[Label, float] = Field(
-        description="Native Logistic Regression probabilities for all supported labels."
+        description="Model probabilities for all supported labels; the frozen decision rule may "
+        "also apply validated ordinal thresholds."
     )
     latency_ms: float = Field(description="End-to-end service inference latency in milliseconds.")
     warnings: tuple[str, ...] = Field(
@@ -134,7 +135,7 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         if service is None:
-            model = SentimentModel.load(resolved_path)
+            model = load_sentiment_model(resolved_path)
             detector = DutchLanguageDetector()
             warmup_text = "Dit is een Nederlandse tekst om de taalmodellen op te warmen."
             detector.detect(warmup_text)

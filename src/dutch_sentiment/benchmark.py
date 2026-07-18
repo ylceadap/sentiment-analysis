@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 from .api import create_app
 from .data import sha256_file
 from .language import DutchLanguageDetector
-from .model import SentimentModel
+from .model import load_sentiment_model
 from .reporting import build_model_report
 from .service import InferenceService
 
@@ -65,7 +65,7 @@ def run_benchmark(
     detector.detect(SAMPLES[0])
     cold_detector_first_inference_ms = (perf_counter() - started) * 1000
     started = perf_counter()
-    model = SentimentModel.load(model_path)
+    model = load_sentiment_model(model_path)
     cold_model_load_ms = (perf_counter() - started) * 1000
     started = perf_counter()
     model.predict([SAMPLES[0]])

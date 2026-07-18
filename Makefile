@@ -1,4 +1,4 @@
-.PHONY: install audit train ordinal-logistic evaluate benchmark predict test coverage lint format serve mlflow docker-build docker-run
+.PHONY: install audit train ordinal-logistic promote-ordinal evaluate benchmark predict test coverage lint format serve mlflow docker-build docker-run
 
 PYTHON := .venv/bin/python
 
@@ -14,6 +14,9 @@ train:
 
 ordinal-logistic:
 	$(PYTHON) -m dutch_sentiment.ordinal_logistic_experiment --config configs/training.yaml
+
+promote-ordinal:
+	$(PYTHON) -m dutch_sentiment.ordinal_promote --config configs/training.yaml
 
 evaluate:
 	.venv/bin/sentiment-evaluate

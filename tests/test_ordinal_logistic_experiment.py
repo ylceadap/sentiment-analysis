@@ -8,6 +8,7 @@ from dutch_sentiment.ordinal_logistic_experiment import (
     probability_argmax_labels,
     project_monotonic_boundaries,
 )
+from dutch_sentiment.ordinal_promote import promotion_gate
 
 
 def test_monotonic_projection_pools_only_violations() -> None:
@@ -61,3 +62,27 @@ def test_blind_evaluation_gate_requires_all_ordinal_improvements() -> None:
     assert not _passes_blind_evaluation_gate(candidate, baseline)
     candidate["severe_error_rate"] = 0.019
     assert _passes_blind_evaluation_gate(candidate, baseline)
+
+
+def test_production_promotion_gate_requires_every_held_out_constraint() -> None:
+    baseline = {
+        "macro_f1": 0.64,
+        "balanced_accuracy": 0.62,
+        "ordinal_mae": 0.36,
+        "quadratic_weighted_kappa": 0.45,
+        "severe_error_rate": 0.02,
+        "per_class": {"Negative": {"precision": 0.72, "recall": 0.52, "f1-score": 0.60}},
+    }
+    candidate = {
+        "macro_f1": 0.65,
+        "balanced_accuracy": 0.64,
+        "ordinal_mae": 0.35,
+        "quadratic_weighted_kappa": 0.47,
+        "severe_error_rate": 0.019,
+        "per_class": {"Negative": {"precision": 0.62, "recall": 0.60, "f1-score": 0.61}},
+    }
+    assert all(promotion_gate(candidate, baseline).values())
+    candidate["per_class"]["Negative"]["precision"] = 0.59
+    checks = promotion_gate(candidate, baseline)
+    assert not checks["negative_precision_at_least_0_60"]
+    assert not all(checks.values())

@@ -10,7 +10,7 @@ from typing import Any
 
 from .constants import MAX_REVIEW_CHARACTERS
 from .language import DutchLanguageDetector
-from .model import SentimentModel
+from .model import load_sentiment_model
 from .service import InferenceService, NonDutchReviewError
 
 
@@ -25,7 +25,7 @@ def predict_review(
         raise ValueError("review must not be empty or whitespace-only")
     if len(review) > MAX_REVIEW_CHARACTERS:
         raise ValueError(f"review exceeds the {MAX_REVIEW_CHARACTERS}-character limit")
-    model = SentimentModel.load(model_path)
+    model = load_sentiment_model(model_path)
     detector = DutchLanguageDetector()
     detector.detect("Dit is een Nederlandse tekst om de taalmodellen op te warmen.")
     service = InferenceService(model, detector)

@@ -7,7 +7,9 @@ from pathlib import Path
 from typing import Any
 
 import joblib
+import numpy as np
 from scipy import sparse
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.dummy import DummyClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -196,3 +198,214 @@ class SentimentModel:
         if not isinstance(loaded, cls):
             raise TypeError(f"Artifact is not a {cls.__name__}: {model_path}")
         return loaded
+
+
+class OrdinalSentimentModel:
+    """Two calibrated cumulative boundaries with a stable serving contract."""
+
+    def __init__(
+        self,
+        feature_pipeline: Pipeline,
+        lower_classifier: CalibratedClassifierCV,
+        upper_classifier: CalibratedClassifierCV,
+        *,
+        lower_threshold: float,
+        upper_threshold: float,
+        version: str = "unversioned",
+    ) -> None:
+        self.feature_pipeline = feature_pipeline
+        self.lower_classifier = lower_classifier
+        self.upper_classifier = upper_classifier
+        self.lower_threshold = float(lower_threshold)
+        self.upper_threshold = float(upper_threshold)
+        self.version = version
+        self._feature_names_cache: Any | None = None
+
+    def fit(self, reviews: list[str], labels: list[str]) -> OrdinalSentimentModel:
+        unexpected = sorted(set(labels) - set(LABELS))
+        if unexpected:
+            raise ValueError(f"Unexpected labels: {unexpected}")
+        transformed = self.feature_pipeline.fit_transform(reviews)
+        labels_array = np.asarray(labels)
+        self.lower_classifier.fit(transformed, (labels_array != "Negative").astype(int))
+        self.upper_classifier.fit(transformed, (labels_array == "Positive").astype(int))
+        self._feature_names_cache = None
+        return self
+
+    @staticmethod
+    def _boundary_probabilities(
+        lower_classifier: CalibratedClassifierCV,
+        upper_classifier: CalibratedClassifierCV,
+        transformed: Any,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        lower = lower_classifier.predict_proba(transformed)[:, 1]
+        upper = upper_classifier.predict_proba(transformed)[:, 1]
+        violations = upper > lower
+        midpoint = (lower[violations] + upper[violations]) / 2.0
+        lower[violations] = midpoint
+        upper[violations] = midpoint
+        return lower, upper
+
+    @staticmethod
+    def _probability_rows(lower: np.ndarray, upper: np.ndarray) -> list[dict[str, float]]:
+        return [
+            {
+                "Positive": float(positive),
+                "Average": float(average),
+                "Negative": float(negative),
+            }
+            for negative, average, positive in zip(1.0 - lower, lower - upper, upper, strict=True)
+        ]
+
+    def _labels(self, lower: np.ndarray, upper: np.ndarray) -> list[str]:
+        return np.where(
+            lower < self.lower_threshold,
+            "Negative",
+            np.where(upper >= self.upper_threshold, "Positive", "Average"),
+        ).tolist()
+
+    def predict(self, reviews: list[str]) -> list[str]:
+        transformed = self.feature_pipeline.transform(reviews)
+        lower, upper = self._boundary_probabilities(
+            self.lower_classifier, self.upper_classifier, transformed
+        )
+        return self._labels(lower, upper)
+
+    def predict_proba(self, reviews: list[str]) -> list[dict[str, float]]:
+        transformed = self.feature_pipeline.transform(reviews)
+        lower, upper = self._boundary_probabilities(
+            self.lower_classifier, self.upper_classifier, transformed
+        )
+        return self._probability_rows(lower, upper)
+
+    @staticmethod
+    def _mean_boundary_coefficients(classifier: CalibratedClassifierCV) -> np.ndarray:
+        coefficients = [
+            calibrated.estimator.coef_[0]
+            for calibrated in classifier.calibrated_classifiers_
+            if hasattr(calibrated.estimator, "coef_")
+        ]
+        if not coefficients:
+            raise RuntimeError("Ordinal explanation requires calibrated linear estimators")
+        return np.mean(coefficients, axis=0)
+
+    def _explain_transformed(
+        self, transformed: Any, predicted: str, *, top_n: int = 5
+    ) -> dict[str, Any]:
+        lower_coefficients = self._mean_boundary_coefficients(self.lower_classifier)
+        upper_coefficients = self._mean_boundary_coefficients(self.upper_classifier)
+        if predicted == "Negative":
+            coefficients = -lower_coefficients
+            boundary = "Negative vs Average+Positive"
+        elif predicted == "Positive":
+            coefficients = upper_coefficients
+            boundary = "Negative+Average vs Positive"
+        else:
+            coefficients = lower_coefficients - upper_coefficients
+            boundary = "between both ordinal boundaries"
+        if not sparse.issparse(transformed):
+            transformed = sparse.csr_matrix(transformed)
+        contributions = transformed.multiply(coefficients).tocsr()
+        if self._feature_names_cache is None:
+            self._feature_names_cache = self.feature_pipeline.named_steps[
+                "features"
+            ].get_feature_names_out()
+        pairs = [
+            (str(self._feature_names_cache[index]), float(value))
+            for index, value in zip(contributions.indices, contributions.data, strict=True)
+        ]
+
+        def item(feature: str, value: float) -> dict[str, Any]:
+            if feature.startswith("word__"):
+                source, clean = "word_ngram", feature.removeprefix("word__")
+            elif feature.startswith("char__"):
+                source, clean = "character_ngram", feature.removeprefix("char__")
+            else:
+                source, clean = "word_ngram", feature
+            return {"feature": clean, "source": source, "contribution": round(value, 6)}
+
+        word_pairs = [pair for pair in pairs if not pair[0].startswith("char__")]
+        char_pairs = [pair for pair in pairs if pair[0].startswith("char__")]
+        supporting = sorted(word_pairs, key=lambda pair: pair[1], reverse=True)[:top_n]
+        opposing = sorted(word_pairs, key=lambda pair: pair[1])[:top_n]
+        technical = sorted(char_pairs, key=lambda pair: abs(pair[1]), reverse=True)[:top_n]
+        return {
+            "predicted_label": predicted,
+            "active_ordinal_boundary": boundary,
+            "supporting_word_features": [item(*pair) for pair in supporting if pair[1] > 0],
+            "opposing_word_features": [item(*pair) for pair in opposing if pair[1] < 0],
+            "technical_character_features": [item(*pair) for pair in technical],
+            "limitation": (
+                "Pre-calibration linear feature contributions are associative, not causal."
+            ),
+        }
+
+    def infer(self, review: str, *, explain: bool = False, top_n: int = 5) -> ModelInference:
+        transformed = self.feature_pipeline.transform([review])
+        lower, upper = self._boundary_probabilities(
+            self.lower_classifier, self.upper_classifier, transformed
+        )
+        label = self._labels(lower, upper)[0]
+        probabilities = self._probability_rows(lower, upper)[0]
+        explanation = (
+            self._explain_transformed(transformed, label, top_n=top_n) if explain else None
+        )
+        return ModelInference(label, probabilities, explanation)
+
+    def explain(self, review: str, *, top_n: int = 5) -> dict[str, Any]:
+        inference = self.infer(review, explain=True, top_n=top_n)
+        if inference.explanation is None:
+            raise RuntimeError("Explanation generation unexpectedly returned no result")
+        return inference.explanation
+
+    def save(self, path: str | Path) -> None:
+        output = Path(path)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        joblib.dump(self, output, compress=3)
+
+
+SupportedSentimentModel = SentimentModel | OrdinalSentimentModel
+
+
+def build_ordinal_model(
+    config: dict[str, Any],
+    *,
+    c_value: float,
+    calibration_folds: int,
+    lower_threshold: float,
+    upper_threshold: float,
+    version: str,
+) -> OrdinalSentimentModel:
+    """Build an unfitted ordinal model using the submitted sparse text features."""
+    base_pipeline = build_pipeline(ModelSpec("ordinal_logistic", "combined", "balanced"), config)
+    features = Pipeline(base_pipeline.steps[:-1])
+
+    def classifier() -> CalibratedClassifierCV:
+        estimator = LogisticRegression(
+            C=c_value,
+            class_weight="balanced",
+            max_iter=int(config.get("max_iter", 1500)),
+            random_state=int(config.get("random_seed", 42)),
+            solver="lbfgs",
+        )
+        return CalibratedClassifierCV(estimator, method="sigmoid", cv=calibration_folds, n_jobs=1)
+
+    return OrdinalSentimentModel(
+        features,
+        classifier(),
+        classifier(),
+        lower_threshold=lower_threshold,
+        upper_threshold=upper_threshold,
+        version=version,
+    )
+
+
+def load_sentiment_model(path: str | Path) -> SupportedSentimentModel:
+    """Load either supported production artifact behind one serving contract."""
+    model_path = Path(path)
+    if not model_path.is_file():
+        raise FileNotFoundError(f"Model artifact not found: {model_path}")
+    loaded = joblib.load(model_path)
+    if not isinstance(loaded, (SentimentModel, OrdinalSentimentModel)):
+        raise TypeError(f"Artifact is not a supported sentiment model: {model_path}")
+    return loaded
