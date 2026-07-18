@@ -10,47 +10,47 @@
     "warmup": 10,
     "sample_count": 3
   },
-  "detector_initialization_ms": 0.3076299326494336,
-  "cold_detector_first_inference_ms": 1397.7078709285706,
-  "cold_model_load_ms": 599.288978963159,
-  "cold_first_prediction_ms": 11.816568905487657,
-  "model_artifact_bytes": 2922196,
-  "model_sha256": "e1eac0ebd0b20133e5537b53c13673b57fca0a32936063739697dd04c96b22b0",
+  "detector_initialization_ms": 0.3287718864157796,
+  "cold_detector_first_inference_ms": 1815.875981003046,
+  "cold_model_load_ms": 657.5204480905086,
+  "cold_first_prediction_ms": 12.469318928197026,
+  "model_artifact_bytes": 2922221,
+  "model_sha256": "0c193ceb866cd795bc3da6012055079d5448807d7e6c3824571400c1f5af3c65",
   "measurements": {
     "normalization_plus_model_prediction": {
       "iterations": 100,
-      "mean_ms": 3.417359198210761,
-      "p50_ms": 2.9090584721416235,
-      "p95_ms": 5.1675812632311136,
-      "max_ms": 5.44736604206264
+      "mean_ms": 4.86872888286598,
+      "p50_ms": 4.508559009991586,
+      "p95_ms": 9.131835965672508,
+      "max_ms": 13.393449946306646
     },
     "language_detection_plus_model": {
       "iterations": 100,
-      "mean_ms": 4.381219078786671,
-      "p50_ms": 3.8135164650157094,
-      "p95_ms": 6.836905959062278,
-      "max_ms": 7.53633095882833
+      "mean_ms": 6.5917730366345495,
+      "p50_ms": 6.050945026800036,
+      "p95_ms": 10.55646202294156,
+      "max_ms": 16.935706953518093
     },
     "service_end_to_end": {
       "iterations": 100,
-      "mean_ms": 8.09474824811332,
-      "p50_ms": 6.778476992622018,
-      "p95_ms": 12.257882265839726,
-      "max_ms": 13.685508980415761
+      "mean_ms": 6.2189399532508105,
+      "p50_ms": 5.751703516580164,
+      "p95_ms": 9.715861914446577,
+      "max_ms": 10.891371057368815
     },
     "explanation_enabled": {
       "iterations": 100,
-      "mean_ms": 133.65247029229067,
-      "p50_ms": 131.70676701702178,
-      "p95_ms": 142.57487172726542,
-      "max_ms": 147.22649799659848
+      "mean_ms": 10.46731194597669,
+      "p50_ms": 7.549380999989808,
+      "p95_ms": 15.804405394010246,
+      "max_ms": 179.48288097977638
     },
     "http_classify": {
       "iterations": 50,
-      "mean_ms": 9.700734335929155,
-      "p50_ms": 8.292267913930118,
-      "p95_ms": 13.91323323477991,
-      "max_ms": 14.038613066077232
+      "mean_ms": 8.120599733665586,
+      "p50_ms": 7.779644511174411,
+      "p95_ms": 11.273501458344981,
+      "max_ms": 11.451068916358054
     }
   }
 }

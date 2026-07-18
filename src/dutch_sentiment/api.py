@@ -64,7 +64,9 @@ def create_app(
         if service is None:
             model = SentimentModel.load(resolved_path)
             detector = DutchLanguageDetector()
-            detector.detect("Dit is een Nederlandse tekst om de taalmodellen op te warmen.")
+            warmup_text = "Dit is een Nederlandse tekst om de taalmodellen op te warmen."
+            detector.detect(warmup_text)
+            model.infer(warmup_text, explain=True)
             app.state.service = InferenceService(model, detector)
         else:
             app.state.service = service

@@ -140,6 +140,35 @@ docker build -t dutch-sentiment .
 docker run --rm -p 8000:8000 dutch-sentiment
 ```
 
-**Status:** complete with one explicit environment limitation: Docker runtime build/run verification was not possible. Evidence: 23 tests passed, 57% total coverage with high coverage of critical logic, Ruff passed, live/local application lifecycle passed, source/model/metadata hashes reconciled.
+**Status:** complete with one explicit environment limitation: Docker runtime build/run verification was not possible. Evidence: 24 tests passed, 58% total branch coverage with high coverage of critical logic, Ruff passed, live/local application lifecycle passed, source/model/metadata hashes reconciled.
 
 **Unresolved risks:** Docker runtime checks are currently blocked because the executable is unavailable.
+
+## Phase 6 — Post-completion performance and usability review
+
+**Objective:** remove avoidable serving work, strengthen probability evidence, reduce container dependencies, and make one-off prediction easier.
+
+- [x] Replace repeated predict/probability/explanation transformations with one sparse-vector inference operation.
+- [x] Cache feature names after first explanation and warm the cache during API startup.
+- [x] Add held-out log loss, multiclass Brier score, 10-bin expected calibration error, and mean confidence.
+- [x] Replace warning-prone CV metric strings with zero-division-safe scorers.
+- [x] Separate core serving dependencies from `train` and `dev` extras.
+- [x] Remove unused API YAML configuration and share the maximum-input constant.
+- [x] Add a local `sentiment-predict` command in addition to REST inference.
+- [x] Retrain from a clean Git commit and rerun latency benchmarks.
+
+**Validation commands**
+
+```bash
+.venv/bin/pytest --cov=dutch_sentiment --cov-report=term-missing
+.venv/bin/ruff check .
+.venv/bin/ruff format --check .
+.venv/bin/sentiment-predict --review 'Deze film was verrassend goed.' --explain
+.venv/bin/sentiment-benchmark --model artifacts/model.joblib
+```
+
+**Status:** complete. Classification metrics remained reproducible. Service p50 improved from 6.778 to 5.752 ms, HTTP p50 from 8.292 to 7.780 ms, and explanation p50 from 131.707 to 7.549 ms.
+
+**Remaining risks:** the probability metrics are held-out descriptive estimates rather than a separately calibrated deployment guarantee; Docker runtime remains unavailable for actual image execution.
+
+**Final verification:** 24 tests passed, total branch coverage is 58%, and both Ruff lint and format checks passed.

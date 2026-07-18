@@ -1,4 +1,4 @@
-.PHONY: install audit train evaluate benchmark test coverage lint format serve mlflow docker-build docker-run
+.PHONY: install audit train evaluate benchmark predict test coverage lint format serve mlflow docker-build docker-run
 
 PYTHON := .venv/bin/python
 
@@ -17,6 +17,10 @@ evaluate:
 
 benchmark:
 	.venv/bin/sentiment-benchmark --model artifacts/model.joblib
+
+predict:
+	@test -n "$(REVIEW)" || (echo "Usage: make predict REVIEW='Deze film was goed.'" && exit 2)
+	.venv/bin/sentiment-predict --review "$(REVIEW)"
 
 test:
 	.venv/bin/pytest

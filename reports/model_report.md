@@ -56,12 +56,12 @@ The pipeline prevents normalized duplicate overlap, fits all vectorizers inside 
 
 | name                             | feature_kind   | class_weight   | mask_ratings   |   cv_accuracy_mean |   cv_accuracy_std |   cv_balanced_accuracy_mean |   cv_balanced_accuracy_std |   cv_macro_precision_mean |   cv_macro_precision_std |   cv_macro_recall_mean |   cv_macro_recall_std |   cv_macro_f1_mean |   cv_macro_f1_std |   cv_weighted_f1_mean |   cv_weighted_f1_std | mlflow_run_id                    |   artifact_size_bytes |
 |:---------------------------------|:---------------|:---------------|:---------------|-------------------:|------------------:|----------------------------:|---------------------------:|--------------------------:|-------------------------:|-----------------------:|----------------------:|-------------------:|------------------:|----------------------:|---------------------:|:---------------------------------|----------------------:|
-| combined_balanced_ratings        | combined       | balanced       | False          |             0.6759 |            0.0086 |                      0.6218 |                     0.0154 |                    0.7127 |                   0.0229 |                 0.6218 |                0.0154 |             0.6544 |            0.0174 |                0.6752 |               0.0089 | e56f8e17491d4d03a9c23de5af4bb04d |               2922094 |
-| combined_balanced_masked_ratings | combined       | balanced       | True           |             0.6725 |            0.0121 |                      0.6169 |                     0.0164 |                    0.713  |                   0.0208 |                 0.6169 |                0.0164 |             0.6507 |            0.0173 |                0.6717 |               0.0123 | 8f959be63b8349239d7bc6310f93a03f |               2923005 |
-| combined_logreg                  | combined       | none           | False          |             0.6557 |            0.0093 |                      0.4888 |                     0.0107 |                    0.7687 |                   0.0061 |                 0.4888 |                0.0107 |             0.4946 |            0.0157 |                0.6387 |               0.0097 | 4ff9beefdca2430789312a3e07a08c2f |               2922191 |
-| char_logreg                      | char           | none           | False          |             0.647  |            0.0047 |                      0.4739 |                     0.0075 |                    0.7302 |                   0.0695 |                 0.4739 |                0.0075 |             0.4716 |            0.0129 |                0.628  |               0.0052 | 1107076690534ac0a34a3655273221b0 |               1537807 |
-| word_logreg                      | word           | none           | False          |             0.6394 |            0.0046 |                      0.4572 |                     0.0032 |                    0.4923 |                   0.1316 |                 0.4572 |                0.0032 |             0.4427 |            0.0049 |                0.617  |               0.0039 | 5b7b91b1465a44de8c4174b228d227b0 |               1384823 |
-| dummy_prior                      | word           | none           | False          |             0.4864 |            0.0007 |                      0.3333 |                     0      |                    0.1621 |                   0.0002 |                 0.3333 |                0      |             0.2181 |            0.0002 |                0.3183 |               0.0008 | d1783e54918a4501a4ba4bec3f8108cd |                  2548 |
+| combined_balanced_ratings        | combined       | balanced       | False          |             0.6759 |            0.0086 |                      0.6218 |                     0.0154 |                    0.7127 |                   0.0229 |                 0.6218 |                0.0154 |             0.6544 |            0.0174 |                0.6752 |               0.0089 | cb9c813dfbb344a4999df9b631a05130 |               2922094 |
+| combined_balanced_masked_ratings | combined       | balanced       | True           |             0.6725 |            0.0121 |                      0.6169 |                     0.0164 |                    0.713  |                   0.0208 |                 0.6169 |                0.0164 |             0.6507 |            0.0173 |                0.6717 |               0.0123 | 4033bf3420be49079abe3cc3e84b7fea |               2923005 |
+| combined_logreg                  | combined       | none           | False          |             0.6557 |            0.0093 |                      0.4888 |                     0.0107 |                    0.7687 |                   0.0061 |                 0.4888 |                0.0107 |             0.4946 |            0.0157 |                0.6387 |               0.0097 | 973aed7246644df58cf4dd747d95ea3c |               2922191 |
+| char_logreg                      | char           | none           | False          |             0.647  |            0.0047 |                      0.4739 |                     0.0075 |                    0.7302 |                   0.0695 |                 0.4739 |                0.0075 |             0.4716 |            0.0129 |                0.628  |               0.0052 | 90306e871b8e46a6a4cffa1c1cfb84a3 |               1537807 |
+| word_logreg                      | word           | none           | False          |             0.6394 |            0.0046 |                      0.4572 |                     0.0032 |                    0.4923 |                   0.1316 |                 0.4572 |                0.0032 |             0.4427 |            0.0049 |                0.617  |               0.0039 | 9eb0a62588ac458f8c9ed4a357095a6a |               1384822 |
+| dummy_prior                      | word           | none           | False          |             0.4864 |            0.0007 |                      0.3333 |                     0      |                    0.1621 |                   0.0002 |                 0.3333 |                0      |             0.2181 |            0.0002 |                0.3183 |               0.0008 | 0482bdc2c0ca4e1b8aab1ee61fa6a809 |                  2549 |
 
 ## 9. Final held-out test metrics
 
@@ -75,6 +75,8 @@ The pipeline prevents normalized duplicate overlap, fits all vectorizers inside 
 - Multiclass Brier score: 0.4532
 - Expected calibration error (10 bins): 0.0491
 - Mean prediction confidence: 0.6016
+
+These probability metrics are descriptive evidence on the held-out set. Logistic Regression supplies native probabilities, but no separate calibration model was fitted; the calibration estimate is not an operational guarantee.
 
 ## 10. Per-class metrics
 
@@ -102,8 +104,8 @@ Negative recall is 0.5000 and Negative F1 is 0.5918. This class has the smallest
 
 | name                             | feature_kind   | class_weight   | mask_ratings   |   cv_accuracy_mean |   cv_accuracy_std |   cv_balanced_accuracy_mean |   cv_balanced_accuracy_std |   cv_macro_precision_mean |   cv_macro_precision_std |   cv_macro_recall_mean |   cv_macro_recall_std |   cv_macro_f1_mean |   cv_macro_f1_std |   cv_weighted_f1_mean |   cv_weighted_f1_std | mlflow_run_id                    |   artifact_size_bytes |
 |:---------------------------------|:---------------|:---------------|:---------------|-------------------:|------------------:|----------------------------:|---------------------------:|--------------------------:|-------------------------:|-----------------------:|----------------------:|-------------------:|------------------:|----------------------:|---------------------:|:---------------------------------|----------------------:|
-| combined_balanced_ratings        | combined       | balanced       | False          |             0.6759 |            0.0086 |                      0.6218 |                     0.0154 |                    0.7127 |                   0.0229 |                 0.6218 |                0.0154 |             0.6544 |            0.0174 |                0.6752 |               0.0089 | e56f8e17491d4d03a9c23de5af4bb04d |               2922094 |
-| combined_balanced_masked_ratings | combined       | balanced       | True           |             0.6725 |            0.0121 |                      0.6169 |                     0.0164 |                    0.713  |                   0.0208 |                 0.6169 |                0.0164 |             0.6507 |            0.0173 |                0.6717 |               0.0123 | 8f959be63b8349239d7bc6310f93a03f |               2923005 |
+| combined_balanced_ratings        | combined       | balanced       | False          |             0.6759 |            0.0086 |                      0.6218 |                     0.0154 |                    0.7127 |                   0.0229 |                 0.6218 |                0.0154 |             0.6544 |            0.0174 |                0.6752 |               0.0089 | cb9c813dfbb344a4999df9b631a05130 |               2922094 |
+| combined_balanced_masked_ratings | combined       | balanced       | True           |             0.6725 |            0.0121 |                      0.6169 |                     0.0164 |                    0.713  |                   0.0208 |                 0.6169 |                0.0164 |             0.6507 |            0.0173 |                0.6717 |               0.0123 | 4033bf3420be49079abe3cc3e84b7fea |               2923005 |
 
 The paired rows differ only in rating masking. The final choice follows CV macro-F1 and Negative-class evidence rather than automatically retaining the higher-leakage signal.
 
@@ -132,17 +134,17 @@ Observed failures may combine ambiguous sentiment, label noise, sparse Negative 
 
 | path                                |   iterations |   mean_ms |   p50_ms |   p95_ms |   max_ms |
 |:------------------------------------|-------------:|----------:|---------:|---------:|---------:|
-| normalization_plus_model_prediction |          100 |     3.417 |    2.909 |    5.168 |    5.447 |
-| language_detection_plus_model       |          100 |     4.381 |    3.814 |    6.837 |    7.536 |
-| service_end_to_end                  |          100 |     8.095 |    6.778 |   12.258 |   13.686 |
-| explanation_enabled                 |          100 |   133.652 |  131.707 |  142.575 |  147.226 |
-| http_classify                       |           50 |     9.701 |    8.292 |   13.913 |   14.039 |
+| normalization_plus_model_prediction |          100 |     4.869 |    4.509 |    9.132 |   13.393 |
+| language_detection_plus_model       |          100 |     6.592 |    6.051 |   10.556 |   16.936 |
+| service_end_to_end                  |          100 |     6.219 |    5.752 |    9.716 |   10.891 |
+| explanation_enabled                 |          100 |    10.467 |    7.549 |   15.804 |  179.483 |
+| http_classify                       |           50 |     8.121 |    7.78  |   11.274 |   11.451 |
 
 - Model artifact bytes: 2922221
-- Model SHA-256: `e0f7c6f912640df057a680e47bc052a0da2782cbac459df9f656ee86b3a2da39`
-- Language-detector constructor (ms): 0.3076299326494336
-- Cold first language inference/model load (ms): 1397.7078709285706
-- Cold load time (ms): 599.288978963159
+- Model SHA-256: `0c193ceb866cd795bc3da6012055079d5448807d7e6c3824571400c1f5af3c65`
+- Language-detector constructor (ms): 0.3287718864157796
+- Cold first language inference/model load (ms): 1815.875981003046
+- Cold load time (ms): 657.5204480905086
 
 ## 17. Prediction explanation
 

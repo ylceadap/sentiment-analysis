@@ -137,6 +137,8 @@ The pipeline prevents normalized duplicate overlap, fits all vectorizers inside 
 - Expected calibration error (10 bins): {_format_metric(metrics.get("expected_calibration_error_10_bin"))}
 - Mean prediction confidence: {_format_metric(metrics.get("mean_prediction_confidence"))}
 
+These probability metrics are descriptive evidence on the held-out set. Logistic Regression supplies native probabilities, but no separate calibration model was fitted; the calibration estimate is not an operational guarantee.
+
 ## 10. Per-class metrics
 
 {per_class_md}

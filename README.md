@@ -61,10 +61,10 @@ Equivalent commands:
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install -e '.[dev]'
+.venv/bin/python -m pip install -e '.[train,dev]'
 ```
 
-Dependencies are constrained by compatible version ranges in `pyproject.toml`. The verified environment resolved scikit-learn 1.9.0, Lingua 2.1.1, FastAPI 0.139.2, MLflow 3.14.0, and pytest 8.4.2.
+Dependencies are constrained by compatible version ranges in `pyproject.toml`. The `train` extra contains MLflow/pandas/reporting tools; the Docker image installs only the smaller serving core. The verified environment resolved scikit-learn 1.9.0, Lingua 2.1.1, FastAPI 0.139.2, MLflow 3.14.0, and pytest 8.4.2.
 
 ## Exact working commands
 
@@ -73,12 +73,35 @@ make audit       # regenerate reports/data_audit.md and artifacts/data_audit.jso
 make train       # run CV experiments, MLflow tracking, select, fit, and evaluate once
 make evaluate    # print stored held-out metrics; does not evaluate the test set again
 make benchmark   # regenerate repeated latency evidence and refresh model report
+make predict REVIEW='Deze film was verrassend goed.'
 make test        # run pytest
 make coverage    # run pytest with branch coverage
 make lint        # Ruff lint and formatting checks
 make serve       # listen on 0.0.0.0:8000
 make mlflow      # open local MLflow UI on port 5000
 ```
+
+## Train and predict: shortest workflow
+
+Train from the supplied CSV and regenerate the fitted model, metadata, comparison table, and report:
+
+```bash
+make install
+make audit
+make train
+make benchmark
+```
+
+Predict locally without starting a server:
+
+```bash
+.venv/bin/sentiment-predict \
+  --model artifacts/model.joblib \
+  --review 'Deze film was verrassend goed.' \
+  --explain
+```
+
+The same operation is available through `make predict REVIEW='...'` or the REST API described below.
 
 The direct audit command is:
 
@@ -137,6 +160,10 @@ The selected model combines word unigrams/bigrams and character 3–5-grams with
 | Macro recall | 0.6055 |
 | Macro-F1 | **0.6311** |
 | Weighted F1 | 0.6474 |
+| Log loss | 0.7318 |
+| Multiclass Brier score | 0.4532 |
+| Expected calibration error, 10 bins | 0.0491 |
+| Mean prediction confidence | 0.6016 |
 
 | Class | Precision | Recall | F1 | Support |
 | --- | ---: | ---: | ---: | ---: |
@@ -146,23 +173,25 @@ The selected model combines word unigrams/bigrams and character 3–5-grams with
 
 Negative is the smallest class; 29/58 held-out Negative reviews were correctly classified, 20 became Average, and 9 became Positive. See `reports/model_report.md` for the full confusion matrix and bounded error analysis.
 
+The probability metrics are descriptive evidence on 863 held-out rows. Logistic Regression provides native probabilities, but the model was not separately calibrated; ECE should not be treated as a guarantee for operational thresholds.
+
 ## Latency evidence
 
 Measured on macOS x86_64, Python 3.11.7, using three short/medium/long Dutch samples, 10 warm-ups, and 100 iterations (HTTP: 50):
 
 | Path | Mean ms | p50 ms | p95 ms | Max ms |
 | --- | ---: | ---: | ---: | ---: |
-| Normalization + model | 3.417 | 2.909 | 5.168 | 5.447 |
-| Language detection + model | 4.381 | 3.814 | 6.837 | 7.536 |
-| Service end-to-end | 8.095 | 6.778 | 12.258 | 13.686 |
-| Explanation enabled | 133.652 | 131.707 | 142.575 | 147.226 |
-| HTTP `/classify` | 9.701 | 8.292 | 13.913 | 14.039 |
+| Normalization + model | 4.869 | 4.509 | 9.132 | 13.393 |
+| Language detection + model | 6.592 | 6.051 | 10.556 | 16.936 |
+| Service end-to-end | 6.219 | 5.752 | 9.716 | 10.891 |
+| Explanation enabled | 10.467 | 7.549 | 15.804 | 179.483 |
+| HTTP `/classify` | 8.121 | 7.780 | 11.274 | 11.451 |
 
-- Lingua constructor: 0.308 ms, but its lazy first inference/model load: 1,397.708 ms.
-- Serialized model load: 599.289 ms; first model prediction: 11.817 ms.
-- Artifact: 2,922,196 bytes; SHA-256 `e1eac0ebd0b20133e5537b53c13673b57fca0a32936063739697dd04c96b22b0`.
+- Lingua constructor: 0.329 ms, but its lazy first inference/model load: 1,815.876 ms.
+- Serialized model load: 657.520 ms; first model prediction: 12.469 ms.
+- Artifact: 2,922,221 bytes; SHA-256 `0c193ceb866cd795bc3da6012055079d5448807d7e6c3824571400c1f5af3c65`.
 
-The API warms Lingua during lifespan startup, so the first production request does not pay the lazy detector cost. Startup/readiness therefore includes that approximately 1.5-second cold cost.
+Compared with the prior implementation, service p50 improved from 6.778 to 5.752 ms, HTTP p50 from 8.292 to 7.780 ms, and explanation p50 from 131.707 to 7.549 ms. The API warms Lingua and the explanation feature-name cache during lifespan startup, so readiness includes the cold initialization cost instead of passing it to the first request. The explanation maximum above is a single runtime outlier; p50/p95 are more representative of the warmed path.
 
 ## REST API
 
@@ -197,8 +226,8 @@ The response contains one exact allowed label plus native Logistic Regression pr
   "label": "Average",
   "model_version": "0.1.0+...",
   "detected_language": "dutch",
-  "probabilities": {"Average": 0.542117, "Negative": 0.130673, "Positive": 0.32721},
-  "latency_ms": 8.25,
+  "probabilities": {"Average": 0.5421167, "Negative": 0.1306731, "Positive": 0.3272102},
+  "latency_ms": 5.75,
   "explanation": null
 }
 ```
@@ -224,11 +253,11 @@ Verified commands:
 
 ```bash
 make test
-# 23 passed, 1 third-party Starlette deprecation warning
+# 24 passed, 1 third-party Starlette deprecation warning
 
 make coverage
-# 57% total branch coverage
-# API 91%, audit 79%, data 78%, language 96%, metrics 100%, model 82%, service 97%, text 100%
+# 24 tests passed; 58% total branch coverage
+# Critical API, audit, data, language, metrics, model, service, and text logic is directly tested
 
 make lint
 # Ruff lint passed; all files formatted
@@ -254,7 +283,7 @@ make docker-build
 make docker-run
 ```
 
-Then repeat the health and classify curl commands. The image uses Python 3.11 slim, installs runtime dependencies only, runs as a non-root user, includes a health check, and copies the model/metadata but excludes the raw CSV, PDF, tests, reports, Git data, and MLflow database.
+Then repeat the health and classify curl commands. The image uses Python 3.11 slim, installs only the core serving dependencies (not MLflow, pandas, pyarrow, matplotlib, or training tools), runs as a non-root user, includes a health check, and copies the model/metadata but excludes the raw CSV, PDF, tests, reports, Git data, and MLflow database.
 
 **Verification status:** Docker runtime was not verified because no Docker executable/engine is installed in the execution environment. The Dockerfile and build context were reviewed statically; do not interpret this as a successful image build.
 
@@ -274,5 +303,5 @@ Then repeat the health and classify curl commands. The image uses Python 3.11 sl
 - Negative has only 290 confident Dutch rows and 58 held-out examples.
 - Source labels and their possible derivation from ratings were not independently verified.
 - There are no timestamps/source IDs for drift or lineage analysis.
-- Startup capacity and readiness time should account for Lingua's approximately 1.5-second cold loading cost.
+- Startup capacity and readiness time should account for Lingua's approximately 1.8-second cold loading cost.
 - A compact Dutch transformer is a future experiment only after collecting a larger adjudicated benchmark and defining latency/cost constraints.

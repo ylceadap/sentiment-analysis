@@ -47,8 +47,8 @@
     "Average",
     "Negative"
   ],
-  "log_loss": 0.7317970795880541,
-  "multiclass_brier_score": 0.4531728539276883,
-  "expected_calibration_error_10_bin": 0.04914807647740436,
-  "mean_prediction_confidence": 0.6015891587485515
+  "log_loss": 0.7317971345953704,
+  "multiclass_brier_score": 0.45317286748436325,
+  "expected_calibration_error_10_bin": 0.049148080923707614,
+  "mean_prediction_confidence": 0.6015891529594753
 }
