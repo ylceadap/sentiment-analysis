@@ -19,6 +19,7 @@ def test_cache_key_changes_with_revision_or_data(tmp_path) -> None:
     original = _cache_path(tmp_path, "model", "rev-1", "data-1", True)
     assert original != _cache_path(tmp_path, "model", "rev-2", "data-1", True)
     assert original != _cache_path(tmp_path, "model", "rev-1", "data-2", True)
+    assert original != _cache_path(tmp_path, "model", "rev-1", "data-1", True, "task=v2")
 
 
 def test_promotion_gate_requires_every_guardrail() -> None:

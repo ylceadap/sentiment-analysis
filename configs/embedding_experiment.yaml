@@ -1,24 +1,27 @@
 training_config: configs/training.yaml
-cache_dir: .cache/embeddings
+cache_dir: .cache/jina_embeddings
 huggingface_cache_dir: .cache/huggingface
-output_csv: artifacts/embedding_experiment_results.csv
-decision_json: artifacts/embedding_experiment_decision.json
-report_path: reports/embedding_experiment.md
+output_csv: artifacts/jina_embedding_experiment_results.csv
+decision_json: artifacts/jina_embedding_experiment_decision.json
+report_path: reports/jina_embedding_experiment.md
 expected_train_normalized_sha256: aa986ef1d8f35ebf232a015fd0e61d3affb1efbe4a589ec4f8653ae01e8ab7c9
 expected_test_normalized_sha256: b76afd73eaeed79bf61903ab8475a08c4565cf523a55e8ae34448d2330e00cbb
 normalize_embeddings: true
-batch_size: 16
+device: auto
+use_fp16_on_cuda: true
+batch_size: 4
 models:
-  - name: multilingual_minilm
-    model_id: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
-    revision: e8f8c211226b894fcb81acc59f3b34ba3efd5f42
+  - name: jina_v3_classification
+    model_id: jinaai/jina-embeddings-v3
+    revision: ab036b023d30b4d1138c4c3bfa9f0c445ab455d6
     language_scope: multilingual_including_dutch_and_english
-  - name: dutch_robbert
-    model_id: NetherlandsForensicInstitute/robbert-2022-dutch-sentence-transformers
-    revision: 49e0e19472a527708e62747ffd12091e23bc1980
-    language_scope: dutch
+    trust_remote_code: true
+    task: classification
+    max_sequence_length: 1024
+    truncate_dimension: 512
+    license: cc-by-nc-4.0
 logistic_regression:
-  c_values: [0.25, 0.5, 0.75, 1.0]
+  c_values: [0.5, 1.0, 2.0]
   class_weights:
     - name: balanced
       value: balanced
