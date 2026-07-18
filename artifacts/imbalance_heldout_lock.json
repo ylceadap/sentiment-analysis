@@ -1,0 +1,17 @@
+{
+  "status": "complete",
+  "created_at_utc": "2026-07-18T12:05:38.637636+00:00",
+  "git_commit": "a90b99cc03edebc0f61f998ed9198ebdb469d5a2",
+  "candidate": "negative_weight_10__0.30",
+  "test_normalized_sha256": "b76afd73eaeed79bf61903ab8475a08c4565cf523a55e8ae34448d2330e00cbb",
+  "completed_at_utc": "2026-07-18T12:05:42.196721+00:00",
+  "promotion": {
+    "checks": {
+      "negative_precision_floor": false,
+      "negative_recall_improved": true,
+      "macro_f1_guardrail": true,
+      "accuracy_guardrail": true
+    },
+    "promote": false
+  }
+}
