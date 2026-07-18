@@ -1,0 +1,44 @@
+.PHONY: install audit train evaluate benchmark test coverage lint format serve mlflow docker-build docker-run
+
+PYTHON := .venv/bin/python
+
+install:
+	python3 -m venv .venv
+	$(PYTHON) -m pip install -e '.[dev]'
+
+audit:
+	.venv/bin/sentiment-audit --data Python_Engineer_Challenge_2.csv
+
+train:
+	.venv/bin/sentiment-train --config configs/training.yaml
+
+evaluate:
+	.venv/bin/sentiment-evaluate
+
+benchmark:
+	.venv/bin/sentiment-benchmark --model artifacts/model.joblib
+
+test:
+	.venv/bin/pytest
+
+coverage:
+	.venv/bin/pytest --cov=dutch_sentiment --cov-report=term-missing
+
+lint:
+	.venv/bin/ruff check .
+	.venv/bin/ruff format --check .
+
+format:
+	.venv/bin/ruff format .
+
+serve:
+	.venv/bin/uvicorn dutch_sentiment.api:create_app --factory --host 0.0.0.0 --port 8000
+
+mlflow:
+	.venv/bin/mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000
+
+docker-build:
+	docker build -t dutch-sentiment:latest .
+
+docker-run:
+	docker run --rm -p 8000:8000 dutch-sentiment:latest

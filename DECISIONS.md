@@ -47,3 +47,27 @@
 - **Reasoning:** Docker is not installed in the current environment and successful container execution must not be fabricated.
 - **Consequences:** local API verification remains required; Docker commands will still be documented.
 - **Limitations:** build-time dependency or runtime issues cannot be ruled out without an actual engine.
+
+## D007 — Use a local SQLite MLflow backend
+
+- **Alternatives considered:** legacy MLflow directory file store; local SQLite backend; custom experiment CSV only.
+- **Decision:** use `sqlite:///mlflow.db` for live tracking and export a compact comparison CSV to the repository.
+- **Reasoning:** installed MLflow 3.14 places the legacy directory store in maintenance mode and refuses new writes by default; SQLite is local, supported, inspectable, and keeps the same one-command UI workflow.
+- **Consequences:** `mlflow.db` is intentionally ignored while portable comparison and evidence artifacts are tracked.
+- **Limitations:** evaluators do not receive the local run database unless it is explicitly packaged; the exported table and metadata preserve key results.
+
+## D008 — Filter confident non-Dutch training rows and allow short ambiguous API input
+
+- **Alternatives considered:** accept all rows; reject every uncertain input; use confidence/margin thresholds plus a short-text ambiguity state.
+- **Decision:** train only on confident Dutch candidates. The API returns HTTP 422 for confident non-Dutch text but permits text shorter than 20 characters as `ambiguous`.
+- **Reasoning:** this follows the Dutch-only requirement without pretending language ID is perfect on inputs such as “Goed”.
+- **Consequences:** 485 English candidates are removed; short non-Dutch text may occasionally reach sentiment classification.
+- **Limitations:** mixed-language and named-entity-heavy text can still be misidentified.
+
+## D009 — Retain explicit ratings in the final pipeline
+
+- **Alternatives considered:** always retain ratings; always mask them; select using a paired experiment.
+- **Decision:** retain ratings because the paired candidate achieved CV macro-F1 0.6544 versus 0.6507 when masked.
+- **Reasoning:** the 0.0038 difference is small relative to fold standard deviations, so ratings are documented as a leakage risk rather than treated as the main performance source.
+- **Consequences:** legitimate rating language remains available to the model and the selected pipeline follows the predefined metric.
+- **Limitations:** source-label construction is unknown, so direct label leakage cannot be ruled out.

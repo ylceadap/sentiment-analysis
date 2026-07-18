@@ -54,8 +54,8 @@ shasum -a 256 Python_Engineer_Challenge_2.csv
 - [x] Add constrained runtime/development dependencies, initial CLI entry points, logging, and configuration.
 - [x] Implement and test conservative text normalization.
 - [x] Implement and test a deterministic Dutch-language policy.
-- [ ] Implement grouped/deduplicated stratified holdout splitting.
-- [ ] Persist split metadata and relevant hashes.
+- [x] Implement grouped/deduplicated stratified holdout splitting.
+- [x] Persist split metadata and relevant hashes.
 
 **Validation commands**
 
@@ -66,7 +66,7 @@ ruff check .
 ruff format --check .
 ```
 
-**Status:** pending.
+**Status:** complete. Evidence: 4,315 confident Dutch candidates, two duplicate extras removed, 3,450/863 stratified split with disjoint normalized hashes.
 
 **Unresolved risks:** dependency installation and detector model availability must be verified locally.
 
@@ -74,13 +74,13 @@ ruff format --check .
 
 **Objective:** compare transparent classical NLP baselines without touching the held-out test set during selection.
 
-- [ ] Run Dummy, word TF-IDF, character TF-IDF, and combined word/character TF-IDF experiments.
-- [ ] Compare imbalance treatment with stratified CV using macro-F1 as the primary selection metric.
-- [ ] Compare otherwise-equivalent retained-rating and masked-rating experiments.
-- [ ] Track meaningful experiments in local MLflow and export a compact comparison table.
-- [ ] Select the final candidate from CV evidence, then evaluate once on the held-out test set.
-- [ ] Perform concise error analysis and create `reports/model_report.md`.
-- [ ] Serialize the fitted pipeline and machine-readable traceability metadata.
+- [x] Run Dummy, word TF-IDF, character TF-IDF, and combined word/character TF-IDF experiments.
+- [x] Compare imbalance treatment with stratified CV using macro-F1 as the primary selection metric.
+- [x] Compare otherwise-equivalent retained-rating and masked-rating experiments.
+- [x] Track meaningful experiments in local MLflow and export a compact comparison table.
+- [x] Select the final candidate from CV evidence, then evaluate once on the held-out test set.
+- [x] Perform concise error analysis and create `reports/model_report.md`.
+- [x] Serialize the fitted pipeline and machine-readable traceability metadata.
 
 **Validation commands**
 
@@ -90,7 +90,7 @@ python -m dutch_sentiment.evaluate --model artifacts/model.joblib
 mlflow ui --backend-store-uri ./mlruns
 ```
 
-**Status:** pending.
+**Status:** complete. Selected CV macro-F1 0.6544 ± 0.0174; held-out macro-F1 0.6311; Negative F1 0.5918.
 
 **Unresolved risks:** Negative has only 300 raw rows, so per-class estimates may have material variance; selection will report fold dispersion and Negative support.
 
@@ -98,11 +98,11 @@ mlflow ui --backend-store-uri ./mlruns
 
 **Objective:** expose the immutable fitted pipeline safely through a testable FastAPI application.
 
-- [ ] Implement a model abstraction with save/load and linear feature contributions.
-- [ ] Implement application factory/lifespan loading, `/classify`, and `/health`.
-- [ ] Reject missing, blank, oversized, and confidently non-Dutch inputs clearly.
-- [ ] Keep explanations optional and avoid logging review text.
-- [ ] Benchmark initialization, loading, warm inference, language-plus-model, explanation, and HTTP paths.
+- [x] Implement a model abstraction with save/load and linear feature contributions.
+- [x] Implement application factory/lifespan loading, `/classify`, and `/health`.
+- [x] Reject missing, blank, oversized, and confidently non-Dutch inputs clearly.
+- [x] Keep explanations optional and avoid logging review text.
+- [x] Benchmark initialization, loading, warm inference, language-plus-model, explanation, and HTTP paths.
 
 **Validation commands**
 
@@ -112,7 +112,7 @@ uvicorn dutch_sentiment.api:create_app --factory --host 0.0.0.0 --port 8000
 curl -fsS http://localhost:8000/health
 ```
 
-**Status:** pending.
+**Status:** complete. Local live HTTP checks returned health 200, Dutch classify 200 with explanation, and English 422.
 
 **Unresolved risks:** explanation readability depends on the selected feature union; word features will be presented separately from technical character features.
 
@@ -120,11 +120,11 @@ curl -fsS http://localhost:8000/health
 
 **Objective:** leave a submission that an evaluator can install, inspect, verify, and serve using documented commands.
 
-- [ ] Add deterministic unit, model round-trip, explanation, and API tests.
-- [ ] Run tests, coverage, lint, and formatting checks; record actual results.
-- [ ] Add a non-root serving Dockerfile that excludes the raw CSV.
+- [x] Add deterministic unit, model round-trip, explanation, and API tests.
+- [x] Run tests, coverage, lint, and formatting checks; record actual results.
+- [x] Add a non-root serving Dockerfile that excludes the raw CSV.
 - [ ] Build/run/test the image if Docker becomes available; otherwise perform static review and mark runtime verification unavailable.
-- [ ] Complete README, model report, decision log, and requirement traceability.
+- [x] Complete README, model report, decision log, and requirement traceability.
 - [ ] Reread the PDF and run the final acceptance checklist.
 - [ ] Recheck the raw CSV hash.
 - [ ] Commit each verified phase with a focused message.

@@ -10,6 +10,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 from .constants import EXPECTED_COLUMNS, LABELS
+from .language import DutchLanguageDetector, LanguageStatus
 from .text import normalize_text
 
 
@@ -86,3 +87,27 @@ def make_holdout_split(
         duplicate_rows_removed=duplicate_rows,
         conflicting_groups_removed=conflicting_groups,
     )
+
+
+def filter_dutch_reviews(
+    frame: pd.DataFrame, detector: DutchLanguageDetector
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Return confidently Dutch rows and row-level language evidence."""
+    records: list[dict[str, object]] = []
+    for index, text in frame["Reviews"].items():
+        result = detector.detect(str(text))
+        records.append(
+            {
+                "source_index": int(index),
+                "language_status": result.status.value,
+                "detected_language": result.detected_language,
+                "dutch_confidence": result.dutch_confidence,
+                "language_margin": result.margin,
+            }
+        )
+    evidence = pd.DataFrame(records).set_index("source_index")
+    work = frame.copy()
+    work["source_row"] = work.index + 2
+    work = work.join(evidence)
+    filtered = work.loc[work["language_status"].eq(LanguageStatus.DUTCH.value)].copy()
+    return filtered.reset_index(drop=True), work.reset_index(drop=True)

@@ -1,7 +1,7 @@
 data_path: Python_Engineer_Challenge_2.csv
 output_dir: artifacts
 report_dir: reports
-mlflow_tracking_uri: ./mlruns
+mlflow_tracking_uri: sqlite:///mlflow.db
 experiment_name: dutch-movie-sentiment
 random_seed: 42
 test_size: 0.20

@@ -1,0 +1,56 @@
+{
+  "environment": {
+    "operating_system": "macOS-26.0-x86_64-i386-64bit",
+    "python_version": "3.11.7",
+    "machine": "x86_64",
+    "processor": "i386"
+  },
+  "configuration": {
+    "iterations": 100,
+    "warmup": 10,
+    "sample_count": 3
+  },
+  "detector_initialization_ms": 0.2872039331123233,
+  "cold_detector_first_inference_ms": 1472.7812669007108,
+  "cold_model_load_ms": 603.4652939997613,
+  "cold_first_prediction_ms": 13.48055002745241,
+  "model_artifact_bytes": 2922199,
+  "model_sha256": "38199b4fa2d40a72bf4805793045ac03d51363e726074af82a4b2b993d52138a",
+  "measurements": {
+    "normalization_plus_model_prediction": {
+      "iterations": 100,
+      "mean_ms": 3.6755876627285033,
+      "p50_ms": 3.4464094787836075,
+      "p95_ms": 5.7190781517419955,
+      "max_ms": 6.258086999878287
+    },
+    "language_detection_plus_model": {
+      "iterations": 100,
+      "mean_ms": 4.448658351320773,
+      "p50_ms": 3.805515938438475,
+      "p95_ms": 7.133838580921291,
+      "max_ms": 8.977499906904995
+    },
+    "service_end_to_end": {
+      "iterations": 100,
+      "mean_ms": 8.25005451682955,
+      "p50_ms": 6.89239997882396,
+      "p95_ms": 12.479361036093906,
+      "max_ms": 13.856903067789972
+    },
+    "explanation_enabled": {
+      "iterations": 100,
+      "mean_ms": 137.36067687976174,
+      "p50_ms": 135.29422448482364,
+      "p95_ms": 148.51510885637254,
+      "max_ms": 230.39080202579498
+    },
+    "http_classify": {
+      "iterations": 50,
+      "mean_ms": 9.920704504474998,
+      "p50_ms": 8.57994199031964,
+      "p95_ms": 13.753145915688947,
+      "max_ms": 15.675215050578117
+    }
+  }
+}

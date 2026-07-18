@@ -1,0 +1,22 @@
+{
+  "random_seed": 42,
+  "test_size": 0.2,
+  "raw_rows": 4800,
+  "confident_dutch_rows": 4315,
+  "training_rows": 3450,
+  "test_rows": 863,
+  "duplicate_rows_removed": 2,
+  "conflicting_groups_removed": 0,
+  "train_label_counts": {
+    "Positive": 1678,
+    "Average": 1540,
+    "Negative": 232
+  },
+  "test_label_counts": {
+    "Positive": 420,
+    "Average": 385,
+    "Negative": 58
+  },
+  "train_normalized_sha256": "e77ab4e1b645624b9d644fb7e447032371088073b6bd0390652e509a9736383f",
+  "test_normalized_sha256": "ba03aa1262bb6ce2f150b801944c0789b7bfaa6fe7da595afd634645a998aa1c"
+}
