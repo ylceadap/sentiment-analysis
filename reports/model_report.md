@@ -11,10 +11,12 @@ The final system uses `combined_balanced_ratings`. Selection is based on stratif
 - Original labels: {"Positive": {"count": 2250, "percentage": 46.88}, "Average": {"count": 2250, "percentage": 46.88}, "Negative": {"count": 300, "percentage": 6.25}}
 - Text is label-ordered, so sequential splitting is invalid.
 
-## 3. Language-filter results
+## 3. Language composition and unified training policy
 
 - Status counts: {"dutch": 4315, "non_dutch": 485}
 - Status by label: {"Positive": {"dutch": 2099, "non_dutch": 151}, "Average": {"dutch": 1926, "non_dutch": 324}, "Negative": {"dutch": 290, "non_dutch": 10}}
+- Every deduplicated Dutch and English row is retained in one shared model; no language-specific model is trained.
+- Holdout and CV splits jointly stratify detected language and label.
 - Detector output is not a gold annotation; manual bounded examples are in `reports/data_audit.md`.
 
 ## 4. Data-quality findings
@@ -33,58 +35,95 @@ The pipeline prevents normalized duplicate overlap, fits all vectorizers inside 
   "random_seed": 42,
   "test_size": 0.2,
   "raw_rows": 4800,
-  "confident_dutch_rows": 4315,
-  "training_rows": 3450,
-  "test_rows": 863,
+  "annotated_rows": 4800,
+  "stratification_columns": [
+    "detected_language",
+    "Label"
+  ],
+  "training_rows": 3838,
+  "test_rows": 960,
   "duplicate_rows_removed": 2,
   "conflicting_groups_removed": 0,
   "train_label_counts": {
-    "Positive": 1678,
-    "Average": 1540,
-    "Negative": 232
+    "Positive": 1799,
+    "Average": 1799,
+    "Negative": 240
   },
   "test_label_counts": {
-    "Positive": 420,
-    "Average": 385,
-    "Negative": 58
+    "Average": 450,
+    "Positive": 450,
+    "Negative": 60
   },
-  "train_normalized_sha256": "e77ab4e1b645624b9d644fb7e447032371088073b6bd0390652e509a9736383f",
-  "test_normalized_sha256": "ba03aa1262bb6ce2f150b801944c0789b7bfaa6fe7da595afd634645a998aa1c"
+  "train_language_counts": {
+    "dutch": 3450,
+    "english": 388
+  },
+  "test_language_counts": {
+    "dutch": 863,
+    "english": 97
+  },
+  "train_language_label_counts": {
+    "dutch::Average": 1540,
+    "dutch::Negative": 232,
+    "dutch::Positive": 1678,
+    "english::Average": 259,
+    "english::Negative": 8,
+    "english::Positive": 121
+  },
+  "test_language_label_counts": {
+    "dutch::Average": 385,
+    "dutch::Negative": 58,
+    "dutch::Positive": 420,
+    "english::Average": 65,
+    "english::Negative": 2,
+    "english::Positive": 30
+  },
+  "train_normalized_sha256": "aa986ef1d8f35ebf232a015fd0e61d3affb1efbe4a589ec4f8653ae01e8ab7c9",
+  "test_normalized_sha256": "b76afd73eaeed79bf61903ab8475a08c4565cf523a55e8ae34448d2330e00cbb"
 }
 
 ## 7–8. Experiment and cross-validation results
 
 | name                             | feature_kind   | class_weight   | mask_ratings   |   cv_accuracy_mean |   cv_accuracy_std |   cv_balanced_accuracy_mean |   cv_balanced_accuracy_std |   cv_macro_precision_mean |   cv_macro_precision_std |   cv_macro_recall_mean |   cv_macro_recall_std |   cv_macro_f1_mean |   cv_macro_f1_std |   cv_weighted_f1_mean |   cv_weighted_f1_std | mlflow_run_id                    |   artifact_size_bytes |
 |:---------------------------------|:---------------|:---------------|:---------------|-------------------:|------------------:|----------------------------:|---------------------------:|--------------------------:|-------------------------:|-----------------------:|----------------------:|-------------------:|------------------:|----------------------:|---------------------:|:---------------------------------|----------------------:|
-| combined_balanced_ratings        | combined       | balanced       | False          |             0.6759 |            0.0086 |                      0.6218 |                     0.0154 |                    0.7127 |                   0.0229 |                 0.6218 |                0.0154 |             0.6544 |            0.0174 |                0.6752 |               0.0089 | cb9c813dfbb344a4999df9b631a05130 |               2922094 |
-| combined_balanced_masked_ratings | combined       | balanced       | True           |             0.6725 |            0.0121 |                      0.6169 |                     0.0164 |                    0.713  |                   0.0208 |                 0.6169 |                0.0164 |             0.6507 |            0.0173 |                0.6717 |               0.0123 | 4033bf3420be49079abe3cc3e84b7fea |               2923005 |
-| combined_logreg                  | combined       | none           | False          |             0.6557 |            0.0093 |                      0.4888 |                     0.0107 |                    0.7687 |                   0.0061 |                 0.4888 |                0.0107 |             0.4946 |            0.0157 |                0.6387 |               0.0097 | 973aed7246644df58cf4dd747d95ea3c |               2922191 |
-| char_logreg                      | char           | none           | False          |             0.647  |            0.0047 |                      0.4739 |                     0.0075 |                    0.7302 |                   0.0695 |                 0.4739 |                0.0075 |             0.4716 |            0.0129 |                0.628  |               0.0052 | 90306e871b8e46a6a4cffa1c1cfb84a3 |               1537807 |
-| word_logreg                      | word           | none           | False          |             0.6394 |            0.0046 |                      0.4572 |                     0.0032 |                    0.4923 |                   0.1316 |                 0.4572 |                0.0032 |             0.4427 |            0.0049 |                0.617  |               0.0039 | 9eb0a62588ac458f8c9ed4a357095a6a |               1384822 |
-| dummy_prior                      | word           | none           | False          |             0.4864 |            0.0007 |                      0.3333 |                     0      |                    0.1621 |                   0.0002 |                 0.3333 |                0      |             0.2181 |            0.0002 |                0.3183 |               0.0008 | 0482bdc2c0ca4e1b8aab1ee61fa6a809 |                  2549 |
+| combined_balanced_ratings        | combined       | balanced       | False          |             0.6699 |            0.0104 |                      0.622  |                     0.0292 |                    0.6895 |                   0.02   |                 0.622  |                0.0292 |             0.6472 |            0.0269 |                0.6689 |               0.0111 | f1a9b3c8edfd44a6984296ac89e7dfff |               2935533 |
+| combined_balanced_masked_ratings | combined       | balanced       | True           |             0.6681 |            0.011  |                      0.6207 |                     0.0294 |                    0.6888 |                   0.0171 |                 0.6207 |                0.0294 |             0.6459 |            0.0257 |                0.667  |               0.0116 | b763c3809438467880f75a100b2bbf89 |               2935751 |
+| combined_logreg                  | combined       | none           | False          |             0.648  |            0.0089 |                      0.4837 |                     0.0088 |                    0.7646 |                   0.0056 |                 0.4837 |                0.0088 |             0.4922 |            0.014  |                0.6329 |               0.0087 | 94d9c63472da4133ad1b5df3a51dfa77 |               2935580 |
+| char_logreg                      | char           | none           | False          |             0.6456 |            0.0058 |                      0.4724 |                     0.005  |                    0.7633 |                   0.0036 |                 0.4724 |                0.005  |             0.4721 |            0.0066 |                0.6283 |               0.0059 | 6163b3e0ac644c488b473e39ccee8329 |               1551708 |
+| word_logreg                      | word           | none           | False          |             0.6464 |            0.0127 |                      0.4609 |                     0.0095 |                    0.4978 |                   0.1343 |                 0.4609 |                0.0095 |             0.4474 |            0.0105 |                0.6258 |               0.0124 | d198412f2ef04d0fa958028a69dda657 |               1384649 |
+| dummy_prior                      | word           | none           | False          |             0.4685 |            0.0003 |                      0.3333 |                     0      |                    0.1562 |                   0.0001 |                 0.3333 |                0      |             0.2127 |            0.0001 |                0.2989 |               0.0004 | 30653994b91847c2b9445d40ee8aa3b9 |                  2533 |
 
 ## 9. Final held-out test metrics
 
-- Accuracy: 0.6477
-- Balanced accuracy: 0.6055
-- Macro precision: 0.6709
-- Macro recall: 0.6055
-- Macro-F1: 0.6311
-- Weighted F1: 0.6474
-- Log loss: 0.7318
-- Multiclass Brier score: 0.4532
-- Expected calibration error (10 bins): 0.0491
-- Mean prediction confidence: 0.6016
+- Accuracy: 0.6531
+- Balanced accuracy: 0.6137
+- Macro precision: 0.6744
+- Macro recall: 0.6137
+- Macro-F1: 0.6379
+- Weighted F1: 0.6525
+- Log loss: 0.7216
+- Multiclass Brier score: 0.4462
+- Expected calibration error (10 bins): 0.0470
+- Mean prediction confidence: 0.6103
 
 These probability metrics are descriptive evidence on the held-out set. Logistic Regression supplies native probabilities, but no separate calibration model was fitted; the calibration estimate is not an operational guarantee.
+
+### Held-out metrics by detected language
+
+| detected_language   |   support |   accuracy |   balanced_accuracy |   macro_f1 |   negative_f1 |   negative_support |   log_loss |
+|:--------------------|----------:|-----------:|--------------------:|-----------:|--------------:|-------------------:|-----------:|
+| dutch               |       863 |     0.6489 |              0.6158 |     0.6381 |        0.6139 |                 58 |     0.729  |
+| english             |        97 |     0.6907 |              0.3615 |     0.3289 |        0      |                  2 |     0.6556 |
+
+Language slices evaluate the same shared model and are not separately trained models. English results require extra caution because the source has only 485 English rows and 10 English Negative rows; the held-out English-Negative support is especially small.
 
 ## 10. Per-class metrics
 
 | label    |   precision |   recall |     f1 |   support |
 |:---------|------------:|---------:|-------:|----------:|
-| Positive |      0.6731 |   0.6619 | 0.6675 |       420 |
-| Average  |      0.6146 |   0.6545 | 0.634  |       385 |
-| Negative |      0.725  |   0.5    | 0.5918 |        58 |
+| Positive |      0.6682 |   0.6356 | 0.6515 |       450 |
+| Average  |      0.6339 |   0.6889 | 0.6603 |       450 |
+| Negative |      0.7209 |   0.5167 | 0.6019 |        60 |
 
 ## 11. Confusion matrix
 
@@ -92,20 +131,20 @@ Rows are true labels and columns are predicted labels.
 
 |          |   Positive |   Average |   Negative |
 |:---------|-----------:|----------:|-----------:|
-| Positive |        278 |       138 |          4 |
-| Average  |        126 |       252 |          7 |
-| Negative |          9 |        20 |         29 |
+| Positive |        286 |       160 |          4 |
+| Average  |        132 |       310 |          8 |
+| Negative |         10 |        19 |         31 |
 
 ## 12. Negative-class analysis
 
-Negative recall is 0.5000 and Negative F1 is 0.5918. This class has the smallest support, so point estimates should be interpreted with more uncertainty than Positive or Average results.
+Negative recall is 0.5167 and Negative F1 is 0.6019. This class has the smallest support, so point estimates should be interpreted with more uncertainty than Positive or Average results.
 
 ## 13. Rating-leakage experiment
 
 | name                             | feature_kind   | class_weight   | mask_ratings   |   cv_accuracy_mean |   cv_accuracy_std |   cv_balanced_accuracy_mean |   cv_balanced_accuracy_std |   cv_macro_precision_mean |   cv_macro_precision_std |   cv_macro_recall_mean |   cv_macro_recall_std |   cv_macro_f1_mean |   cv_macro_f1_std |   cv_weighted_f1_mean |   cv_weighted_f1_std | mlflow_run_id                    |   artifact_size_bytes |
 |:---------------------------------|:---------------|:---------------|:---------------|-------------------:|------------------:|----------------------------:|---------------------------:|--------------------------:|-------------------------:|-----------------------:|----------------------:|-------------------:|------------------:|----------------------:|---------------------:|:---------------------------------|----------------------:|
-| combined_balanced_ratings        | combined       | balanced       | False          |             0.6759 |            0.0086 |                      0.6218 |                     0.0154 |                    0.7127 |                   0.0229 |                 0.6218 |                0.0154 |             0.6544 |            0.0174 |                0.6752 |               0.0089 | cb9c813dfbb344a4999df9b631a05130 |               2922094 |
-| combined_balanced_masked_ratings | combined       | balanced       | True           |             0.6725 |            0.0121 |                      0.6169 |                     0.0164 |                    0.713  |                   0.0208 |                 0.6169 |                0.0164 |             0.6507 |            0.0173 |                0.6717 |               0.0123 | 4033bf3420be49079abe3cc3e84b7fea |               2923005 |
+| combined_balanced_ratings        | combined       | balanced       | False          |             0.6699 |            0.0104 |                      0.622  |                     0.0292 |                    0.6895 |                   0.02   |                 0.622  |                0.0292 |             0.6472 |            0.0269 |                0.6689 |               0.0111 | f1a9b3c8edfd44a6984296ac89e7dfff |               2935533 |
+| combined_balanced_masked_ratings | combined       | balanced       | True           |             0.6681 |            0.011  |                      0.6207 |                     0.0294 |                    0.6888 |                   0.0171 |                 0.6207 |                0.0294 |             0.6459 |            0.0257 |                0.667  |               0.0116 | b763c3809438467880f75a100b2bbf89 |               2935751 |
 
 The paired rows differ only in rating masking. The final choice follows CV macro-F1 and Negative-class evidence rather than automatically retaining the higher-leakage signal.
 
@@ -113,38 +152,38 @@ The paired rows differ only in rating masking. The final choice follows CV macro
 
 Excerpts are deliberately capped and whitespace-normalized.
 
-| actual   | predicted   | excerpt                                                                                                                                                          |
-|:---------|:------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Positive | Average     | Ik ben helemaal niet kieskeurig als het om horrorfilms gaat, en ik ben bereid ze vrijwel allemaal te bekijken. Dat betekent niet dat ik bereid ben veel ervan op |
-| Positive | Average     | vreselijk onderschat met Matt Dillon en Tom Skerritt, goede achtergrond voor een solide verhaal en enkele memorabele regels, goed geacteerd en goed gecast, Tomm |
-| Negative | Average     | Wat de originele Killer Tomatoes leuk maakte, was dat het werd gemaakt door mensen zonder budget, die maar een paar dagen gek waren...<br /><br />Dit was iets m |
-| Positive | Average     | Als iemand die in de buurt van Buffalo, New York woont, scoorde deze film bij mij al punten voordat ik hem zelfs maar zag, aangezien het verhaal hier is gebasee |
-| Negative | Positive    | Het moet het meest oubollige tv-programma op de ether zijn. Dit is waarschijnlijk een ontsnapping voor Jim Belushi en al zijn slechte films. Zijn broer zoog al  |
-| Average  | Positive    | Oscarwinnaar Robert Redford (Beste Regisseur. Ordinary People 1980) legt de majesteit van de wildernis van Montana en de kracht van de Amerikaanse familie vast  |
-| Average  | Positive    | GÃ³mez Pereira is verantwoordelijk voor enkele van de meest verachtelijke komedies van de nieuwste Spaanse cinema (kijk maar eens naar zijn curriculum vitae), d |
-| Positive | Average     | Ik vond dit een uiterst charmante film. Het verhaal lijkt een nauwelijks verhulde autobiografie van John Waters te zijn: Peckers grootste gave is zijn vermogen  |
-| Positive | Average     | Op het eerste gezicht lijkt deze film niet bepaald geweldig. Een Bette Davis-film met slechts 166 stemmen op IMDb en een beoordeling van 6,5 moet immers een beh |
-| Positive | Average     | De vredestichter afslachten? Blijkbaar. Na het gewelddadige begin waarin Spike, Tom en Jerry allemaal naar elkaar zwaaien, stopt Butch en wil weten waarom. Dat  |
-| Average  | Positive    | Heb deze film net op dvd gezien en vond het acteerwerk erg goed, maar het algehele verhaal liet veel te wensen over. Deze film heeft dezelfde textuur en uitstra |
-| Positive | Average     | Dit is de meest meeslepende en uitmuntende prestatie die Robert Taylor ooit heeft gegeven. Het overtreft zelfs zijn geweldige optreden als "Johnny Eager", veert |
+| actual   | predicted   | detected_language   | excerpt                                                                                                                                                          |
+|:---------|:------------|:--------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Average  | Positive    | dutch               | Het is een vreemd, maar op de een of andere manier indrukwekkend verhaal over liefde. Persoonlijk kom ik in het echte leven nog nooit zo'n twist-off-verhaal teg |
+| Positive | Average     | dutch               | Met enige nieuwsgierigheid heb ik deze film bekeken. Ik wilde zien of 1) Paul Muni Chinees kon spelen en 2) Luise Rainer haar Oscar verdiende. Ik verliet de fil |
+| Average  | Positive    | dutch               | Heb deze film net op dvd gezien en vond het acteerwerk erg goed, maar het algehele verhaal liet veel te wensen over. Deze film heeft dezelfde textuur en uitstra |
+| Positive | Average     | dutch               | Henry Fool van Hal Hartley was een onafhankelijk filmmeesterwerk en zeker zijn beste werk. Het heeft een enorme karakterdiepte, subtiele, gecompliceerde dialoge |
+| Average  | Positive    | dutch               | Ik heb deze film onlangs gezien in mijn International Business-klas. Ik had niets anders verwacht dan weer een saaie documentaire (om niet te zeggen dat ik niet |
+| Positive | Average     | dutch               | Dit is een betere bewerking van het boek dan die met Paltrow (hoewel ik die ook leuk vond). Het is niet zozeer dat Beckinsale beter is – ze zijn allebei erg goe |
+| Positive | Average     | dutch               | Ik vond deze film erg vermakelijk. Ik heb deze film met mijn vrouw bekeken VOORDAT ik mijn eerste kind kreeg. Daarom zag ik het niet als gewoon familie-entertai |
+| Positive | Average     | english             | One shot, one kill, no exceptions. A must see if you are into marines or snipers. two big thumbs up! Great overall storyline, great camera work, good drama, act |
+| Average  | Positive    | dutch               | De mannen kunnen genieten van Lollo, als ze dat willen (of haar lollos – ze heeft haar naam gegeven aan jargontermen voor borsten in het Frans), maar de dames h |
+| Average  | Positive    | dutch               | Als Jack Nicholsons regiedebuut Drive, laat He Said op zijn minst zien dat hij een begaafd acteursregisseur is. Zelfs als het verhaal de weg lijkt te verliezen  |
+| Positive | Average     | dutch               | De Duitse middeleeuwse saga van Fritz Lang gaat verder in Die Nibelungen: Kriemhilds Rache (1924). Kriemhild (Margarete Schoen) wil haar vermoorde echtgenoot Si |
+| Average  | Positive    | dutch               | Er zijn weinig films of films die ik door de jaren heen als favorieten beschouw. De Evangelieweg was er één van. Ik heb dit als jonge tiener gezien en zou het g |
 
-Observed failures may combine ambiguous sentiment, label noise, sparse Negative evidence, language-detection errors, and bag-of-ngrams limitations. Feature contributions do not establish causal reasons.
+Observed failures may combine ambiguous sentiment, label noise, sparse Negative evidence, cross-language imbalance, and bag-of-ngrams limitations. Feature contributions do not establish causal reasons.
 
 ## 15–16. Inference latency, size, and load time
 
 | path                                |   iterations |   mean_ms |   p50_ms |   p95_ms |   max_ms |
 |:------------------------------------|-------------:|----------:|---------:|---------:|---------:|
-| normalization_plus_model_prediction |          100 |     4.869 |    4.509 |    9.132 |   13.393 |
-| language_detection_plus_model       |          100 |     6.592 |    6.051 |   10.556 |   16.936 |
-| service_end_to_end                  |          100 |     6.219 |    5.752 |    9.716 |   10.891 |
-| explanation_enabled                 |          100 |    10.467 |    7.549 |   15.804 |  179.483 |
-| http_classify                       |           50 |     8.121 |    7.78  |   11.274 |   11.451 |
+| normalization_plus_model_prediction |          100 |     3.906 |    3.819 |    6.288 |    6.569 |
+| language_detection_plus_model       |          100 |     5.143 |    4.835 |    8.174 |    8.945 |
+| service_end_to_end                  |          100 |     5.666 |    5.32  |    8.807 |    9.711 |
+| explanation_enabled                 |          100 |     6.499 |    5.95  |    9.477 |   10.684 |
+| http_classify                       |           50 |     8.045 |    7.571 |   11.146 |   11.778 |
 
-- Model artifact bytes: 2922221
-- Model SHA-256: `0c193ceb866cd795bc3da6012055079d5448807d7e6c3824571400c1f5af3c65`
-- Language-detector constructor (ms): 0.3287718864157796
-- Cold first language inference/model load (ms): 1815.875981003046
-- Cold load time (ms): 657.5204480905086
+- Model artifact bytes: 2935649
+- Model SHA-256: `32ec6bc66d70c26f50bc7b6f495d0852cdd1ee0fd68cbff97d823b34370bf836`
+- Language-detector constructor (ms): 0.368613051250577
+- Cold first language inference/model load (ms): 1610.0913219852373
+- Cold load time (ms): 630.5980730103329
 
 ## 17. Prediction explanation
 
@@ -157,6 +196,7 @@ Selected specification: `{"name": "combined_balanced_ratings", "feature_kind": "
 ## 19. Limitations
 
 - Language detection is uncertain for short, mixed, or named-entity-heavy text.
+- English predictions are supported but less reliable because English supervision is limited and highly class-imbalanced.
 - Sparse n-grams do not deeply model negation scope, irony, or long-range composition.
 - Negative has limited raw and held-out support.
 - The supplied labels and their construction were not independently verified.
@@ -164,4 +204,4 @@ Selected specification: `{"name": "combined_balanced_ratings", "feature_kind": "
 
 ## 20. Sensible production improvements
 
-Collect adjudicated Dutch labels, monitor language/label drift, calibrate and threshold behavior against business costs, add safe model registry promotion, and compare a compact Dutch transformer only after establishing a larger trustworthy benchmark.
+Collect adjudicated Dutch and English labels, monitor metrics and drift by language/label, calibrate and threshold behavior against business costs, add safe model registry promotion, and compare a compact multilingual transformer only after establishing a larger trustworthy benchmark.

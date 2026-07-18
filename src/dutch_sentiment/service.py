@@ -40,22 +40,16 @@ class InferenceService:
     def classify(self, review: str, *, explain: bool = False) -> PredictionResult:
         started = perf_counter()
         language = self.detector.detect(review)
-        is_confident_english = (
-            language.status is LanguageStatus.NON_DUTCH and language.detected_language == "english"
-        )
-        if language.status is LanguageStatus.NON_DUTCH and not is_confident_english:
+        is_english = language.detected_language == "english"
+        if language.status is LanguageStatus.NON_DUTCH and not is_english:
             raise NonDutchReviewError(
                 "The review was confidently detected as an unsupported language; "
                 "submit a Dutch or English review."
             )
         inference = self.model.infer(review, explain=explain)
         latency_ms = (perf_counter() - started) * 1000
-        detected = (
-            "ambiguous"
-            if language.status is LanguageStatus.AMBIGUOUS
-            else language.detected_language or language.status.value
-        )
-        warnings = (ENGLISH_RELIABILITY_WARNING,) if is_confident_english else ()
+        detected = language.detected_language or "ambiguous"
+        warnings = (ENGLISH_RELIABILITY_WARNING,) if is_english else ()
         return PredictionResult(
             label=inference.label,
             model_version=self.model.version,

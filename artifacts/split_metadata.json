@@ -2,21 +2,49 @@
   "random_seed": 42,
   "test_size": 0.2,
   "raw_rows": 4800,
-  "confident_dutch_rows": 4315,
-  "training_rows": 3450,
-  "test_rows": 863,
+  "annotated_rows": 4800,
+  "stratification_columns": [
+    "detected_language",
+    "Label"
+  ],
+  "training_rows": 3838,
+  "test_rows": 960,
   "duplicate_rows_removed": 2,
   "conflicting_groups_removed": 0,
   "train_label_counts": {
-    "Positive": 1678,
-    "Average": 1540,
-    "Negative": 232
+    "Positive": 1799,
+    "Average": 1799,
+    "Negative": 240
   },
   "test_label_counts": {
-    "Positive": 420,
-    "Average": 385,
-    "Negative": 58
+    "Average": 450,
+    "Positive": 450,
+    "Negative": 60
   },
-  "train_normalized_sha256": "e77ab4e1b645624b9d644fb7e447032371088073b6bd0390652e509a9736383f",
-  "test_normalized_sha256": "ba03aa1262bb6ce2f150b801944c0789b7bfaa6fe7da595afd634645a998aa1c"
+  "train_language_counts": {
+    "dutch": 3450,
+    "english": 388
+  },
+  "test_language_counts": {
+    "dutch": 863,
+    "english": 97
+  },
+  "train_language_label_counts": {
+    "dutch::Average": 1540,
+    "dutch::Negative": 232,
+    "dutch::Positive": 1678,
+    "english::Average": 259,
+    "english::Negative": 8,
+    "english::Positive": 121
+  },
+  "test_language_label_counts": {
+    "dutch::Average": 385,
+    "dutch::Negative": 58,
+    "dutch::Positive": 420,
+    "english::Average": 65,
+    "english::Negative": 2,
+    "english::Positive": 30
+  },
+  "train_normalized_sha256": "aa986ef1d8f35ebf232a015fd0e61d3affb1efbe4a589ec4f8653ae01e8ab7c9",
+  "test_normalized_sha256": "b76afd73eaeed79bf61903ab8475a08c4565cf523a55e8ae34448d2330e00cbb"
 }

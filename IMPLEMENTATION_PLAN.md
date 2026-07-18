@@ -66,7 +66,7 @@ ruff check .
 ruff format --check .
 ```
 
-**Status:** complete. Evidence: 4,315 confident Dutch candidates, two duplicate extras removed, 3,450/863 stratified split with disjoint normalized hashes.
+**Status:** superseded by Phase 7. The original Dutch-only split had 3,450/863 rows; the user later approved one shared Dutch/English model using all supplied rows.
 
 **Unresolved risks:** dependency installation and detector model availability must be verified locally.
 
@@ -90,7 +90,7 @@ python -m dutch_sentiment.evaluate --model artifacts/model.joblib
 mlflow ui --backend-store-uri ./mlruns
 ```
 
-**Status:** complete. Selected CV macro-F1 0.6544 ± 0.0174; held-out macro-F1 0.6311; Negative F1 0.5918.
+**Status:** superseded by Phase 7 retraining. The final unified model has CV macro-F1 0.6472 ± 0.0269, held-out macro-F1 0.6379, and Negative F1 0.6019.
 
 **Unresolved risks:** Negative has only 300 raw rows, so per-class estimates may have material variance; selection will report fold dispersion and Negative support.
 
@@ -100,7 +100,7 @@ mlflow ui --backend-store-uri ./mlruns
 
 - [x] Implement a model abstraction with save/load and linear feature contributions.
 - [x] Implement application factory/lifespan loading, `/classify`, and `/health`.
-- [x] Reject missing, blank, oversized, and confidently non-Dutch inputs clearly.
+- [x] Reject missing, blank, oversized, and confidently unsupported-language inputs clearly.
 - [x] Keep explanations optional and avoid logging review text.
 - [x] Benchmark initialization, loading, warm inference, language-plus-model, explanation, and HTTP paths.
 
@@ -112,7 +112,7 @@ uvicorn dutch_sentiment.api:create_app --factory --host 0.0.0.0 --port 8000
 curl -fsS http://localhost:8000/health
 ```
 
-**Status:** complete. Local live HTTP checks returned health 200, Dutch classify 200 with explanation, and English 422.
+**Status:** superseded by Phase 7 API policy. Dutch and English now return 200; English includes a reliability warning, while other confidently identified languages return 422.
 
 **Unresolved risks:** explanation readability depends on the selected feature union; word features will be presented separately from technical character features.
 
@@ -172,3 +172,22 @@ docker run --rm -p 8000:8000 dutch-sentiment
 **Remaining risks:** the probability metrics are held-out descriptive estimates rather than a separately calibrated deployment guarantee; Docker runtime remains unavailable for actual image execution.
 
 **Final verification:** 24 tests passed, total branch coverage is 58%, and both Ruff lint and format checks passed.
+
+## Phase 7 — Unified Dutch/English training and transparent reliability warning
+
+**Objective:** use all supplied Dutch and English reviews in one model while making the weaker English evidence explicit.
+
+- [x] Replace Dutch filtering with row-level language annotation that retains all supplied rows.
+- [x] Deduplicate before one unified language×label-stratified holdout split.
+- [x] Use the same language×label stratification across model-selection CV folds.
+- [x] Train one shared model rather than separate Dutch and English models.
+- [x] Add overall and per-language held-out metrics.
+- [x] Accept English in local/HTTP inference and return `detected_language` plus an explicit warning.
+- [x] Keep confidently identified languages outside Dutch/English unsupported.
+- [x] Retrain from clean Git commit `9829f35` and regenerate the model report and latency benchmark.
+
+**Measured evidence:** 4,798 deduplicated rows; 3,838 train and 960 test. Overall held-out macro-F1 is 0.6379. Dutch macro-F1 is 0.6381 over 863 rows. English macro-F1 is 0.3289 over 97 rows; English Negative has only 2 held-out examples and F1 0, so the warning is mandatory.
+
+**Remaining risk:** the user's all-sample scope intentionally extends the challenge's literal Dutch-only wording. English performance is descriptive and strongly biased toward Average; it must not be presented as production-grade bilingual support.
+
+**Final verification:** 26 tests passed, total branch coverage is 58%, Ruff lint/format checks passed, and real Dutch/English/unsupported-language API paths were exercised against the serialized model.

@@ -1,45 +1,45 @@
 {
-  "accuracy": 0.6477404403244496,
-  "balanced_accuracy": 0.6054834054834055,
-  "macro_precision": 0.6709192110080907,
-  "macro_recall": 0.6054834054834055,
-  "macro_f1": 0.6310886618798462,
-  "weighted_f1": 0.6474370066791885,
+  "accuracy": 0.653125,
+  "balanced_accuracy": 0.6137037037037038,
+  "macro_precision": 0.6743671206298029,
+  "macro_recall": 0.6137037037037038,
+  "macro_f1": 0.6378997585649555,
+  "weighted_f1": 0.6525077005305123,
   "per_class": {
     "Positive": {
-      "precision": 0.6731234866828087,
-      "recall": 0.6619047619047619,
-      "f1-score": 0.6674669867947179,
-      "support": 420.0
+      "precision": 0.6682242990654206,
+      "recall": 0.6355555555555555,
+      "f1-score": 0.6514806378132119,
+      "support": 450.0
     },
     "Average": {
-      "precision": 0.6146341463414634,
-      "recall": 0.6545454545454545,
-      "f1-score": 0.6339622641509434,
-      "support": 385.0
+      "precision": 0.6339468302658486,
+      "recall": 0.6888888888888889,
+      "f1-score": 0.6602768903088392,
+      "support": 450.0
     },
     "Negative": {
-      "precision": 0.725,
-      "recall": 0.5,
-      "f1-score": 0.5918367346938775,
-      "support": 58.0
+      "precision": 0.7209302325581395,
+      "recall": 0.5166666666666667,
+      "f1-score": 0.6019417475728155,
+      "support": 60.0
     }
   },
   "confusion_matrix": [
     [
-      278,
-      138,
+      286,
+      160,
       4
     ],
     [
-      126,
-      252,
-      7
+      132,
+      310,
+      8
     ],
     [
-      9,
-      20,
-      29
+      10,
+      19,
+      31
     ]
   ],
   "label_order": [
@@ -47,8 +47,118 @@
     "Average",
     "Negative"
   ],
-  "log_loss": 0.7317971345953704,
-  "multiclass_brier_score": 0.45317286748436325,
-  "expected_calibration_error_10_bin": 0.049148080923707614,
-  "mean_prediction_confidence": 0.6015891529594753
+  "log_loss": 0.721572844347228,
+  "multiclass_brier_score": 0.4461724298295352,
+  "expected_calibration_error_10_bin": 0.04698093574176622,
+  "mean_prediction_confidence": 0.6102965865508112,
+  "by_language": {
+    "dutch": {
+      "accuracy": 0.6488991888760139,
+      "balanced_accuracy": 0.6157511071304175,
+      "macro_precision": 0.6698650613196465,
+      "macro_recall": 0.6157511071304175,
+      "macro_f1": 0.638146362530252,
+      "weighted_f1": 0.6486650514903327,
+      "per_class": {
+        "Positive": {
+          "precision": 0.6674528301886793,
+          "recall": 0.6738095238095239,
+          "f1-score": 0.6706161137440758,
+          "support": 420.0
+        },
+        "Average": {
+          "precision": 0.6212121212121212,
+          "recall": 0.638961038961039,
+          "f1-score": 0.6299615877080665,
+          "support": 385.0
+        },
+        "Negative": {
+          "precision": 0.7209302325581395,
+          "recall": 0.5344827586206896,
+          "f1-score": 0.6138613861386139,
+          "support": 58.0
+        }
+      },
+      "confusion_matrix": [
+        [
+          283,
+          133,
+          4
+        ],
+        [
+          131,
+          246,
+          8
+        ],
+        [
+          10,
+          17,
+          31
+        ]
+      ],
+      "label_order": [
+        "Positive",
+        "Average",
+        "Negative"
+      ],
+      "log_loss": 0.7289882202644841,
+      "multiclass_brier_score": 0.45053132989912165,
+      "expected_calibration_error_10_bin": 0.050678052408407157,
+      "mean_prediction_confidence": 0.6028403964917948
+    },
+    "english": {
+      "accuracy": 0.6907216494845361,
+      "balanced_accuracy": 0.3615384615384616,
+      "macro_precision": 0.47939068100358423,
+      "macro_recall": 0.3615384615384616,
+      "macro_f1": 0.3288657235045917,
+      "weighted_f1": 0.5974468607748463,
+      "per_class": {
+        "Positive": {
+          "precision": 0.75,
+          "recall": 0.1,
+          "f1-score": 0.17647058823529413,
+          "support": 30.0
+        },
+        "Average": {
+          "precision": 0.6881720430107527,
+          "recall": 0.9846153846153847,
+          "f1-score": 0.810126582278481,
+          "support": 65.0
+        },
+        "Negative": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 2.0
+        }
+      },
+      "confusion_matrix": [
+        [
+          3,
+          27,
+          0
+        ],
+        [
+          1,
+          64,
+          0
+        ],
+        [
+          0,
+          2,
+          0
+        ]
+      ],
+      "label_order": [
+        "Positive",
+        "Average",
+        "Negative"
+      ],
+      "log_loss": 0.655598932835969,
+      "multiclass_brier_score": 0.4073917003444515,
+      "expected_calibration_error_10_bin": 0.08307194260100334,
+      "mean_prediction_confidence": 0.6766336176944313
+    }
+  }
 }

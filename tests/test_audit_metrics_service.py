@@ -17,6 +17,8 @@ class FixedDetector:
     short_text_characters = 20
 
     def detect(self, text: str) -> LanguageResult:
+        if text.startswith("ShortEnglish"):
+            return LanguageResult(LanguageStatus.AMBIGUOUS, "english", 0.2, 0.6, 0.1)
         if text.startswith("English"):
             return LanguageResult(LanguageStatus.NON_DUTCH, "english", 0.01, 0.99, 0.98)
         if text.startswith("French"):
@@ -98,6 +100,9 @@ def test_inference_service_accepts_english_with_warning_and_rejects_unsupported(
     english = service.classify("English review with obvious language")
     assert english.detected_language == "english"
     assert english.warnings == (ENGLISH_RELIABILITY_WARNING,)
+    short_english = service.classify("ShortEnglish")
+    assert short_english.detected_language == "english"
+    assert short_english.warnings == (ENGLISH_RELIABILITY_WARNING,)
     try:
         service.classify("French review with obvious language")
     except NonDutchReviewError as exc:

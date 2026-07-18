@@ -67,7 +67,7 @@ Detector policy: local Lingua over Dutch, English, German, French, Spanish, Ital
 
 Detected top languages: {"dutch": 4315, "english": 485}.
 
-These are candidate filtering results rather than gold labels. Manual spot checks below assess obvious Dutch, obvious non-Dutch, uncertain cases, label coverage, artifacts, ratings, and long reviews. Mixed or translated prose remains a known source of false positives/negatives.
+These are language-composition estimates rather than gold labels. The supplied rows are all retained because the detected languages are Dutch and English; language and label are jointly stratified so both languages remain represented in the unified training and held-out partitions. Manual spot checks below assess obvious Dutch, obvious English, uncertain cases, label coverage, artifacts, ratings, and long reviews. Mixed or translated prose remains a known source of identification errors.
 
 ## Bounded manual-review samples
 
@@ -109,7 +109,7 @@ No examples matched.
 
 1. **High — ordered labels:** invalidates sequential splitting. Remediation: deterministic shuffled stratification.
 2. **High — class imbalance:** Negative is only 6.25% of rows. Remediation: select on macro-F1, report per-class metrics, and compare class weighting.
-3. **High — language contamination:** confidently non-Dutch candidates must not be silently used as Dutch training evidence. Remediation: filter them, report removals by label, and reject confident non-Dutch API input with HTTP 422.
+3. **High — bilingual imbalance:** English is a real supplied segment but has far fewer rows, including only 10 Negative examples. Remediation: train one shared Dutch/English model on all deduplicated rows, jointly stratify language and label, report held-out metrics by language, and attach a reliability warning to English predictions.
 4. **Medium — explicit ratings:** may be legitimate review content or label leakage. Remediation: matched mask/no-mask experiment and feature/error analysis.
 5. **Medium — markup and invisible characters:** create spurious tokens and duplicate mismatches. Remediation: shared deterministic normalization.
 6. **Low/Medium — mojibake candidates:** can weaken individual features. Remediation: preserve by default; only add repair if a separately verified experiment helps.

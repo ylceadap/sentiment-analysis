@@ -225,7 +225,7 @@ def run_training(config_path: str | Path) -> dict[str, Any]:
                         "actual": actual,
                         "predicted": predicted,
                         "detected_language": language,
-                        "excerpt": " ".join(review.split())[:160],
+                        "excerpt": " ".join(review.split())[:160].rstrip(),
                     }
                 )
         pd.DataFrame(misclassified).to_csv(output_dir / "error_analysis.csv", index=False)
@@ -291,7 +291,7 @@ def run_training(config_path: str | Path) -> dict[str, Any]:
             json.dumps(metadata, indent=2), encoding="utf-8"
         )
         language_summary = pd.crosstab(
-            language_evidence["Label"], language_evidence["language_status"]
+            language_evidence["Label"], language_evidence["detected_language"]
         )
         language_summary.to_csv(output_dir / "language_summary.csv")
         mlflow.log_artifacts(str(output_dir), artifact_path="evidence")

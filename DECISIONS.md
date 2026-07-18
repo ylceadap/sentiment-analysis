@@ -56,7 +56,7 @@
 - **Consequences:** `mlflow.db` is intentionally ignored while portable comparison and evidence artifacts are tracked.
 - **Limitations:** evaluators do not receive the local run database unless it is explicitly packaged; the exported table and metadata preserve key results.
 
-## D008 — Filter confident non-Dutch training rows and allow short ambiguous API input
+## D008 — Filter confident non-Dutch training rows and allow short ambiguous API input (superseded by D012)
 
 - **Alternatives considered:** accept all rows; reject every uncertain input; use confidence/margin thresholds plus a short-text ambiguity state.
 - **Decision:** train only on confident Dutch candidates. The API returns HTTP 422 for confident non-Dutch text but permits text shorter than 20 characters as `ambiguous`.
@@ -67,8 +67,8 @@
 ## D009 — Retain explicit ratings in the final pipeline
 
 - **Alternatives considered:** always retain ratings; always mask them; select using a paired experiment.
-- **Decision:** retain ratings because the paired candidate achieved CV macro-F1 0.6544 versus 0.6507 when masked.
-- **Reasoning:** the 0.0038 difference is small relative to fold standard deviations, so ratings are documented as a leakage risk rather than treated as the main performance source.
+- **Decision:** retain ratings because the final unified-data paired candidate achieved CV macro-F1 0.6472 versus 0.6459 when masked.
+- **Reasoning:** the 0.0014 difference is small relative to fold standard deviations, so ratings are documented as a leakage risk rather than treated as the main performance source.
 - **Consequences:** legitimate rating language remains available to the model and the selected pipeline follows the predefined metric.
 - **Limitations:** source-label construction is unknown, so direct label leakage cannot be ruled out.
 
