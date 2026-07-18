@@ -14,6 +14,7 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from . import __version__
 from .constants import LABELS, MAX_REVIEW_CHARACTERS
 from .language import DutchLanguageDetector
 from .model import SentimentModel
@@ -24,6 +25,8 @@ Label = Literal["Positive", "Average", "Negative"]
 
 
 class ClassifyRequest(BaseModel):
+    """Validate the public classification request body."""
+
     model_config = ConfigDict(extra="forbid")
     review: Annotated[str, Field(min_length=1, max_length=MAX_REVIEW_CHARACTERS)]
     explain: bool = False
@@ -31,12 +34,15 @@ class ClassifyRequest(BaseModel):
     @field_validator("review")
     @classmethod
     def reject_blank_review(cls, value: str) -> str:
+        """Reject whitespace-only reviews after Pydantic length validation."""
         if not value.strip():
             raise ValueError("review must not be empty or whitespace-only")
         return value
 
 
 class ClassifyResponse(BaseModel):
+    """Define the stable successful classification response contract."""
+
     label: Label
     model_version: str
     detected_language: str
@@ -47,6 +53,8 @@ class ClassifyResponse(BaseModel):
 
 
 class HealthResponse(BaseModel):
+    """Define readiness evidence returned by the health endpoint."""
+
     status: Literal["ok"]
     model_version: str
     model_ready: Literal[True]
@@ -62,6 +70,7 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        """Load and warm production components before marking the app ready."""
         if service is None:
             model = SentimentModel.load(resolved_path)
             detector = DutchLanguageDetector()
@@ -76,18 +85,20 @@ def create_app(
 
     app = FastAPI(
         title="Dutch-primary Movie Review Sentiment",
-        version="0.1.0",
+        version=__version__,
         lifespan=lifespan,
     )
 
     @app.get("/health", response_model=HealthResponse)
     async def health(request: Request) -> HealthResponse:
+        """Report readiness and the loaded model version."""
         return HealthResponse(
             status="ok", model_version=request.app.state.service.model_version, model_ready=True
         )
 
     @app.post("/classify", response_model=ClassifyResponse)
     async def classify(payload: ClassifyRequest, request: Request) -> ClassifyResponse:
+        """Classify one review while returning safe public errors."""
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
         try:
             result = request.app.state.service.classify(payload.review, explain=payload.explain)
@@ -123,5 +134,6 @@ def create_app(
 
 
 def run() -> None:
+    """Start the Uvicorn server using environment-configured port settings."""
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     uvicorn.run(create_app(), host="0.0.0.0", port=int(os.getenv("PORT", "8000")))

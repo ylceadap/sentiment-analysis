@@ -17,6 +17,8 @@ class NonDutchReviewError(ValueError):
 
 @dataclass(frozen=True)
 class PredictionResult:
+    """Contain the complete stable response returned by the inference service."""
+
     label: str
     model_version: str
     detected_language: str
@@ -30,14 +32,17 @@ class InferenceService:
     """Apply language policy and one loaded immutable model per request."""
 
     def __init__(self, model: SentimentModel, detector: DutchLanguageDetector) -> None:
+        """Bind one immutable fitted model to one local language detector."""
         self.model = model
         self.detector = detector
 
     @property
     def model_version(self) -> str:
+        """Expose the version embedded in the loaded model artifact."""
         return self.model.version
 
     def classify(self, review: str, *, explain: bool = False) -> PredictionResult:
+        """Apply language policy and return one timed model inference."""
         started = perf_counter()
         language = self.detector.detect(review)
         is_english = language.detected_language == "english"

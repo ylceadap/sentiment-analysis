@@ -23,6 +23,7 @@ MOJIBAKE_RE = re.compile(r"(?:Ã.|Â.|â€|â€™|â€œ|â€˜|ðŸ|�)")
 
 
 def _distribution(series: pd.Series) -> dict[str, float]:
+    """Return counts and percentages for a categorical series."""
     quantiles = series.quantile([0.0, 0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99, 1.0])
     return {
         f"p{int(level * 100):02d}": round(float(value), 2) for level, value in quantiles.items()
@@ -30,6 +31,7 @@ def _distribution(series: pd.Series) -> dict[str, float]:
 
 
 def _safe_examples(frame: pd.DataFrame, mask: pd.Series, limit: int = 3) -> list[dict[str, Any]]:
+    """Return bounded excerpts without exposing complete review bodies."""
     examples: list[dict[str, Any]] = []
     for index, row in frame.loc[mask, ["Reviews", "Label"]].head(limit).iterrows():
         excerpt = re.sub(r"\s+", " ", str(row["Reviews"])).strip()[:120]
@@ -143,6 +145,7 @@ def audit_dataset(path: str | Path, detector: DutchLanguageDetector) -> dict[str
 
 
 def _markdown_table(headers: list[str], rows: list[list[object]]) -> str:
+    """Render a small GitHub-flavored Markdown table."""
     lines = ["| " + " | ".join(headers) + " |", "| " + " | ".join("---" for _ in headers) + " |"]
     lines.extend("| " + " | ".join(str(cell) for cell in row) + " |" for row in rows)
     return "\n".join(lines)
@@ -299,6 +302,7 @@ These are language-composition estimates rather than gold labels. The supplied r
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse dataset audit CLI arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", default="Python_Engineer_Challenge_2.csv")
     parser.add_argument("--output", default="reports/data_audit.md")
@@ -309,6 +313,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Run the audit CLI and write Markdown and JSON evidence."""
     args = parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     detector = DutchLanguageDetector(

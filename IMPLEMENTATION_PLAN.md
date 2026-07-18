@@ -191,3 +191,25 @@ docker run --rm -p 8000:8000 dutch-sentiment
 **Remaining risk:** the user's all-sample scope intentionally extends the challenge's literal Dutch-only wording. English performance is descriptive and strongly biased toward Average; it must not be presented as production-grade bilingual support.
 
 **Final verification:** 26 tests passed, total branch coverage is 58%, Ruff lint/format checks passed, and real Dutch/English/unsupported-language API paths were exercised against the serialized model.
+
+## Phase 8 — Repository, version, experiment, and model-governance consolidation
+
+**Objective:** reduce duplicated experiment code, make versions reproducible, protect local state, and
+document the complete architecture without changing the formal model or frozen evidence.
+
+- [x] Classify source, configuration, immutable input, durable evidence, generated output, local state,
+  and sensitive files in `docs/REPOSITORY_LAYOUT.md`.
+- [x] Ignore all caches, secrets, render inspection files, and temporary output; exclude them from Docker.
+- [x] Make `dutch_sentiment.__version__` the single package/API/training version source.
+- [x] Align supported Python metadata and Docker with verified Python 3.11.
+- [x] Add an exact verified Python 3.11 lock file while retaining dependency groups.
+- [x] Extract shared frozen-split, embedding runtime, hash/probability/metric/gate, and ordinal modules.
+- [x] Add concise docstrings to every source function/class and explain ordinal/ECE/Brier equations.
+- [x] Replace deprecated synchronous API tests with asynchronous ASGI tests.
+- [x] Raise total branch coverage from 48% at cleanup start to 76% with 43 passing tests.
+- [x] Organize MLflow into one champion plus governed baseline/benchmark/challenger/research/external
+  entries and archive eight evidence-only experiment runs.
+- [x] Add `docs/ARCHITECTURE.md` with end-to-end, inference, module, artifact, and deployment diagrams.
+
+**Status:** complete except Docker runtime execution, which remains unavailable because no Docker
+executable is installed. Presentation deletion remains subject to explicit user confirmation.

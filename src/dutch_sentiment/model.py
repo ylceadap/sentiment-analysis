@@ -19,6 +19,8 @@ from .text import TextNormalizer
 
 @dataclass(frozen=True)
 class ModelSpec:
+    """Describe one transparent classical-model experiment candidate."""
+
     name: str
     feature_kind: str
     class_weight: str | None = None
@@ -28,6 +30,8 @@ class ModelSpec:
 
 @dataclass(frozen=True)
 class ModelInference:
+    """Contain label, probabilities, and optional linear contributions."""
+
     label: str
     probabilities: dict[str, float]
     explanation: dict[str, Any] | None = None
@@ -80,22 +84,26 @@ class SentimentModel:
     """Stable application-facing abstraction around a fitted sklearn pipeline."""
 
     def __init__(self, pipeline: Pipeline, version: str = "unversioned") -> None:
+        """Wrap a fitted or unfitted sklearn pipeline with a stable version."""
         self.pipeline = pipeline
         self.version = version
         self._feature_names_cache: Any | None = None
 
     def fit(self, reviews: list[str], labels: list[str]) -> SentimentModel:
+        """Fit the complete normalization, feature, and classifier pipeline."""
         self.pipeline.fit(reviews, labels)
         self._feature_names_cache = None
         return self
 
     @staticmethod
     def _validate_label(label: str) -> str:
+        """Reject labels outside the public three-class contract."""
         if label not in LABELS:
             raise RuntimeError(f"Model returned invalid label: {label}")
         return label
 
     def predict(self, reviews: list[str]) -> list[str]:
+        """Predict and validate labels for a batch of reviews."""
         predictions = self.pipeline.predict(reviews).tolist()
         invalid = sorted(set(predictions) - set(LABELS))
         if invalid:
@@ -103,6 +111,7 @@ class SentimentModel:
         return predictions
 
     def _probability_dict(self, transformed: Any) -> dict[str, float]:
+        """Map one transformed row's native probabilities to class names."""
         classifier = self.pipeline.named_steps["classifier"]
         if not hasattr(classifier, "predict_proba"):
             raise RuntimeError("Selected classifier does not provide native probabilities")
@@ -113,6 +122,7 @@ class SentimentModel:
         }
 
     def predict_proba(self, reviews: list[str]) -> list[dict[str, float]]:
+        """Return native class probabilities for every input review."""
         classifier = self.pipeline.named_steps["classifier"]
         if not hasattr(classifier, "predict_proba"):
             raise RuntimeError("Selected classifier does not provide native probabilities")
@@ -126,6 +136,7 @@ class SentimentModel:
     def _explain_transformed(
         self, transformed: Any, predicted: str, *, top_n: int = 5
     ) -> dict[str, Any]:
+        """Rank active linear feature contributions for one transformed review."""
         classifier = self.pipeline.named_steps["classifier"]
         if not hasattr(classifier, "coef_"):
             raise RuntimeError("Feature contributions require a fitted linear classifier")
@@ -143,6 +154,7 @@ class SentimentModel:
         ]
 
         def item(feature: str, value: float) -> dict[str, Any]:
+            """Convert one raw feature contribution into the API schema."""
             if feature.startswith("word__"):
                 source, clean = "word_ngram", feature.removeprefix("word__")
             elif feature.startswith("char__"):
@@ -183,12 +195,14 @@ class SentimentModel:
         return inference.explanation
 
     def save(self, path: str | Path) -> None:
+        """Serialize the controlled model artifact with compression."""
         output = Path(path)
         output.parent.mkdir(parents=True, exist_ok=True)
         joblib.dump(self, output, compress=3)
 
     @classmethod
     def load(cls, path: str | Path) -> SentimentModel:
+        """Load and type-check a trusted local model artifact."""
         model_path = Path(path)
         if not model_path.is_file():
             raise FileNotFoundError(f"Model artifact not found: {model_path}")

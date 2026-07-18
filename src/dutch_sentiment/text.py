@@ -37,13 +37,16 @@ class TextNormalizer(BaseEstimator, TransformerMixin):
     """Sklearn-compatible normalizer stored inside the fitted model pipeline."""
 
     def __init__(self, mask_ratings: bool = False) -> None:
+        """Store whether explicit rating patterns should be masked."""
         self.mask_ratings = mask_ratings
 
     def fit(self, x: Iterable[str], y: object = None) -> TextNormalizer:
+        """Return the stateless transformer unchanged for sklearn compatibility."""
         del x, y
         return self
 
     def transform(self, x: Iterable[str]) -> np.ndarray:
+        """Normalize every input string into an object array for vectorizers."""
         return np.asarray(
             [normalize_text(value, mask_ratings=self.mask_ratings) for value in x],
             dtype=object,

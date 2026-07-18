@@ -32,6 +32,7 @@ CV_SCORING = {
 def _probability_metrics(
     y_true: list[str], probabilities: list[dict[str, float]], bins: int = 10
 ) -> dict[str, float]:
+    """Calculate log loss, multiclass Brier score, confidence, and binned ECE."""
     matrix = np.asarray([[row[label] for label in LABELS] for row in probabilities])
     target_indices = np.asarray([LABELS.index(label) for label in y_true])
     one_hot = np.eye(len(LABELS))[target_indices]
@@ -40,6 +41,7 @@ def _probability_metrics(
     correct = predicted_indices == target_indices
     boundaries = np.linspace(0.0, 1.0, bins + 1)
     calibration_error = 0.0
+    # ECE = sum_b P(confidence in b) * |accuracy_b - confidence_b|.
     for lower, upper in zip(boundaries[:-1], boundaries[1:], strict=True):
         in_bin = (confidence > lower) & (confidence <= upper)
         if in_bin.any():
@@ -48,6 +50,7 @@ def _probability_metrics(
             )
     return {
         "log_loss": float(log_loss(target_indices, matrix, labels=list(range(len(LABELS))))),
+        # Multiclass Brier score is the mean squared distance to the one-hot target.
         "multiclass_brier_score": float(np.mean(np.sum((matrix - one_hot) ** 2, axis=1))),
         "expected_calibration_error_10_bin": calibration_error,
         "mean_prediction_confidence": float(confidence.mean()),

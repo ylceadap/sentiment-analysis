@@ -34,6 +34,7 @@ def predict_review(
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse local prediction CLI arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--review", required=True, help="One Dutch or English movie review")
     parser.add_argument("--model", default="artifacts/model.joblib")
@@ -42,6 +43,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
+    """Run one validated local prediction and print JSON."""
     args = parse_args()
     try:
         result = predict_review(args.review, model_path=args.model, explain=args.explain)

@@ -11,6 +11,8 @@ from .text import normalize_text
 
 
 class LanguageStatus(StrEnum):
+    """Represent accepted Dutch, unsupported, or ambiguous language evidence."""
+
     DUTCH = "dutch"
     NON_DUTCH = "non_dutch"
     AMBIGUOUS = "ambiguous"
@@ -18,6 +20,8 @@ class LanguageStatus(StrEnum):
 
 @dataclass(frozen=True)
 class LanguageResult:
+    """Contain local detector scores and the resulting policy status."""
+
     status: LanguageStatus
     detected_language: str | None
     dutch_confidence: float
@@ -44,6 +48,7 @@ class DutchLanguageDetector:
         minimum_margin: float = 0.20,
         short_text_characters: int = 20,
     ) -> None:
+        """Configure confidence, margin, and short-text ambiguity thresholds."""
         self.minimum_dutch_confidence = minimum_dutch_confidence
         self.minimum_margin = minimum_margin
         self.short_text_characters = short_text_characters
@@ -52,6 +57,7 @@ class DutchLanguageDetector:
         ).build()
 
     def detect(self, text: str) -> LanguageResult:
+        """Detect review language and apply the explicit ambiguity policy."""
         cleaned = normalize_text(text)
         values = self._detector.compute_language_confidence_values(cleaned)
         if not values:

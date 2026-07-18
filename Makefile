@@ -1,10 +1,19 @@
-.PHONY: install install-embeddings audit train embedding-experiment jina-ordinal-logistic evaluate benchmark predict test coverage lint format serve mlflow docker-build docker-run
+.PHONY: install install-core install-locked install-embeddings audit train embedding-experiment jina-ordinal-logistic evaluate benchmark predict test coverage lint format serve mlflow mlflow-organize docker-build docker-run
 
 PYTHON := .venv/bin/python
 
 install:
 	python3 -m venv .venv
 	$(PYTHON) -m pip install -e '.[train,dev]'
+
+install-core:
+	python3 -m venv .venv
+	$(PYTHON) -m pip install -e .
+
+install-locked:
+	python3 -m venv .venv
+	$(PYTHON) -m pip install -r requirements/verified-py311.lock
+	$(PYTHON) -m pip install --no-deps -e .
 
 install-embeddings:
 	$(PYTHON) -m pip install -e '.[train,dev,embeddings]'
@@ -49,6 +58,9 @@ serve:
 
 mlflow:
 	.venv/bin/mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5000
+
+mlflow-organize:
+	$(PYTHON) scripts/organize_mlflow_registry.py
 
 docker-build:
 	docker build -t dutch-sentiment:latest .

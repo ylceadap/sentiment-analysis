@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import logging
 import platform
@@ -16,32 +15,21 @@ import pandas as pd
 import sklearn
 import yaml
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import StratifiedKFold
 
-from .config import load_config
 from .constants import LABELS
-from .data import annotate_review_languages, load_dataset, make_holdout_split, sha256_file
-from .language import DutchLanguageDetector
+from .embedding_runtime import encode_or_load as _encode_or_load
+from .experiment_data import prepare_frozen_experiment
+from .experiment_utils import (
+    aligned_probabilities as _aligned_probabilities,
+)
+from .experiment_utils import (
+    promotion_gate,
+    select_by_gate,
+)
 from .metrics import classification_metrics
 from .model import ModelSpec, build_pipeline
 
 LOGGER = logging.getLogger(__name__)
-
-
-def _hash_values(values: list[str]) -> str:
-    return hashlib.sha256("\n".join(values).encode()).hexdigest()
-
-
-def _hash_reviews(values: list[str]) -> str:
-    raw = json.dumps(values, ensure_ascii=False, separators=(",", ":")).encode()
-    return hashlib.sha256(raw).hexdigest()
-
-
-def _aligned_probabilities(estimator: Any, features: Any) -> np.ndarray:
-    raw = estimator.predict_proba(features)
-    columns = {str(label): raw[:, i] for i, label in enumerate(estimator.classes_)}
-    aligned = np.column_stack([columns[label] for label in LABELS])
-    return aligned / aligned.sum(axis=1, keepdims=True)
 
 
 def threshold_predictions(probabilities: np.ndarray, threshold: str | float) -> list[str]:
@@ -57,111 +45,6 @@ def threshold_predictions(probabilities: np.ndarray, threshold: str | float) -> 
         "Negative" if row[negative] >= value else LABELS[max(alternatives, key=row.__getitem__)]
         for row in probabilities
     ]
-
-
-def _cache_path(
-    cache_dir: Path,
-    model_name: str,
-    revision: str,
-    review_hash: str,
-    normalized: bool,
-    variant: str = "",
-) -> Path:
-    key = hashlib.sha256(
-        f"{model_name}|{revision}|{review_hash}|{normalized}|{variant}".encode()
-    ).hexdigest()
-    return cache_dir / f"{model_name}-{key[:16]}.npz"
-
-
-def _encode_or_load(
-    model_spec: dict[str, Any], reviews: list[str], config: dict[str, Any]
-) -> tuple[np.ndarray, dict[str, Any]]:
-    review_hash = _hash_reviews(reviews)
-    cache_dir = Path(config["cache_dir"])
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    normalized = bool(config["normalize_embeddings"])
-    variant = json.dumps(
-        {
-            "task": model_spec.get("task"),
-            "max_sequence_length": model_spec.get("max_sequence_length"),
-            "truncate_dimension": model_spec.get("truncate_dimension"),
-        },
-        sort_keys=True,
-    )
-    cache = _cache_path(
-        cache_dir,
-        model_spec["name"],
-        model_spec["revision"],
-        review_hash,
-        normalized,
-        variant,
-    )
-    if cache.is_file():
-        with np.load(cache, allow_pickle=False) as stored:
-            if str(stored["review_hash"].item()) != review_hash:
-                raise RuntimeError(f"Embedding cache hash mismatch: {cache}")
-            embeddings = stored["embeddings"].astype(np.float32, copy=False)
-        return embeddings, {
-            "cache_hit": True,
-            "cache_path": str(cache),
-            "cache_sha256": sha256_file(cache),
-            "encode_seconds": 0.0,
-            "embedding_dimension": embeddings.shape[1],
-        }
-    try:
-        import torch
-        from sentence_transformers import SentenceTransformer
-    except ImportError as exc:
-        raise RuntimeError("Run `make install-embeddings` before this experiment") from exc
-    started = time.perf_counter()
-    requested_device = str(config.get("device", "auto"))
-    device = (
-        "cuda"
-        if requested_device == "auto" and torch.cuda.is_available()
-        else "cpu"
-        if requested_device == "auto"
-        else requested_device
-    )
-    model_kwargs = {"default_task": str(model_spec["task"])} if model_spec.get("task") else None
-    model = SentenceTransformer(
-        model_spec["model_id"],
-        revision=model_spec["revision"],
-        cache_folder=config["huggingface_cache_dir"],
-        device=device,
-        trust_remote_code=bool(model_spec.get("trust_remote_code", False)),
-        truncate_dim=model_spec.get("truncate_dimension"),
-        model_kwargs=model_kwargs,
-    )
-    if model_spec.get("max_sequence_length"):
-        model.max_seq_length = int(model_spec["max_sequence_length"])
-    if device == "cuda" and bool(config.get("use_fp16_on_cuda", True)):
-        model.half()
-    embeddings = model.encode(
-        reviews,
-        batch_size=int(config["batch_size"]),
-        show_progress_bar=True,
-        convert_to_numpy=True,
-        normalize_embeddings=normalized,
-    ).astype(np.float32, copy=False)
-    np.savez_compressed(
-        cache,
-        embeddings=embeddings,
-        review_hash=np.asarray(review_hash),
-        model_id=np.asarray(model_spec["model_id"]),
-        revision=np.asarray(model_spec["revision"]),
-        normalized=np.asarray(normalized),
-        variant=np.asarray(variant),
-    )
-    return embeddings, {
-        "cache_hit": False,
-        "cache_path": str(cache),
-        "cache_sha256": sha256_file(cache),
-        "encode_seconds": time.perf_counter() - started,
-        "embedding_dimension": embeddings.shape[1],
-        "max_sequence_length": int(model.max_seq_length),
-        "encoding_device": device,
-        "encoding_dtype": "float16" if device == "cuda" else "float32",
-    }
 
 
 def _metric_row(
@@ -180,6 +63,7 @@ def _metric_row(
     validation_folds: list[np.ndarray],
     runtime: dict[str, Any],
 ) -> dict[str, Any]:
+    """Combine OOF aggregate, fold, language, and runtime evidence into one row."""
     probabilities = probabilities / probabilities.sum(axis=1, keepdims=True)
     probability_rows = [
         {label: float(row[index]) for index, label in enumerate(LABELS)} for row in probabilities
@@ -238,6 +122,7 @@ def _official_baseline(
     folds: list[tuple[np.ndarray, np.ndarray]],
     model_config: dict[str, Any],
 ) -> dict[str, Any]:
+    """Reproduce the official TF-IDF baseline on the fixed OOF folds."""
     probabilities = np.zeros((len(labels), len(LABELS)))
     started = time.perf_counter()
     for train, validation in folds:
@@ -275,6 +160,7 @@ def _embedding_rows(
     config: dict[str, Any],
     runtime: dict[str, Any],
 ) -> list[dict[str, Any]]:
+    """Evaluate the configured Logistic Regression heads on frozen embeddings."""
     rows: list[dict[str, Any]] = []
     settings = config["logistic_regression"]
     y = np.asarray(labels)
@@ -322,38 +208,25 @@ def _embedding_rows(
 def _gate_candidate(
     candidate: dict[str, Any], baseline: dict[str, Any], gates: dict[str, float]
 ) -> dict[str, bool]:
-    return {
-        "macro_f1": candidate["cv_macro_f1_mean"]
-        >= baseline["cv_macro_f1_mean"] + gates["minimum_macro_f1_improvement"],
-        "negative_precision": candidate["negative_precision"]
-        >= gates["minimum_negative_precision"],
-        "negative_recall": candidate["negative_recall"]
-        >= baseline["negative_recall"] + gates["minimum_negative_recall_improvement"],
-        "accuracy": candidate["oof_accuracy"]
-        >= baseline["oof_accuracy"] - gates["maximum_accuracy_drop"],
-        "stability": candidate["cv_macro_f1_std"]
-        <= baseline["cv_macro_f1_std"] + gates["maximum_cv_macro_f1_std_increase"],
-    }
+    """Compatibility wrapper around the shared promotion gate."""
+    return promotion_gate(candidate, baseline, gates)
 
 
 def _select(
     rows: list[dict[str, Any]], baseline: dict[str, Any], gates: dict[str, float]
 ) -> tuple[dict[str, Any], dict[str, bool], bool]:
-    evaluated = [
-        (row, _gate_candidate(row, baseline, gates))
-        for row in rows
-        if row["model_type"] == "frozen_sentence_embedding_logreg"
-    ]
-    eligible = [item for item in evaluated if all(item[1].values())]
-    selected, checks = max(
-        eligible or evaluated,
-        key=lambda item: (
-            item[0]["cv_macro_f1_mean"],
-            item[0]["negative_recall"],
-            -item[0]["cv_macro_f1_std"],
+    """Select the strongest frozen-embedding row under shared gates."""
+    return select_by_gate(
+        rows,
+        baseline,
+        gates,
+        include=lambda row: row["model_type"] == "frozen_sentence_embedding_logreg",
+        rank=lambda row: (
+            row["cv_macro_f1_mean"],
+            row["negative_recall"],
+            -row["cv_macro_f1_std"],
         ),
     )
-    return selected, checks, bool(eligible)
 
 
 def _write_report(
@@ -364,6 +237,7 @@ def _write_report(
     decision: dict[str, Any],
     path: Path,
 ) -> None:
+    """Write a concise Markdown decision report for the embedding experiment."""
     columns = [
         "name",
         "cv_macro_f1_mean",
@@ -423,38 +297,30 @@ License note: Jina Embeddings v3 is CC-BY-NC-4.0. This branch is a non-commercia
 
 
 def run_experiment(config_path: str | Path) -> dict[str, Any]:
+    """Run the frozen-embedding OOF experiment without touching held-out labels."""
     config = yaml.safe_load(Path(config_path).read_text(encoding="utf-8"))
-    training = load_config(config["training_config"])
-    seed = int(training["random_seed"])
-    config["random_seed"] = seed
-    raw = load_dataset(training["data_path"])
-    annotated, _ = annotate_review_languages(raw, DutchLanguageDetector(**training["language"]))
-    split = make_holdout_split(
-        annotated,
-        test_size=float(training["test_size"]),
-        random_seed=seed,
-        stratify_columns=("detected_language", "Label"),
-    )
-    train_hash = _hash_values(split.train["normalized_review"].tolist())
-    test_hash = _hash_values(split.test["normalized_review"].tolist())
-    if train_hash != config["expected_train_normalized_sha256"]:
-        raise RuntimeError("Frozen training split hash changed; refusing to run")
-    if test_hash != config["expected_test_normalized_sha256"]:
-        raise RuntimeError("Frozen held-out split hash changed; refusing to run")
-    reviews = split.train["Reviews"].astype(str).tolist()
-    labels = split.train["Label"].astype(str).tolist()
-    languages = split.train["detected_language"].astype(str).tolist()
-    strata = split.train[["detected_language", "Label"]].astype(str).agg("::".join, axis=1)
-    splitter = StratifiedKFold(n_splits=int(training["cv_folds"]), shuffle=True, random_state=seed)
-    folds = list(splitter.split(reviews, strata))
+    prepared = prepare_frozen_experiment(config)
+    config["random_seed"] = prepared.seed
     baseline = _official_baseline(
-        reviews, labels, languages, folds, {**training["model"], "random_seed": seed}
+        prepared.reviews,
+        prepared.labels,
+        prepared.languages,
+        prepared.folds,
+        {**prepared.training_config["model"], "random_seed": prepared.seed},
     )
     rows = [baseline]
     for model_spec in config["models"]:
-        embeddings, runtime = _encode_or_load(model_spec, reviews, config)
+        embeddings, runtime = _encode_or_load(model_spec, prepared.reviews, config)
         rows.extend(
-            _embedding_rows(model_spec, embeddings, labels, languages, folds, config, runtime)
+            _embedding_rows(
+                model_spec,
+                embeddings,
+                prepared.labels,
+                prepared.languages,
+                prepared.folds,
+                config,
+                runtime,
+            )
         )
     selected, checks, advance = _select(rows, baseline, config["promotion_gates"])
     selected_model = next(
@@ -499,11 +365,11 @@ def run_experiment(config_path: str | Path) -> dict[str, Any]:
             "scikit_learn": sklearn.__version__,
         },
         "data": {
-            "raw_sha256": sha256_file(training["data_path"]),
-            "train_rows": len(split.train),
-            "heldout_rows": len(split.test),
-            "train_normalized_sha256": train_hash,
-            "heldout_normalized_sha256": test_hash,
+            "raw_sha256": prepared.raw_sha256,
+            "train_rows": prepared.train_rows,
+            "heldout_rows": prepared.heldout_rows,
+            "train_normalized_sha256": prepared.train_sha256,
+            "heldout_normalized_sha256": prepared.heldout_sha256,
         },
     }
     output = Path(config["output_csv"])
@@ -517,6 +383,7 @@ def run_experiment(config_path: str | Path) -> dict[str, Any]:
 
 
 def main() -> None:
+    """Run the embedding experiment CLI."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="configs/embedding_experiment.yaml")
     parser.add_argument("--verbose", action="store_true")
