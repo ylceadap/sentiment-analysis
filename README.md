@@ -152,15 +152,15 @@ Measured on macOS x86_64, Python 3.11.7, using three short/medium/long Dutch sam
 
 | Path | Mean ms | p50 ms | p95 ms | Max ms |
 | --- | ---: | ---: | ---: | ---: |
-| Normalization + model | 3.676 | 3.446 | 5.719 | 6.258 |
-| Language detection + model | 4.449 | 3.806 | 7.134 | 8.977 |
-| Service end-to-end | 8.250 | 6.892 | 12.479 | 13.857 |
-| Explanation enabled | 137.361 | 135.294 | 148.515 | 230.391 |
-| HTTP `/classify` | 9.921 | 8.580 | 13.753 | 15.675 |
+| Normalization + model | 3.417 | 2.909 | 5.168 | 5.447 |
+| Language detection + model | 4.381 | 3.814 | 6.837 | 7.536 |
+| Service end-to-end | 8.095 | 6.778 | 12.258 | 13.686 |
+| Explanation enabled | 133.652 | 131.707 | 142.575 | 147.226 |
+| HTTP `/classify` | 9.701 | 8.292 | 13.913 | 14.039 |
 
-- Lingua constructor: 0.287 ms, but its lazy first inference/model load: 1,472.781 ms.
-- Serialized model load: 603.465 ms; first model prediction: 13.481 ms.
-- Artifact: 2,922,199 bytes; SHA-256 `38199b4fa2d40a72bf4805793045ac03d51363e726074af82a4b2b993d52138a`.
+- Lingua constructor: 0.308 ms, but its lazy first inference/model load: 1,397.708 ms.
+- Serialized model load: 599.289 ms; first model prediction: 11.817 ms.
+- Artifact: 2,922,196 bytes; SHA-256 `e1eac0ebd0b20133e5537b53c13673b57fca0a32936063739697dd04c96b22b0`.
 
 The API warms Lingua during lifespan startup, so the first production request does not pay the lazy detector cost. Startup/readiness therefore includes that approximately 1.5-second cold cost.
 
@@ -228,7 +228,7 @@ make test
 
 make coverage
 # 57% total branch coverage
-# API 94%, audit 79%, data 78%, language 96%, metrics 100%, model 82%, service 97%, text 100%
+# API 91%, audit 79%, data 78%, language 96%, metrics 100%, model 82%, service 97%, text 100%
 
 make lint
 # Ruff lint passed; all files formatted

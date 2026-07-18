@@ -123,11 +123,11 @@ curl -fsS http://localhost:8000/health
 - [x] Add deterministic unit, model round-trip, explanation, and API tests.
 - [x] Run tests, coverage, lint, and formatting checks; record actual results.
 - [x] Add a non-root serving Dockerfile that excludes the raw CSV.
-- [ ] Build/run/test the image if Docker becomes available; otherwise perform static review and mark runtime verification unavailable.
+- [x] Check Docker availability, perform static review, and mark runtime verification unavailable because no Docker executable exists.
 - [x] Complete README, model report, decision log, and requirement traceability.
-- [ ] Reread the PDF and run the final acceptance checklist.
-- [ ] Recheck the raw CSV hash.
-- [ ] Commit each verified phase with a focused message.
+- [x] Reread the PDF and run the final acceptance checklist.
+- [x] Recheck the raw CSV hash.
+- [x] Commit each verified phase with a focused message.
 
 **Validation commands**
 
@@ -140,6 +140,6 @@ docker build -t dutch-sentiment .
 docker run --rm -p 8000:8000 dutch-sentiment
 ```
 
-**Status:** pending.
+**Status:** complete with one explicit environment limitation: Docker runtime build/run verification was not possible. Evidence: 23 tests passed, 57% total coverage with high coverage of critical logic, Ruff passed, live/local application lifecycle passed, source/model/metadata hashes reconciled.
 
 **Unresolved risks:** Docker runtime checks are currently blocked because the executable is unavailable.

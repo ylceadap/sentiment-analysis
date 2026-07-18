@@ -56,12 +56,12 @@ The pipeline prevents normalized duplicate overlap, fits all vectorizers inside 
 
 | name                             | feature_kind   | class_weight   | mask_ratings   |   cv_accuracy_mean |   cv_accuracy_std |   cv_balanced_accuracy_mean |   cv_balanced_accuracy_std |   cv_macro_precision_mean |   cv_macro_precision_std |   cv_macro_recall_mean |   cv_macro_recall_std |   cv_macro_f1_mean |   cv_macro_f1_std |   cv_weighted_f1_mean |   cv_weighted_f1_std | mlflow_run_id                    |   artifact_size_bytes |
 |:---------------------------------|:---------------|:---------------|:---------------|-------------------:|------------------:|----------------------------:|---------------------------:|--------------------------:|-------------------------:|-----------------------:|----------------------:|-------------------:|------------------:|----------------------:|---------------------:|:---------------------------------|----------------------:|
-| combined_balanced_ratings        | combined       | balanced       | False          |             0.6759 |            0.0086 |                      0.6218 |                     0.0154 |                    0.7127 |                   0.0229 |                 0.6218 |                0.0154 |             0.6544 |            0.0174 |                0.6752 |               0.0089 | 642388c15dba421888fd53f0d2b9b5ea |               2922094 |
-| combined_balanced_masked_ratings | combined       | balanced       | True           |             0.6725 |            0.0121 |                      0.6169 |                     0.0164 |                    0.713  |                   0.0208 |                 0.6169 |                0.0164 |             0.6507 |            0.0173 |                0.6717 |               0.0123 | 42a3c251ef3942229694741aea2173bb |               2923005 |
-| combined_logreg                  | combined       | none           | False          |             0.6557 |            0.0093 |                      0.4888 |                     0.0107 |                    0.7687 |                   0.0061 |                 0.4888 |                0.0107 |             0.4946 |            0.0157 |                0.6387 |               0.0097 | 0b562d7320fc4d48a563f5becba6415a |               2922191 |
-| char_logreg                      | char           | none           | False          |             0.647  |            0.0047 |                      0.4739 |                     0.0075 |                    0.7302 |                   0.0695 |                 0.4739 |                0.0075 |             0.4716 |            0.0129 |                0.628  |               0.0052 | 48c964105cbd4916bb4f8916a2ddd278 |               1537807 |
-| word_logreg                      | word           | none           | False          |             0.6394 |            0.0046 |                      0.4572 |                     0.0032 |                    0.4923 |                   0.1316 |                 0.4572 |                0.0032 |             0.4427 |            0.0049 |                0.617  |               0.0039 | 6f0ecd73a938400d943893d4575ffa01 |               1384823 |
-| dummy_prior                      | word           | none           | False          |             0.4864 |            0.0007 |                      0.3333 |                     0      |                    0.1621 |                   0.0002 |                 0.3333 |                0      |             0.2181 |            0.0002 |                0.3183 |               0.0008 | 133c1a2f2f3547e2a4d96026bf4a6e93 |                  2549 |
+| combined_balanced_ratings        | combined       | balanced       | False          |             0.6759 |            0.0086 |                      0.6218 |                     0.0154 |                    0.7127 |                   0.0229 |                 0.6218 |                0.0154 |             0.6544 |            0.0174 |                0.6752 |               0.0089 | c44535ae99d84ae59fad03a69ed0f1c4 |               2922094 |
+| combined_balanced_masked_ratings | combined       | balanced       | True           |             0.6725 |            0.0121 |                      0.6169 |                     0.0164 |                    0.713  |                   0.0208 |                 0.6169 |                0.0164 |             0.6507 |            0.0173 |                0.6717 |               0.0123 | 21c0dcc0ddca47348d4b7d0a0b125ae7 |               2923004 |
+| combined_logreg                  | combined       | none           | False          |             0.6557 |            0.0093 |                      0.4888 |                     0.0107 |                    0.7687 |                   0.0061 |                 0.4888 |                0.0107 |             0.4946 |            0.0157 |                0.6387 |               0.0097 | 2b47e07b4467486c8681e8b37ade6048 |               2922191 |
+| char_logreg                      | char           | none           | False          |             0.647  |            0.0047 |                      0.4739 |                     0.0075 |                    0.7302 |                   0.0695 |                 0.4739 |                0.0075 |             0.4716 |            0.0129 |                0.628  |               0.0052 | 1e8259ac87e44f31827bce7ddd917afa |               1537807 |
+| word_logreg                      | word           | none           | False          |             0.6394 |            0.0046 |                      0.4572 |                     0.0032 |                    0.4923 |                   0.1316 |                 0.4572 |                0.0032 |             0.4427 |            0.0049 |                0.617  |               0.0039 | 96427d4732a0470c99f146868d2ebb87 |               1384823 |
+| dummy_prior                      | word           | none           | False          |             0.4864 |            0.0007 |                      0.3333 |                     0      |                    0.1621 |                   0.0002 |                 0.3333 |                0      |             0.2181 |            0.0002 |                0.3183 |               0.0008 | 22812e76ab1b4a9f9dc9bb97f110012f |                  2548 |
 
 ## 9. Final held-out test metrics
 
@@ -98,8 +98,8 @@ Negative recall is 0.5000 and Negative F1 is 0.5918. This class has the smallest
 
 | name                             | feature_kind   | class_weight   | mask_ratings   |   cv_accuracy_mean |   cv_accuracy_std |   cv_balanced_accuracy_mean |   cv_balanced_accuracy_std |   cv_macro_precision_mean |   cv_macro_precision_std |   cv_macro_recall_mean |   cv_macro_recall_std |   cv_macro_f1_mean |   cv_macro_f1_std |   cv_weighted_f1_mean |   cv_weighted_f1_std | mlflow_run_id                    |   artifact_size_bytes |
 |:---------------------------------|:---------------|:---------------|:---------------|-------------------:|------------------:|----------------------------:|---------------------------:|--------------------------:|-------------------------:|-----------------------:|----------------------:|-------------------:|------------------:|----------------------:|---------------------:|:---------------------------------|----------------------:|
-| combined_balanced_ratings        | combined       | balanced       | False          |             0.6759 |            0.0086 |                      0.6218 |                     0.0154 |                    0.7127 |                   0.0229 |                 0.6218 |                0.0154 |             0.6544 |            0.0174 |                0.6752 |               0.0089 | 642388c15dba421888fd53f0d2b9b5ea |               2922094 |
-| combined_balanced_masked_ratings | combined       | balanced       | True           |             0.6725 |            0.0121 |                      0.6169 |                     0.0164 |                    0.713  |                   0.0208 |                 0.6169 |                0.0164 |             0.6507 |            0.0173 |                0.6717 |               0.0123 | 42a3c251ef3942229694741aea2173bb |               2923005 |
+| combined_balanced_ratings        | combined       | balanced       | False          |             0.6759 |            0.0086 |                      0.6218 |                     0.0154 |                    0.7127 |                   0.0229 |                 0.6218 |                0.0154 |             0.6544 |            0.0174 |                0.6752 |               0.0089 | c44535ae99d84ae59fad03a69ed0f1c4 |               2922094 |
+| combined_balanced_masked_ratings | combined       | balanced       | True           |             0.6725 |            0.0121 |                      0.6169 |                     0.0164 |                    0.713  |                   0.0208 |                 0.6169 |                0.0164 |             0.6507 |            0.0173 |                0.6717 |               0.0123 | 21c0dcc0ddca47348d4b7d0a0b125ae7 |               2923004 |
 
 The paired rows differ only in rating masking. The final choice follows CV macro-F1 and Negative-class evidence rather than automatically retaining the higher-leakage signal.
 
@@ -128,17 +128,17 @@ Observed failures may combine ambiguous sentiment, label noise, sparse Negative 
 
 | path                                |   iterations |   mean_ms |   p50_ms |   p95_ms |   max_ms |
 |:------------------------------------|-------------:|----------:|---------:|---------:|---------:|
-| normalization_plus_model_prediction |          100 |     3.676 |    3.446 |    5.719 |    6.258 |
-| language_detection_plus_model       |          100 |     4.449 |    3.806 |    7.134 |    8.977 |
-| service_end_to_end                  |          100 |     8.25  |    6.892 |   12.479 |   13.857 |
-| explanation_enabled                 |          100 |   137.361 |  135.294 |  148.515 |  230.391 |
-| http_classify                       |           50 |     9.921 |    8.58  |   13.753 |   15.675 |
+| normalization_plus_model_prediction |          100 |     3.417 |    2.909 |    5.168 |    5.447 |
+| language_detection_plus_model       |          100 |     4.381 |    3.814 |    6.837 |    7.536 |
+| service_end_to_end                  |          100 |     8.095 |    6.778 |   12.258 |   13.686 |
+| explanation_enabled                 |          100 |   133.652 |  131.707 |  142.575 |  147.226 |
+| http_classify                       |           50 |     9.701 |    8.292 |   13.913 |   14.039 |
 
-- Model artifact bytes: 2922199
-- Model SHA-256: `38199b4fa2d40a72bf4805793045ac03d51363e726074af82a4b2b993d52138a`
-- Language-detector constructor (ms): 0.2872039331123233
-- Cold first language inference/model load (ms): 1472.7812669007108
-- Cold load time (ms): 603.4652939997613
+- Model artifact bytes: 2922196
+- Model SHA-256: `e1eac0ebd0b20133e5537b53c13673b57fca0a32936063739697dd04c96b22b0`
+- Language-detector constructor (ms): 0.3076299326494336
+- Cold first language inference/model load (ms): 1397.7078709285706
+- Cold load time (ms): 599.288978963159
 
 ## 17. Prediction explanation
 
