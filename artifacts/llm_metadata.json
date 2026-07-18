@@ -1,0 +1,226 @@
+{
+  "generated_at_utc": "2026-07-18T13:15:19.662539+00:00",
+  "provider": "deepseek",
+  "requested_model": "deepseek-v4-flash",
+  "response_models": [
+    "deepseek-v4-flash"
+  ],
+  "system_fingerprints": [
+    "fp_8b330d02d0_prod0820_fp8_kvcache_20260402"
+  ],
+  "thinking": "disabled",
+  "temperature": 0.0,
+  "prompt_sha256": "d4ca19fd4f4bb457a5d36ed4e90e1bcf925157a7f7f36496d3c8ab0c1fa0b908",
+  "shot_manifest": [
+    {
+      "train_index": 1307,
+      "source_row": 318,
+      "language": "dutch",
+      "label": "Positive",
+      "review": "De filmmaker ademde de kunst van Andy Goldsworthy in, zijn zoektocht naar verbondenheid met het land en het water, en zijn gevoel voor verhoudingen - en ademde dit zo zacht en zo mooi weer in om te filmen voor de rest van ons. \"Rivers and Tides\" houdt van Goldsworthy's werk en voegt zich erbij als een visueel concert van tijd en menselijke aanwezigheid in een vloeiende wereld, een wereld die zijn kracht in het volle zicht verbergt. Bekijk deze film!",
+      "review_sha256": "0841c021845c1748955551b16e5587c1e26f76a364d31ade22f43cb533908b6a"
+    },
+    {
+      "train_index": 1226,
+      "source_row": 1262,
+      "language": "dutch",
+      "label": "Positive",
+      "review": "Zeer goede dramatische komedie over een toneelschrijver die probeert het hoofd boven water te houden nadat hij geen ideeën meer heeft. Ik kan niet veel over deze film zeggen zonder het verhaal weg te geven. Ik kan zeggen dat er weinig was wat het lijkt als je naar de foto kijkt. Iedereen heeft zijn of haar eigen agenda. Leuke kleine verrassing aan het einde - na alle andere verrassingen. Goed geschreven met goede acteerprestaties van iedereen.",
+      "review_sha256": "aefd8fd4c14a497606908ebc4476ecb9aae291bd17c66c9eed867848188bfb2e"
+    },
+    {
+      "train_index": 3090,
+      "source_row": 863,
+      "language": "dutch",
+      "label": "Positive",
+      "review": "Starfucker (waar Starstruck op mijn doos staat) was de meest geweldige film die ik ooit heb gezien. Ik vond het een van de beste films die ik ooit heb gezien. Dus waarom geen 10? Niets is perfect. Jamie Kennedy bewijst waarom hij een van mijn favoriete acteurs is in deze zeer interessante kijk op een donkere kant van Hollywood. Ik heb een paar anderen gedwongen de film te bekijken en ze waren het er allemaal over eens dat het een uitstekende film was.",
+      "review_sha256": "7cf2114a322d84b026878f51b810341753146529f4c7ea367ee1380ca94bc60d"
+    },
+    {
+      "train_index": 946,
+      "source_row": 849,
+      "language": "dutch",
+      "label": "Positive",
+      "review": "ik hou van deze film. de liedjes en verhaallijnen zijn erg leuk. en het liedje \"afscheid nemen\" ontroert mij altijd. Wat een briljant iets om poppen tot leven te brengen, op een manier dat je echt geeft om deze dingen gemaakt van stof en stof en wat dan ook. geweldige stemmen en groot talent. waarom waren alle andere muppetfilms die na deze kwamen zo veel minder interessant, ontroerend en grappig? is het dat dhr. Henson wordt zo erg gemist?",
+      "review_sha256": "a78404367250f9993cdb75319db9b8dfaa8d2f45b132f3eec8a08b514084b3e0"
+    },
+    {
+      "train_index": 3644,
+      "source_row": 1538,
+      "language": "dutch",
+      "label": "Positive",
+      "review": "Ik zag deze film voor het eerst ongeveer 4 jaar geleden en ik verwachtte iets grappigs, vergelijkbaar met CB4. Ik werd weggeblazen. Ik lag op de grond van het lachen, deze film is zo geweldig. Veel beter dan CB4, de personages, de liedjes, de plot, alles. Onafhankelijke film van topklasse die door Siskel en Egbert \"Two Thumbs UP\" werd gegeven (en als twee oude blanke jongens de humor in deze film kunnen begrijpen, weet je dat het goed is).",
+      "review_sha256": "3e2303704291be697403131b742241c52c94816504d4897507a62db15d9cc9ff"
+    },
+    {
+      "train_index": 591,
+      "source_row": 2219,
+      "language": "dutch",
+      "label": "Positive",
+      "review": "Toen The Grinch uitkwam, was ik opgewonden, hoewel ik dacht dat het een vrolijke film zou worden, en dat was het ook. Al had het wel een vleugje Nightmare before Christmas. Je weet wel, een beetje donker en griezelig. Ik hield van deze film omdat hij mensen in de kerstsfeer bracht. Dus vooral de Grinch heeft Kerstmis gered. En wat er toen gebeurde, in Whoville zeggen ze dat het kleine hartje van de Grinch die dag drie maten groeide. VROLIJKE GRINCHMA'S!",
+      "review_sha256": "4faca87672c4bc52ba4debc20b86ab72648dab4d6506dbfa3aa1c90e5f1e0b84"
+    },
+    {
+      "train_index": 2584,
+      "source_row": 166,
+      "language": "english",
+      "label": "Positive",
+      "review": "Sophmoric this film is. But, it is funny as all get out. It shows the \"boys locker room mentality\" being played by the \"other side\". It is good to see such tides turned and how silly they are. But that's probably not news to most women, 'cause (just ask one), \"they've heard 'em all before\". Watch it with a small group or party of mixed gender and 97.3% of the room will laugh for 2 hours straight. And the other 2.7%...can you ever really please them?",
+      "review_sha256": "85eaf2a9bb0d1367ea7dc4c7a523ed1d2e0e60e762ba34fb8a3e7a69b9a780fe"
+    },
+    {
+      "train_index": 2600,
+      "source_row": 163,
+      "language": "english",
+      "label": "Positive",
+      "review": "This movie is not schlock, despite the lo fi production and its link to Troma productions. A dark fable for adults. Exploitation is a theme of Sugar Cookies, and one wonders if the cast has not fallen prey to said theme. A weird movie with enticing visuals: shadows and contrast are prominent. Definitely worth a look, especially from fans of Warhol and stylish decadence. Through all the cruelty and wickedness, a moral, albeit twisted, can be gleamed.",
+      "review_sha256": "daddf88c82319d63c287e82d994c2d942e9ceaddafff31f93b543aaffc553d85"
+    },
+    {
+      "train_index": 122,
+      "source_row": 2981,
+      "language": "dutch",
+      "label": "Average",
+      "review": "Kalifornia is een goede Hollywood-achtige odyssee van spanning en terreur die vertelt over twee stellen die door het land naar Californië rijden om de benzinekosten te delen: een paar verliezers (Lewis & Pitt) en twee wannabee-artiesten, een fotograaf en een schrijver (Duchovny & Forbes). Pitt 'spijkert' zijn karakter vast, dat centraal staat in deze enigszins voorspelbare thriller. Een goed horloge voor degenen die van psycho-killer flix houden.",
+      "review_sha256": "4eba30dd88cb26a65ff0ff13ca6b88d09dbbc3d6434aa4835b1607b8f14f3078"
+    },
+    {
+      "train_index": 3254,
+      "source_row": 3889,
+      "language": "dutch",
+      "label": "Average",
+      "review": "Deze film was indrukwekkend. Mijn eerste ervaring met een buitenlandse film was niet te lang en ook niet te complex. Zelf heb ik genoten van de ondertitels; en de plot was verrassend fris. Het verhaal van een volwassen zoon die na een lange scheiding zijn bejaarde vader en achterlijke broer bezoekt, leek aanvankelijk cliché, maar bleek zeer ontroerend en realistisch. Er was ook wat subtiele humor om het publiek niet te deprimeren of te vervelen.",
+      "review_sha256": "05fed6dc0825429fb4301d054c8583feb48745d70c18731f8ead47e81496b93e"
+    },
+    {
+      "train_index": 536,
+      "source_row": 3123,
+      "language": "dutch",
+      "label": "Average",
+      "review": "Al met al een goede film en beter omdat als de film niet gemaakt was, het verhaal voor de massa verborgen zou kunnen blijven. Brosnan doet het goed als de inheemse Amerikaan met een verborgen verleden en de fotografie is verbluffend. Voor sommigen is dit misschien te grillig, voor anderen saai - voor mij is het een zachtaardig, goed verteld verhaal en perfect om met het hele gezin te bekijken. Dat is niet iets wat je de laatste tijd vaak tegenkomt.",
+      "review_sha256": "af5ab476307a201a33adebc18d9d0e5f805f7557daecc14b273a0ed4d621ffd2"
+    },
+    {
+      "train_index": 2823,
+      "source_row": 3727,
+      "language": "dutch",
+      "label": "Average",
+      "review": "Over het algemeen zou ik moeten zeggen dat ik de film leuk vond. Sommige vechtscènes zijn echt goed. Vooral de strijd tegen Leung Ka-Yan. Eén punt dat mij echt stoorde was het feit dat ze een Aziaat gebruikten om een zwarte man te spelen. Ik bedoel echt. Over slechte smaak gesproken. Tijdens een vechtscène zie je dat een van de vechters op de grond lacht. Voor het overige kopieert Sammo de vechtbewegingen van Bruce Lee perfect. 5 van de 10 sterren.",
+      "review_sha256": "b0e03d563dcc7af8227e5934128c4d87561c755028c1012d7a209504de1a2873"
+    },
+    {
+      "train_index": 1178,
+      "source_row": 3560,
+      "language": "dutch",
+      "label": "Average",
+      "review": "IQ is een schattige romantische komedie met twee geweldige acteurs die goed lijken te klikken op het scherm. Het plot is een typische man die verkeerd is voor een meisje, een man krijgt een meisjesformaat, maar maakt duidelijk dat je moet liefhebben met het hart en niet met de geest. Toevoeging van Albert Einstein en zijn bende genieën zorgt voor uitstekende komische verlichting. Over het geheel genomen een goede film. Niet geweldig, maar goed",
+      "review_sha256": "0187702dcf17b9a3952de104d9fbb58b44c71a902a51520d3f117ac63784e880"
+    },
+    {
+      "train_index": 3699,
+      "source_row": 2340,
+      "language": "dutch",
+      "label": "Average",
+      "review": "Zo voorspelbaar als een Hallmark-kaart, maar niet onverdienstelijk, zorgt The Rookie voor een solide optreden. Dennis Quaid, de meest redelijke jock-acteur die vandaag de dag werkt, is absoluut perfect als de wetenschapsleraar die honkbalspeler Jimmy Morris werd. De film wordt voor de kinderen nooit versimpeld, zoals je zou verwachten van een film met een G-rating. Als sportfilm is The Rookie een van de beste die ik sinds Any Give Sunday heb gezien.",
+      "review_sha256": "8c2708b777933ce273e13ac1ef35ec6934a69ff50f6a2f7d1109da594f5b0664"
+    },
+    {
+      "train_index": 83,
+      "source_row": 2618,
+      "language": "english",
+      "label": "Average",
+      "review": "Having never seen the original Dirty Harry, I judged this movie on a clean slate. And I must say, I quite enjoyed it. Sure, some of the acting by Sondre Locke made me a little squeemish - but hey, it was the 80's. But even if you can't get past her (and I almost couldn't) or her revenge killings (which seemed a little.. overdone ;P), it's worth it just for Dirty Harry. Or at the very least, the bull dog he affectionately names 'MeatHead' :P 7/10.",
+      "review_sha256": "a6fd10e53fdbe75ff2d402f2053f38169dcf53c54f2b0f4c157f28b81ddda4ca"
+    },
+    {
+      "train_index": 2308,
+      "source_row": 2801,
+      "language": "english",
+      "label": "Average",
+      "review": "This movie is about a fictional soap opera. It is very fast and funny. To say anything else would ruin the movie. There are several plots and sub plots in the movie. This movie has ensemble cast with today's hottest stars. They all gives over the top performances. This movie is favorite of mine from the year 1991. Soapdish is perfect for fans of either daytime soap opera /or prime time soap opera!!!If you watch soap go check this movie it's hilarious!!!",
+      "review_sha256": "95938efcd322b30524fa7ca0e67e87dd1fc0b46de467ebc219f8445d53187d9e"
+    },
+    {
+      "train_index": 2590,
+      "source_row": 4550,
+      "language": "dutch",
+      "label": "Negative",
+      "review": "Dit is geen goede film. Het acteerwerk is opmerkelijk stijf en weinig overtuigend. De film lijkt niet te weten of hij voor een echte horroraanpak gaat of voor de kamp- en kitschroute. Ik heb de eerste film nooit gezien, maar deze komt niet op zichzelf over, er zijn verschillende niet-overtuigende plotwendingen en de kijker wordt nooit bewust gemaakt van het belang van de vrouwelijke hoofdrolvampier. De moeite van het kijken niet waard",
+      "review_sha256": "0e4427d9dc151cf252b9a031d4bf64dd6978013c2459b332d2691ba42fadcbf2"
+    },
+    {
+      "train_index": 1536,
+      "source_row": 4611,
+      "language": "dutch",
+      "label": "Negative",
+      "review": "Geen ‘vrouwenfilm’ maar film voor de bende. Een van de slechtste films ooit gemaakt door een mannelijke regisseur over vrouwen. Regisseur Andy McKay kent simpelweg geen vrouwen. Pieken van slechte smaak, de humorstijl van American Pie, grof verhaal, geen zin, ongefundeerd verhaal, weerlegde karakters. Vulgaire fantasieën kwamen tot leven op het scherm. Beledigend en zeker niet grappig. Ik vraag me af hoe drie goede actrices accepteerden om eraan deel te nemen.",
+      "review_sha256": "3aea87cfd3721f2812b873d9e87c1ec6c6f7f4f4347f2c282c3e073ff82bff89"
+    },
+    {
+      "train_index": 3464,
+      "source_row": 4701,
+      "language": "dutch",
+      "label": "Negative",
+      "review": "PROBLEM CHILD is een van de slechtste films die ik de afgelopen tien jaar heb gezien! Dit is een slechte film over een wilde jongen die door twee ouders wordt geadopteerd, maar later in de problemen komt. Dat Junior in opa's auto kan rijden. Hij kan mensen bang maken met een beer. Hij kan een kamer in brand steken! Het is net zo'n slechte film als BATTLEFIELD EARTH. Een vervolg is een nog erger lot. Huur in plaats daarvan CHICKEN RUN. *1/2 van **** Ik geef het.",
+      "review_sha256": "87c9e2103ffbcca4a61977b0829ad3f6b54f24772c9f69beb8f93a510e7d3cb1"
+    },
+    {
+      "train_index": 3740,
+      "source_row": 4566,
+      "language": "dutch",
+      "label": "Negative",
+      "review": "Dit is een hybride wezen geboren in de geest van Carl Macek. Met Robotech de tweede generatie (Robotech Masters) en Megazone 23 in één ellendige film, die geen logica kent! Het verhaal is heel, heel slecht, en je kunt de actie van Megazone niet vergeven als je niets met Robotech te maken hebt. Als deze film zo hoog scoort, is dat voor de tv-serie en niet voor zichzelf!! Ik heb het gezegd, de naam kan dit niet redden!",
+      "review_sha256": "ff1f183cdcf393889e8c03bc9fb97a4042f87f5504d8c0288cd59b89a54edfa0"
+    },
+    {
+      "train_index": 755,
+      "source_row": 4555,
+      "language": "dutch",
+      "label": "Negative",
+      "review": "Ik heb deze film gisteravond op FX gezien en terwijl ik ernaar zat te kijken, bedacht ik me dat dit misschien wel de slechtste film ooit zou kunnen zijn. Slecht acteerwerk, slechte cinematografie, slecht geluid, totaal ongelooflijke vechtscènes, stomme karakters. Dit alles maakte het tot de meest lachwekkend slechte film die ik ooit heb gezien. Het was zo slecht, ik was geboeid door het pure gebrek aan iets semi-competents waar ik naar moest blijven kijken... en ze maakten een vervolg!",
+      "review_sha256": "92a5fad3f1aa6fa9d26d5212a1b6a525cb36525cdb43ce02f326f417dd46179a"
+    },
+    {
+      "train_index": 497,
+      "source_row": 4712,
+      "language": "dutch",
+      "label": "Negative",
+      "review": "Als fan van goedkope horrorfilms zag ik dit in mijn videotheek en dacht: ik ga het eens proberen. Nu ik het heb gezien, wens ik het geen enkele levende ziel op deze planeet toe. Ik krijg mijn huurfilms gratis, en ik heb het gevoel dat ik niet waar voor mijn geld heb gekregen. Ik heb in mijn tijd een aantal slechte goedkope horrorfilms gezien, ik ben er verdomd fan van, maar dit was gewoon een belediging.",
+      "review_sha256": "c7ec53e24e3afb531836ea1a67f570bacc91431598b5aaa4cc1fa9e30a879540"
+    },
+    {
+      "train_index": 3098,
+      "source_row": 4788,
+      "language": "english",
+      "label": "Negative",
+      "review": "I think the biggest disappointment in this film was that, right until the end, I expected the acting instructors of the cast to break in and apologize for how poor the acting was. When you consider the powerful subject, the brilliant scenery and the effort made in creating a wonderful set and spectacular images, it is a shame that little attention was given to acting.",
+      "review_sha256": "838675a29731382249ad6d8fe263c3bc83549ef144503de1dcb6573487036e01"
+    },
+    {
+      "train_index": 270,
+      "source_row": 4783,
+      "language": "english",
+      "label": "Negative",
+      "review": "I had VERY low expectations for this alleged \"re-imagining\" of the original -- and they weren't even met! What were they thinking? (Answer: They weren't.) Please don't waste your time on this Hollywood trash fest. Clip your nails, balance your checkbook, do anything besides watch this. Remember: If you rent stuff like this, it will only ensure they make more.",
+      "review_sha256": "d218577b118af09f0bb7744c9a35b18cd6a5b60bcdb8daeec8ccdd9b8d12cd83"
+    }
+  ],
+  "cost_and_latency": {
+    "prompt_tokens": 17998645,
+    "prompt_cache_hit_tokens": 15821312,
+    "prompt_cache_miss_tokens": 2177333,
+    "completion_tokens": 23870,
+    "total_tokens": 18022515,
+    "estimated_usd_at_2026_07_18_prices": 0.35580989360000004,
+    "api_calls": 4774,
+    "cache_hits": 0,
+    "latency_p50_ms": 137115.75322551653,
+    "latency_p95_ms": 255029.61167611647
+  },
+  "environment": {
+    "python": "3.11.7",
+    "platform": "macOS-26.0-x86_64-i386-64bit",
+    "scikit_learn": "1.9.0",
+    "httpx": "0.28.1"
+  }
+}

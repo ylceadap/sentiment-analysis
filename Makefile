@@ -1,4 +1,4 @@
-.PHONY: install audit train evaluate benchmark predict test coverage lint format serve mlflow docker-build docker-run
+.PHONY: install install-llm audit train llm-experiment evaluate benchmark predict test coverage lint format serve mlflow docker-build docker-run
 
 PYTHON := .venv/bin/python
 
@@ -6,11 +6,17 @@ install:
 	python3 -m venv .venv
 	$(PYTHON) -m pip install -e '.[train,dev]'
 
+install-llm:
+	$(PYTHON) -m pip install -e '.[train,dev,llm]'
+
 audit:
 	.venv/bin/sentiment-audit --data Python_Engineer_Challenge_2.csv
 
 train:
 	.venv/bin/sentiment-train --config configs/training.yaml
+
+llm-experiment:
+	.venv/bin/python -m dutch_sentiment.llm_experiment --config configs/llm_experiment.yaml --run
 
 evaluate:
 	.venv/bin/sentiment-evaluate

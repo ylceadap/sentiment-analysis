@@ -1,0 +1,33 @@
+{
+  "generated_at": "2026-07-18",
+  "heldout_rows_joined": 960,
+  "prediction_rows": 4774,
+  "unique_source_rows": 4774,
+  "unique_review_hashes": 4774,
+  "valid_response_rows": 4774,
+  "deepseek_accuracy": 0.7208333333333333,
+  "tfidf_accuracy": 0.653125,
+  "accuracy_gain_percentage_points": 6.7708333333333375,
+  "accuracy_gain_bootstrap_95ci_percentage_points": [
+    3.229166666666672,
+    10.520833333333336
+  ],
+  "deepseek_macro_f1": 0.7505698654305757,
+  "tfidf_macro_f1": 0.6378997585649555,
+  "macro_f1_gain_percentage_points": 11.267010686562017,
+  "macro_f1_gain_bootstrap_95ci_percentage_points": [
+    6.7743582647544125,
+    16.101754603522174
+  ],
+  "bootstrap_samples": 2000,
+  "bootstrap_random_seed": 20260718,
+  "deepseek_only_correct": 201,
+  "tfidf_only_correct": 136,
+  "mcnemar_exact_p": 0.00047220905240461886,
+  "saved_metrics_match_independent_recalculation": true,
+  "saved_confusion_matrix_matches_independent_recalculation": true,
+  "all_api_calls_succeeded_on_first_attempt": true,
+  "cache_write_span_seconds": 269,
+  "latency_measurement_valid": false,
+  "latency_caveat": "The original timer included concurrency queue time; saved p50/p95 values are not request latency."
+}
