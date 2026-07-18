@@ -43,6 +43,11 @@ def test_model_fit_predict_probability_and_explanation_contract() -> None:
     assert explanation["predicted_label"] == prediction
     assert explanation["supporting_word_features"]
     assert all(item["source"] == "word_ngram" for item in explanation["supporting_word_features"])
+    inference = model.infer(review, explain=True)
+    assert inference.label == prediction
+    assert inference.probabilities == probabilities
+    assert inference.explanation == explanation
+    assert model._feature_names_cache is not None
 
 
 def test_model_is_deterministic_and_survives_round_trip(tmp_path: Path) -> None:

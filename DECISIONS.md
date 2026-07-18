@@ -71,3 +71,19 @@
 - **Reasoning:** the 0.0038 difference is small relative to fold standard deviations, so ratings are documented as a leakage risk rather than treated as the main performance source.
 - **Consequences:** legitimate rating language remains available to the model and the selected pipeline follows the predefined metric.
 - **Limitations:** source-label construction is unknown, so direct label leakage cannot be ruled out.
+
+## D010 — Use a single transformed feature vector per API prediction
+
+- **Alternatives considered:** keep independent `predict`, `predict_proba`, and `explain` calls; cache only explanations; add one application-facing inference operation.
+- **Decision:** add `SentimentModel.infer`, which normalizes/vectorizes once and derives the label, native probabilities, and optional explanation from the same sparse vector. Cache immutable feature names after the first explanation.
+- **Reasoning:** the previous service repeated the most expensive transformation two to four times per request and regenerated roughly 90,000 feature names for every explanation.
+- **Consequences:** faster inference, internally consistent outputs, and a small lazy memory cache after explanations are used.
+- **Limitations:** the first explanation still pays one-time feature-name construction cost.
+
+## D011 — Separate serving dependencies from training dependencies
+
+- **Alternatives considered:** install the full analytics stack in Docker; maintain a duplicate requirements file; use optional dependency groups.
+- **Decision:** keep FastAPI, Lingua, sklearn, and serialization libraries in core dependencies; move MLflow, pandas, PyYAML, and tabulate to the `train` extra. Development installation uses `.[train,dev]`, while Docker installs core only.
+- **Reasoning:** the existing local environment was 837 MB and unnecessarily pulled MLflow, pyarrow, matplotlib, and database tooling into the serving image.
+- **Consequences:** smaller and lower-risk serving images without duplicating version constraints.
+- **Limitations:** audit/training commands require the documented `train` extra.

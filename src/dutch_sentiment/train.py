@@ -21,6 +21,7 @@ from sklearn.model_selection import StratifiedKFold, cross_validate
 
 from . import __version__
 from .config import load_config
+from .constants import MAX_REVIEW_CHARACTERS
 from .data import filter_dutch_reviews, load_dataset, make_holdout_split, sha256_file
 from .language import DutchLanguageDetector
 from .metrics import CV_SCORING, classification_metrics
@@ -35,6 +36,13 @@ def _git_commit() -> str | None:
         ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
     )
     return result.stdout.strip() if result.returncode == 0 else None
+
+
+def _git_dirty() -> bool | None:
+    result = subprocess.run(
+        ["git", "status", "--porcelain"], capture_output=True, text=True, check=False
+    )
+    return bool(result.stdout.strip()) if result.returncode == 0 else None
 
 
 def _hash_values(values: list[str]) -> str:
@@ -101,6 +109,7 @@ def run_training(config_path: str | Path) -> dict[str, Any]:
     mlflow.set_experiment(config["experiment_name"])
     raw_hash = sha256_file(config["data_path"])
     git_commit = _git_commit()
+    git_dirty = _git_dirty()
     shared_params = {
         "raw_data_sha256": raw_hash,
         "random_seed": seed,
@@ -108,6 +117,7 @@ def run_training(config_path: str | Path) -> dict[str, Any]:
         "training_rows": len(split.train),
         "dutch_rows": len(dutch),
         "git_commit": git_commit or "unavailable",
+        "git_dirty": git_dirty if git_dirty is not None else "unavailable",
     }
     rows: list[dict[str, Any]] = []
     for spec in _experiment_specs():
@@ -158,7 +168,8 @@ def run_training(config_path: str | Path) -> dict[str, Any]:
         model = SentimentModel(build_pipeline(selected_spec, model_config), version=version)
         model.fit(train_reviews, train_labels)
         predictions = model.predict(test_reviews)
-        metrics = classification_metrics(test_labels, predictions)
+        probabilities = model.predict_proba(test_reviews)
+        metrics = classification_metrics(test_labels, predictions, probabilities)
         mlflow.log_metrics(
             {key: value for key, value in metrics.items() if isinstance(value, float)}
         )
@@ -197,6 +208,7 @@ def run_training(config_path: str | Path) -> dict[str, Any]:
             "model_version": version,
             "training_timestamp_utc": datetime.now(UTC).isoformat(),
             "git_commit": git_commit,
+            "git_dirty": git_dirty,
             "python_version": platform.python_version(),
             "sklearn_version": sklearn.__version__,
             "raw_data_sha256": raw_hash,
@@ -204,7 +216,9 @@ def run_training(config_path: str | Path) -> dict[str, Any]:
             "model_size_bytes": model_size,
             "mlflow_run_id": final_run.info.run_id,
             "label_classes": list(model.pipeline.named_steps["classifier"].classes_),
-            "expected_input_schema": {"review": "non-empty Dutch string <= 8000 characters"},
+            "expected_input_schema": {
+                "review": (f"non-empty Dutch string <= {MAX_REVIEW_CHARACTERS} characters")
+            },
             "language_configuration": config["language"],
             "split": split_metadata,
             "experiment": selected_spec.__dict__,

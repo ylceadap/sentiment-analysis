@@ -132,6 +132,10 @@ The pipeline prevents normalized duplicate overlap, fits all vectorizers inside 
 - Macro recall: {_format_metric(metrics.get("macro_recall"))}
 - Macro-F1: {_format_metric(metrics.get("macro_f1"))}
 - Weighted F1: {_format_metric(metrics.get("weighted_f1"))}
+- Log loss: {_format_metric(metrics.get("log_loss"))}
+- Multiclass Brier score: {_format_metric(metrics.get("multiclass_brier_score"))}
+- Expected calibration error (10 bins): {_format_metric(metrics.get("expected_calibration_error_10_bin"))}
+- Mean prediction confidence: {_format_metric(metrics.get("mean_prediction_confidence"))}
 
 ## 10. Per-class metrics
 

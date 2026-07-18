@@ -26,6 +26,13 @@ class ModelSpec:
     dummy: bool = False
 
 
+@dataclass(frozen=True)
+class ModelInference:
+    label: str
+    probabilities: dict[str, float]
+    explanation: dict[str, Any] | None = None
+
+
 def build_pipeline(spec: ModelSpec, config: dict[str, Any]) -> Pipeline:
     """Build an unfitted sparse-text pipeline from a transparent experiment spec."""
     normalizer = TextNormalizer(mask_ratings=spec.mask_ratings)
@@ -75,10 +82,18 @@ class SentimentModel:
     def __init__(self, pipeline: Pipeline, version: str = "unversioned") -> None:
         self.pipeline = pipeline
         self.version = version
+        self._feature_names_cache: Any | None = None
 
     def fit(self, reviews: list[str], labels: list[str]) -> SentimentModel:
         self.pipeline.fit(reviews, labels)
+        self._feature_names_cache = None
         return self
+
+    @staticmethod
+    def _validate_label(label: str) -> str:
+        if label not in LABELS:
+            raise RuntimeError(f"Model returned invalid label: {label}")
+        return label
 
     def predict(self, reviews: list[str]) -> list[str]:
         predictions = self.pipeline.predict(reviews).tolist()
@@ -87,10 +102,20 @@ class SentimentModel:
             raise RuntimeError(f"Model returned invalid labels: {invalid}")
         return predictions
 
+    def _probability_dict(self, transformed: Any) -> dict[str, float]:
+        classifier = self.pipeline.named_steps["classifier"]
+        if not hasattr(classifier, "predict_proba"):
+            raise RuntimeError("Selected classifier does not provide native probabilities")
+        values = classifier.predict_proba(transformed)[0]
+        return {
+            str(label): round(float(probability), 6)
+            for label, probability in zip(classifier.classes_, values, strict=True)
+        }
+
     def predict_proba(self, reviews: list[str]) -> list[dict[str, float]]:
         classifier = self.pipeline.named_steps["classifier"]
         if not hasattr(classifier, "predict_proba"):
-            raise RuntimeError("Selected classifier does not provide calibrated probabilities")
+            raise RuntimeError("Selected classifier does not provide native probabilities")
         values = self.pipeline.predict_proba(reviews)
         classes = classifier.classes_.tolist()
         return [
@@ -101,18 +126,20 @@ class SentimentModel:
             for row in values
         ]
 
-    def explain(self, review: str, *, top_n: int = 5) -> dict[str, Any]:
-        """Return active linear feature contributions, not causal explanations."""
+    def _explain_transformed(
+        self, transformed: Any, predicted: str, *, top_n: int = 5
+    ) -> dict[str, Any]:
         classifier = self.pipeline.named_steps["classifier"]
         if not hasattr(classifier, "coef_"):
             raise RuntimeError("Feature contributions require a fitted linear classifier")
-        transformed = self.pipeline[:-1].transform([review])
         if not sparse.issparse(transformed):
             transformed = sparse.csr_matrix(transformed)
-        predicted = self.predict([review])[0]
         class_index = list(classifier.classes_).index(predicted)
         contributions = transformed.multiply(classifier.coef_[class_index]).tocsr()
-        feature_names = self.pipeline.named_steps["features"].get_feature_names_out()
+        feature_names = getattr(self, "_feature_names_cache", None)
+        if feature_names is None:
+            feature_names = self.pipeline.named_steps["features"].get_feature_names_out()
+            self._feature_names_cache = feature_names
         pairs = [
             (str(feature_names[index]), float(value))
             for index, value in zip(contributions.indices, contributions.data, strict=True)
@@ -139,6 +166,24 @@ class SentimentModel:
             "technical_character_features": [item(*pair) for pair in technical],
             "limitation": "Linear feature contributions are associative, not causal explanations.",
         }
+
+    def infer(self, review: str, *, explain: bool = False, top_n: int = 5) -> ModelInference:
+        """Transform once, then derive label, probabilities, and optional contributions."""
+        transformed = self.pipeline[:-1].transform([review])
+        classifier = self.pipeline.named_steps["classifier"]
+        label = self._validate_label(str(classifier.predict(transformed)[0]))
+        probabilities = self._probability_dict(transformed)
+        explanation = (
+            self._explain_transformed(transformed, label, top_n=top_n) if explain else None
+        )
+        return ModelInference(label, probabilities, explanation)
+
+    def explain(self, review: str, *, top_n: int = 5) -> dict[str, Any]:
+        """Return active linear feature contributions, not causal explanations."""
+        inference = self.infer(review, explain=True, top_n=top_n)
+        if inference.explanation is None:
+            raise RuntimeError("Explanation generation unexpectedly returned no result")
+        return inference.explanation
 
     def save(self, path: str | Path) -> None:
         output = Path(path)

@@ -4,7 +4,7 @@ PYTHON := .venv/bin/python
 
 install:
 	python3 -m venv .venv
-	$(PYTHON) -m pip install -e '.[dev]'
+	$(PYTHON) -m pip install -e '.[train,dev]'
 
 audit:
 	.venv/bin/sentiment-audit --data Python_Engineer_Challenge_2.csv

@@ -6,6 +6,7 @@ from dutch_sentiment.audit import audit_dataset, render_markdown
 from dutch_sentiment.config import load_config
 from dutch_sentiment.language import LanguageResult, LanguageStatus
 from dutch_sentiment.metrics import classification_metrics
+from dutch_sentiment.model import ModelInference
 from dutch_sentiment.service import InferenceService, NonDutchReviewError
 
 
@@ -31,6 +32,14 @@ class FixedModel:
 
     def explain(self, review: str) -> dict[str, str]:
         return {"feature": review.split()[0]}
+
+    def infer(self, review: str, *, explain: bool = False) -> ModelInference:
+        explanation = self.explain(review) if explain else None
+        return ModelInference(
+            "Positive",
+            {"Positive": 0.8, "Average": 0.15, "Negative": 0.05},
+            explanation,
+        )
 
 
 def test_audit_profiles_complete_fixture_and_renders_report(tmp_path: Path) -> None:
@@ -61,9 +70,18 @@ def test_audit_profiles_complete_fixture_and_renders_report(tmp_path: Path) -> N
 def test_metrics_include_minority_class_and_confusion_matrix() -> None:
     actual = ["Positive", "Average", "Negative", "Negative"]
     predicted = ["Positive", "Positive", "Negative", "Average"]
-    metrics = classification_metrics(actual, predicted)
+    probabilities = [
+        {"Positive": 0.8, "Average": 0.1, "Negative": 0.1},
+        {"Positive": 0.6, "Average": 0.3, "Negative": 0.1},
+        {"Positive": 0.1, "Average": 0.1, "Negative": 0.8},
+        {"Positive": 0.1, "Average": 0.6, "Negative": 0.3},
+    ]
+    metrics = classification_metrics(actual, predicted, probabilities)
     assert metrics["per_class"]["Negative"]["support"] == 2.0
     assert metrics["confusion_matrix"] == [[1, 0, 0], [1, 0, 0], [0, 1, 1]]
+    assert metrics["log_loss"] > 0
+    assert 0 <= metrics["expected_calibration_error_10_bin"] <= 1
+    assert 0 <= metrics["mean_prediction_confidence"] <= 1
 
 
 def test_inference_service_success_explanation_and_non_dutch() -> None:

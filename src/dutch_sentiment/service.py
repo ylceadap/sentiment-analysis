@@ -42,9 +42,7 @@ class InferenceService:
             raise NonDutchReviewError(
                 "The review was confidently detected as non-Dutch; submit a Dutch review."
             )
-        label = self.model.predict([review])[0]
-        probabilities = self.model.predict_proba([review])[0]
-        explanation = self.model.explain(review) if explain else None
+        inference = self.model.infer(review, explain=explain)
         latency_ms = (perf_counter() - started) * 1000
         detected = (
             "ambiguous"
@@ -52,10 +50,10 @@ class InferenceService:
             else language.detected_language or language.status.value
         )
         return PredictionResult(
-            label=label,
+            label=inference.label,
             model_version=self.model.version,
             detected_language=detected,
-            probabilities=probabilities,
+            probabilities=inference.probabilities,
             latency_ms=round(latency_ms, 3),
-            explanation=explanation,
+            explanation=inference.explanation,
         )

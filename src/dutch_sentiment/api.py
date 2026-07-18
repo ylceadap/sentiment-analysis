@@ -14,13 +14,12 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from .constants import LABELS
+from .constants import LABELS, MAX_REVIEW_CHARACTERS
 from .language import DutchLanguageDetector
 from .model import SentimentModel
 from .service import InferenceService, NonDutchReviewError
 
 LOGGER = logging.getLogger(__name__)
-MAX_REVIEW_CHARACTERS = 8000
 Label = Literal["Positive", "Average", "Negative"]
 
 

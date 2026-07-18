@@ -16,7 +16,3 @@ model:
   char_max_features: 50000
   min_df: 2
   max_df: 0.98
-api:
-  max_review_characters: 8000
-  default_model_path: artifacts/model.joblib
-  default_metadata_path: artifacts/model_metadata.json
