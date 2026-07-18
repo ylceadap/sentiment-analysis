@@ -52,6 +52,25 @@ def test_health_and_successful_classification(client: TestClient) -> None:
     assert body["explanation"] == {"supporting_word_features": []}
 
 
+def test_openapi_documents_classification_contract_and_examples(client: TestClient) -> None:
+    response = client.get("/openapi.json")
+    assert response.status_code == 200
+    schema = response.json()
+    operation = schema["paths"]["/classify"]["post"]
+    request_schema = schema["components"]["schemas"]["ClassifyRequest"]
+    response_schema = schema["components"]["schemas"]["ClassifyResponse"]
+
+    assert operation["summary"] == "Classify one movie review"
+    assert request_schema["examples"][0]["explain"] is False
+    assert "review" in request_schema["examples"][0]
+    assert response_schema["examples"][0]["label"] in {"Positive", "Average", "Negative"}
+    assert set(response_schema["examples"][0]["probabilities"]) == {
+        "Positive",
+        "Average",
+        "Negative",
+    }
+
+
 @pytest.mark.parametrize("review", ["", "   \n\t"])
 def test_empty_input_rejected(client: TestClient, review: str) -> None:
     assert client.post("/classify", json={"review": review}).status_code == 422
