@@ -127,9 +127,9 @@ Detector output is not treated as annotated ground truth. The bounded manual sam
 
 ## Leakage-safe evaluation
 
-Two same-label normalized duplicate extras are removed. With seed 42, language×label stratification places 3,838 rows in the training/CV partition and 960 in the untouched final test partition. Training contains 3,450 Dutch and 388 English rows; test contains 863 Dutch and 97 English rows. Test label supports are Positive 450, Average 450, and Negative 60. Normalized review hashes prove the partitions are disjoint.
+Two same-label normalized duplicate extras are removed. With seed 42, language×label stratification places 3,838 rows in the training/CV partition and 960 in the originally held-out test partition. Training contains 3,450 Dutch and 388 English rows; test contains 863 Dutch and 97 English rows. Test label supports are Positive 450, Average 450, and Negative 60. Normalized review hashes prove the partitions are disjoint.
 
-All normalization and TF-IDF fitting happens inside CV folds. The test set is used once after selecting the best mean CV macro-F1.
+All normalization and TF-IDF fitting happens inside CV folds. The official TF-IDF workflow used the test set once after selecting the best mean CV macro-F1. Later isolated research branches reused the same fixed partition for comparisons, so it remains leakage-free with respect to model fitting but is not a new blind set for future promotion decisions.
 
 ## Experiment comparison
 
@@ -143,6 +143,20 @@ All normalization and TF-IDF fitting happens inside CV folds. The test set is us
 | dummy_prior | ignored baseline features | no | no | 0.2127 ± 0.0001 | 0.3333 |
 
 Full metrics, standard deviations, MLflow run IDs, and artifact sizes are in `artifacts/experiment_comparison.csv`.
+
+### Research branch index
+
+The production submission remains on `main`. Completed or exploratory work stays isolated so optional dependencies and alternative serving designs do not blur the formal model contract.
+
+| Branch | Scope | Headline result | Promotion status |
+| --- | --- | --- | --- |
+| [`experiment/linear-models`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/linear-models) | Logistic Regression C sweep and LinearSVC | Best CV macro-F1 0.6536 | Frozen; predefined improvement gate not met |
+| [`experiment/negative-imbalance`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/negative-imbalance) | Custom class weights, Negative thresholds, and fold-local oversampling | Held-out Negative recall 0.65, precision 0.5909 | Frozen; precision gate of 0.60 not met |
+| [`experiment/transformer-embeddings`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/transformer-embeddings) | Frozen multilingual MiniLM and Dutch RobBERT sentence embeddings with Logistic Regression | Did not pass the OOF promotion gates | Frozen; official model unchanged |
+| [`experiment/jina-embeddings`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/jina-embeddings) | Frozen Jina v3 classification embeddings with Logistic Regression | Best OOF macro-F1 0.7108 | Research only; no held-out promotion evaluation and non-commercial model license |
+| [`experiment/llm`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/llm) | Direct DeepSeek V4 Flash few-shot classification | Held-out macro-F1 0.7506 | Separate architecture review required; external API, privacy, cost, latency, and repeated-test-set caveats |
+
+Only a candidate that wins on training-only CV/OOF evidence, is frozen, passes a new blind evaluation, satisfies deployment constraints, and passes CI should be proposed for merge into `main`.
 
 ### Rating-leakage result
 
