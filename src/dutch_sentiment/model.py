@@ -79,9 +79,15 @@ def build_pipeline(spec: ModelSpec, config: dict[str, Any]) -> Pipeline:
 class SentimentModel:
     """Stable application-facing abstraction around a fitted sklearn pipeline."""
 
-    def __init__(self, pipeline: Pipeline, version: str = "unversioned") -> None:
+    def __init__(
+        self,
+        pipeline: Pipeline,
+        version: str = "unversioned",
+        negative_threshold: float | None = None,
+    ) -> None:
         self.pipeline = pipeline
         self.version = version
+        self.negative_threshold = negative_threshold
         self._feature_names_cache: Any | None = None
 
     def fit(self, reviews: list[str], labels: list[str]) -> SentimentModel:
@@ -96,11 +102,22 @@ class SentimentModel:
         return label
 
     def predict(self, reviews: list[str]) -> list[str]:
+        threshold = getattr(self, "negative_threshold", None)
+        if threshold is not None:
+            probabilities = self.predict_proba(reviews)
+            predictions = [self._threshold_label(row, threshold) for row in probabilities]
+            return [self._validate_label(label) for label in predictions]
         predictions = self.pipeline.predict(reviews).tolist()
         invalid = sorted(set(predictions) - set(LABELS))
         if invalid:
             raise RuntimeError(f"Model returned invalid labels: {invalid}")
         return predictions
+
+    @staticmethod
+    def _threshold_label(probabilities: dict[str, float], threshold: float) -> str:
+        if probabilities["Negative"] >= threshold:
+            return "Negative"
+        return max(("Positive", "Average"), key=probabilities.__getitem__)
 
     def _probability_dict(self, transformed: Any) -> dict[str, float]:
         classifier = self.pipeline.named_steps["classifier"]
@@ -168,8 +185,13 @@ class SentimentModel:
         """Transform once, then derive label, probabilities, and optional contributions."""
         transformed = self.pipeline[:-1].transform([review])
         classifier = self.pipeline.named_steps["classifier"]
-        label = self._validate_label(str(classifier.predict(transformed)[0]))
         probabilities = self._probability_dict(transformed)
+        threshold = getattr(self, "negative_threshold", None)
+        label = self._validate_label(
+            self._threshold_label(probabilities, threshold)
+            if threshold is not None
+            else str(classifier.predict(transformed)[0])
+        )
         explanation = (
             self._explain_transformed(transformed, label, top_n=top_n) if explain else None
         )

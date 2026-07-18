@@ -1,4 +1,4 @@
-.PHONY: install audit train evaluate benchmark predict test coverage lint format serve mlflow docker-build docker-run
+.PHONY: install audit train evaluate benchmark experiment-imbalance experiment-imbalance-heldout predict test coverage lint format serve mlflow docker-build docker-run
 
 PYTHON := .venv/bin/python
 
@@ -17,6 +17,12 @@ evaluate:
 
 benchmark:
 	.venv/bin/sentiment-benchmark --model artifacts/model.joblib
+
+experiment-imbalance:
+	.venv/bin/sentiment-imbalance-experiment --config configs/imbalance_experiment.yaml --stage oof
+
+experiment-imbalance-heldout:
+	.venv/bin/sentiment-imbalance-experiment --config configs/imbalance_experiment.yaml --stage heldout
 
 predict:
 	@test -n "$(REVIEW)" || (echo "Usage: make predict REVIEW='Deze film was goed.'" && exit 2)

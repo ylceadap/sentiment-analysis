@@ -60,3 +60,13 @@ def test_model_is_deterministic_and_survives_round_trip(tmp_path: Path) -> None:
     loaded = SentimentModel.load(path)
     assert loaded.version == "test-v1"
     assert loaded.predict(reviews) == before
+
+
+def test_negative_threshold_changes_prediction_without_changing_probabilities() -> None:
+    model = _model()
+    model.negative_threshold = 0.0
+    review = "een onduidelijke film"
+    probabilities = model.predict_proba([review])[0]
+    assert model.predict([review]) == ["Negative"]
+    assert model.infer(review).label == "Negative"
+    assert abs(sum(probabilities.values()) - 1.0) < 1e-5

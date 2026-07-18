@@ -1,0 +1,40 @@
+training_config: configs/training.yaml
+frozen_split_metadata: artifacts/split_metadata.json
+frozen_baseline_metrics: artifacts/final_metrics.json
+frozen_cv_comparison: artifacts/experiment_comparison.csv
+output_csv: artifacts/imbalance_oof_results.csv
+output_decision: artifacts/imbalance_oof_decision.json
+output_heldout: artifacts/imbalance_heldout_comparison.json
+output_candidate_model: artifacts/negative_candidate_model.joblib
+heldout_lock: artifacts/imbalance_heldout_lock.json
+output_report: reports/negative_imbalance_experiment.md
+
+class_weight_candidates:
+  - name: balanced
+    value: balanced
+  - name: negative_weight_3
+    value: {Positive: 1, Average: 1, Negative: 3}
+  - name: negative_weight_5
+    value: {Positive: 1, Average: 1, Negative: 5}
+  - name: negative_weight_7
+    value: {Positive: 1, Average: 1, Negative: 7}
+  - name: negative_weight_10
+    value: {Positive: 1, Average: 1, Negative: 10}
+
+oversampling_candidates:
+  - name: random_oversample_negative_x2
+    negative_multiplier: 2
+  - name: random_oversample_negative_x3
+    negative_multiplier: 3
+
+negative_thresholds: [argmax, 0.20, 0.25, 0.30, 0.35, 0.40]
+
+selection:
+  minimum_negative_precision: 0.60
+  close_negative_recall_tolerance: 0.01
+
+promotion:
+  minimum_heldout_negative_precision: 0.60
+  minimum_heldout_negative_recall_improvement: 0.0
+  maximum_heldout_macro_f1_drop: 0.02
+  maximum_heldout_accuracy_drop: 0.03
