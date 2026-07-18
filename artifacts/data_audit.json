@@ -1,0 +1,199 @@
+{
+  "source": {
+    "path": "Python_Engineer_Challenge_2.csv",
+    "size_bytes": 7435723,
+    "sha256": "2788b987e2c9fa4fd6459a1798a6e7d1dd63ddb5618c10907712d39042cc4be2",
+    "utf8_bom": true,
+    "utf8_decode": "ok"
+  },
+  "schema": {
+    "rows": 4800,
+    "columns": [
+      "Reviews",
+      "Label"
+    ],
+    "dtypes": {
+      "Reviews": "object",
+      "Label": "object"
+    },
+    "missing": {
+      "Reviews": 0,
+      "Label": 0
+    },
+    "blank_reviews": 0,
+    "unexpected_labels": []
+  },
+  "labels": {
+    "Positive": {
+      "count": 2250,
+      "percentage": 46.88
+    },
+    "Average": {
+      "count": 2250,
+      "percentage": 46.88
+    },
+    "Negative": {
+      "count": 300,
+      "percentage": 6.25
+    }
+  },
+  "label_runs": 3,
+  "duplicates": {
+    "exact_extra_rows": 2,
+    "exact_review_extra_rows": 2,
+    "exact_review_groups": 2,
+    "exact_conflicting_groups": 0,
+    "normalized_extra_rows": 2,
+    "normalized_conflicting_groups": 0
+  },
+  "lengths": {
+    "characters": {
+      "p00": 60.0,
+      "p01": 257.98,
+      "p05": 392.0,
+      "p25": 785.0,
+      "p50": 1143.5,
+      "p75": 1929.25,
+      "p95": 3947.2,
+      "p99": 5673.15,
+      "p100": 7654.0
+    },
+    "tokens": {
+      "p00": 12.0,
+      "p01": 44.0,
+      "p05": 66.0,
+      "p25": 135.0,
+      "p50": 192.0,
+      "p75": 322.0,
+      "p95": 649.05,
+      "p99": 922.07,
+      "p100": 1321.0
+    }
+  },
+  "artifacts": {
+    "html_break": 2908,
+    "html_tag": 2908,
+    "zero_width": 1261,
+    "mojibake": 122,
+    "rating": 411,
+    "short": 2,
+    "long": 48
+  },
+  "language": {
+    "status_counts": {
+      "dutch": 4315,
+      "non_dutch": 485
+    },
+    "detected_language_counts": {
+      "dutch": 4315,
+      "english": 485
+    },
+    "status_by_label": {
+      "Positive": {
+        "dutch": 2099,
+        "non_dutch": 151
+      },
+      "Average": {
+        "dutch": 1926,
+        "non_dutch": 324
+      },
+      "Negative": {
+        "dutch": 290,
+        "non_dutch": 10
+      }
+    },
+    "policy": {
+      "minimum_dutch_confidence": 0.7,
+      "minimum_margin": 0.2,
+      "short_text_characters": 20
+    }
+  },
+  "examples": {
+    "mojibake": [
+      {
+        "row": 5,
+        "label": "Positive",
+        "excerpt": "In navolging van het briljante \"GoyÃ´kiba\" (ook bekend als \"Hanzo The Razor - Sword Of Justice\", 1972) en het uitstekend"
+      },
+      {
+        "row": 9,
+        "label": "Positive",
+        "excerpt": "Ik heb niet alle films van Jess Franco gezien, ik heb er vijf gezien, denk ik, en er zijn er meer dan 180. Dus misschien"
+      },
+      {
+        "row": 93,
+        "label": "Positive",
+        "excerpt": "When you start watching this animation-masterpiece, you quickly notice, that it's a European production. Although the Eu"
+      }
+    ],
+    "rating": [
+      {
+        "row": 4,
+        "label": "Positive",
+        "excerpt": "James Cagney staat vooral bekend om zijn stoere karakter- en gangsterrollen, maar hij heeft in zijn carrière ook heel wa"
+      },
+      {
+        "row": 10,
+        "label": "Positive",
+        "excerpt": "Ik moet zeggen dat Higher Learning een van de top 3 films is die ik ooit heb gezien. Het heeft een briljante cast en een"
+      },
+      {
+        "row": 22,
+        "label": "Positive",
+        "excerpt": "Dit werk gaat minder over Steve Martins personage Davis, dan over Kline (Mack) en Glover (Simon), en Kline en McDonnell "
+      }
+    ],
+    "long": [
+      {
+        "row": 63,
+        "label": "Positive",
+        "excerpt": "Het is altijd moeilijk om welke film dan ook als ‘de beste’ te bestempelen, of het nu aller tijden is, een bepaald genre"
+      },
+      {
+        "row": 351,
+        "label": "Positive",
+        "excerpt": "Vaak komen films van deze aard over als een allegaartje van geweldig werk, samen met een beetje geklets om de speelduur "
+      },
+      {
+        "row": 358,
+        "label": "Positive",
+        "excerpt": "Veel mensen blijven hangen bij het label van deze film als 'kinderfilm', en dat is het zeker, ook al is het een film gem"
+      }
+    ],
+    "non_dutch": [
+      {
+        "row": 77,
+        "label": "Positive",
+        "excerpt": "In the classic sense of the four humors (which are not specific to the concept of funny or even entertainment), Altman's"
+      },
+      {
+        "row": 78,
+        "label": "Positive",
+        "excerpt": "Imagine turning out the lights in your remote farmhouse on a cold night, and then going to bed. There's no need to lock "
+      },
+      {
+        "row": 79,
+        "label": "Positive",
+        "excerpt": "This movie is a lot of fun. The actors really make the movie go the distance though. Without giving away the plot, I wou"
+      }
+    ],
+    "ambiguous": [],
+    "dutch": [
+      {
+        "row": 2,
+        "label": "Positive",
+        "excerpt": "De kameleonachtige uitvoering van Kurt Russell, gecombineerd met het onberispelijke filmwerk van John Carpenter, maakt d"
+      },
+      {
+        "row": 3,
+        "label": "Positive",
+        "excerpt": "Het was een extreem laag budget (sommige scènes lijken te zijn opgenomen met een videorecorder voor thuis). Het heeft ec"
+      },
+      {
+        "row": 4,
+        "label": "Positive",
+        "excerpt": "James Cagney staat vooral bekend om zijn stoere karakter- en gangsterrollen, maar hij heeft in zijn carrière ook heel wa"
+      }
+    ]
+  }
+}
