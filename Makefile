@@ -1,4 +1,4 @@
-.PHONY: install audit train evaluate benchmark predict test coverage lint format serve mlflow docker-build docker-run
+.PHONY: install install-embeddings audit train embedding-experiment evaluate benchmark predict test coverage lint format serve mlflow docker-build docker-run
 
 PYTHON := .venv/bin/python
 
@@ -6,11 +6,17 @@ install:
 	python3 -m venv .venv
 	$(PYTHON) -m pip install -e '.[train,dev]'
 
+install-embeddings:
+	$(PYTHON) -m pip install -e '.[train,dev,embeddings]'
+
 audit:
 	.venv/bin/sentiment-audit --data Python_Engineer_Challenge_2.csv
 
 train:
 	.venv/bin/sentiment-train --config configs/training.yaml
+
+embedding-experiment:
+	$(PYTHON) -m dutch_sentiment.embedding_experiment --config configs/embedding_experiment.yaml
 
 evaluate:
 	.venv/bin/sentiment-evaluate

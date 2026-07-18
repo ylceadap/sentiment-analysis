@@ -25,6 +25,12 @@ train = [
   "PyYAML>=6,<7",
   "tabulate>=0.9,<1",
 ]
+embeddings = [
+  "numpy>=1.26,<2",
+  "sentence-transformers>=5,<6",
+  "torch==2.2.2; platform_system == 'Darwin' and platform_machine == 'x86_64'",
+  "transformers>=4.41,<5",
+]
 dev = [
   "httpx>=0.27,<1",
   "pytest>=8,<9",
@@ -37,6 +43,7 @@ sentiment-audit = "dutch_sentiment.audit:main"
 sentiment-train = "dutch_sentiment.train:main"
 sentiment-evaluate = "dutch_sentiment.evaluate:main"
 sentiment-benchmark = "dutch_sentiment.benchmark:main"
+sentiment-embedding-experiment = "dutch_sentiment.embedding_experiment:main"
 sentiment-predict = "dutch_sentiment.predict:main"
 sentiment-serve = "dutch_sentiment.api:run"
 

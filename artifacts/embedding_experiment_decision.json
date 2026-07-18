@@ -1,0 +1,26 @@
+{
+  "advance_to_gpu_finetuning": false,
+  "data": {
+    "heldout_normalized_sha256": "b76afd73eaeed79bf61903ab8475a08c4565cf523a55e8ae34448d2330e00cbb",
+    "heldout_rows": 960,
+    "raw_sha256": "2788b987e2c9fa4fd6459a1798a6e7d1dd63ddb5618c10907712d39042cc4be2",
+    "train_normalized_sha256": "aa986ef1d8f35ebf232a015fd0e61d3affb1efbe4a589ec4f8653ae01e8ab7c9",
+    "train_rows": 3838
+  },
+  "environment": {
+    "platform": "macOS-26.0-x86_64-i386-64bit",
+    "python": "3.11.7",
+    "scikit_learn": "1.9.0"
+  },
+  "gate_checks": {
+    "accuracy": false,
+    "macro_f1": false,
+    "negative_precision": false,
+    "negative_recall": true,
+    "stability": true
+  },
+  "heldout_evaluated": false,
+  "next_step": "Collect and review more Dutch Negative examples before GPU fine-tuning",
+  "official_model_replaced": false,
+  "selected_candidate": "dutch_robbert__c0.25__negative_7__threshold_0.4"
+}

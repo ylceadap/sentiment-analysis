@@ -81,6 +81,17 @@ make serve       # listen on 0.0.0.0:8000
 make mlflow      # open local MLflow UI on port 5000
 ```
 
+### Frozen sentence-embedding experiment
+
+This branch also contains a train-only experiment with two revision-pinned CPU encoders: multilingual MiniLM and Dutch RobBERT. It trains one Logistic Regression classifier on all Dutch and English training rows, searches class weights and the Negative threshold only with five-fold out-of-fold predictions, and never evaluates the existing held-out test.
+
+```bash
+make install-embeddings
+make embedding-experiment
+```
+
+The first run downloads the encoders and creates ignored local caches under `.cache/`; later runs reuse them. Full OOF results are in `artifacts/embedding_experiment_results.csv` and the decision is in `reports/embedding_experiment.md`. Neither frozen encoder passed the predeclared promotion gates, so `artifacts/model.joblib` remains the official model and GPU fine-tuning is not currently recommended.
+
 ## Train and predict: shortest workflow
 
 Train from the supplied CSV and regenerate the fitted model, metadata, comparison table, and report:

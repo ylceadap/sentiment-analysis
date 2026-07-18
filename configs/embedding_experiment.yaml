@@ -1,0 +1,33 @@
+training_config: configs/training.yaml
+cache_dir: .cache/embeddings
+huggingface_cache_dir: .cache/huggingface
+output_csv: artifacts/embedding_experiment_results.csv
+decision_json: artifacts/embedding_experiment_decision.json
+report_path: reports/embedding_experiment.md
+expected_train_normalized_sha256: aa986ef1d8f35ebf232a015fd0e61d3affb1efbe4a589ec4f8653ae01e8ab7c9
+expected_test_normalized_sha256: b76afd73eaeed79bf61903ab8475a08c4565cf523a55e8ae34448d2330e00cbb
+normalize_embeddings: true
+batch_size: 16
+models:
+  - name: multilingual_minilm
+    model_id: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+    revision: e8f8c211226b894fcb81acc59f3b34ba3efd5f42
+    language_scope: multilingual_including_dutch_and_english
+  - name: dutch_robbert
+    model_id: NetherlandsForensicInstitute/robbert-2022-dutch-sentence-transformers
+    revision: 49e0e19472a527708e62747ffd12091e23bc1980
+    language_scope: dutch
+logistic_regression:
+  c_values: [0.25, 0.5, 0.75, 1.0]
+  class_weights:
+    - name: balanced
+      value: balanced
+    - name: negative_7
+      value: {Positive: 1.0, Average: 1.0, Negative: 7.0}
+  negative_thresholds: [argmax, 0.25, 0.30, 0.35, 0.40]
+promotion_gates:
+  minimum_macro_f1_improvement: 0.015
+  minimum_negative_precision: 0.60
+  minimum_negative_recall_improvement: 0.08
+  maximum_accuracy_drop: 0.01
+  maximum_cv_macro_f1_std_increase: 0.01
