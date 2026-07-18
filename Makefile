@@ -1,4 +1,4 @@
-.PHONY: install audit train ordinal-logistic promote-ordinal evaluate benchmark predict test coverage lint format serve mlflow docker-build docker-run
+.PHONY: install install-embeddings audit train embedding-experiment ordinal-logistic jina-ordinal-logistic promote-ordinal evaluate benchmark predict test coverage lint format serve mlflow docker-build docker-run
 
 PYTHON := .venv/bin/python
 
@@ -6,14 +6,23 @@ install:
 	python3 -m venv .venv
 	$(PYTHON) -m pip install -e '.[train,dev]'
 
+install-embeddings:
+	$(PYTHON) -m pip install -e '.[train,dev,embeddings]'
+
 audit:
 	.venv/bin/sentiment-audit --data Python_Engineer_Challenge_2.csv
 
 train:
 	.venv/bin/sentiment-train --config configs/training.yaml
 
+embedding-experiment:
+	$(PYTHON) -m dutch_sentiment.embedding_experiment --config configs/embedding_experiment.yaml
+
 ordinal-logistic:
 	$(PYTHON) -m dutch_sentiment.ordinal_logistic_experiment --config configs/training.yaml
+
+jina-ordinal-logistic:
+	$(PYTHON) -m dutch_sentiment.jina_ordinal_logistic_experiment --config configs/jina_ordinal_logistic.yaml
 
 promote-ordinal:
 	$(PYTHON) -m dutch_sentiment.ordinal_promote --config configs/training.yaml

@@ -155,10 +155,35 @@ The production submission remains on `main`. Completed or exploratory work stays
 | [`experiment/negative-imbalance`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/negative-imbalance) | Custom class weights, Negative thresholds, and fold-local oversampling | Held-out Negative recall 0.65, precision 0.5909 | Frozen; precision gate of 0.60 not met |
 | [`experiment/transformer-embeddings`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/transformer-embeddings) | Frozen multilingual MiniLM and Dutch RobBERT sentence embeddings with Logistic Regression | Did not pass the OOF promotion gates | Frozen; official model unchanged |
 | [`experiment/jina-embeddings`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/jina-embeddings) | Frozen Jina v3 classification embeddings with Logistic Regression | Best OOF macro-F1 0.7108 | Research only; no held-out promotion evaluation and non-commercial model license |
+| `experiment/jina-ordinal-logistic` | Frozen Jina v3 classification embeddings with multiclass and ordinal Logistic Regression heads | Pending Colab OOF run | Research only; official model unchanged |
 | [`experiment/llm`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/llm) | Direct DeepSeek V4 Flash few-shot classification | Held-out macro-F1 0.7506 | Separate architecture review required; external API, privacy, cost, latency, and repeated-test-set caveats |
 | `experiment/ordinal-logistic` | Two calibrated cumulative Logistic Regression boundaries with monotonic composition and cross-fitted thresholds | Held-out macro-F1 0.6406; Negative recall 0.6167 | Promoted on this branch after passing the predefined replacement gate |
 
 Only a candidate that wins on training-only CV/OOF evidence, is frozen, passes a new blind evaluation, satisfies deployment constraints, and passes CI should be proposed for merge into `main`.
+
+### Jina ordinal-logistic experiment
+
+This branch follows the same Colab execution mode as `experiment/jina-embeddings`: the heavy
+Jina encoding step runs on a Colab GPU, while this repository stores the reproducible script,
+configuration, notebook, and small result artifacts. It compares two heads on the same frozen
+Jina v3 classification embeddings:
+
+```text
+standard multiclass Logistic Regression
+two-boundary ordinal Logistic Regression
+```
+
+Run it in Colab with `notebooks/jina_ordinal_logistic_experiment.ipynb`, or locally only if the
+embedding dependencies and enough compute are available:
+
+```bash
+make install-embeddings
+make jina-ordinal-logistic
+```
+
+Outputs are written to `artifacts/jina_ordinal_logistic/` and
+`reports/jina_ordinal_logistic_experiment.md`. The script verifies the frozen split hashes and
+does not evaluate the reserved holdout rows or replace `artifacts/model.joblib`.
 
 ### Ordinal logistic experiment
 

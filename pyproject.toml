@@ -26,6 +26,12 @@ train = [
   "PyYAML>=6,<7",
   "tabulate>=0.9,<1",
 ]
+embeddings = [
+  "numpy>=1.26,<2",
+  "sentence-transformers>=5,<6",
+  "torch==2.2.2; platform_system == 'Darwin' and platform_machine == 'x86_64'",
+  "transformers>=4.41,<5",
+]
 dev = [
   "pytest>=8,<9",
   "pytest-cov>=5,<7",
@@ -35,7 +41,9 @@ dev = [
 [project.scripts]
 sentiment-audit = "dutch_sentiment.audit:main"
 sentiment-train = "dutch_sentiment.train:main"
+sentiment-embedding-experiment = "dutch_sentiment.embedding_experiment:main"
 sentiment-ordinal-logistic = "dutch_sentiment.ordinal_logistic_experiment:main"
+sentiment-jina-ordinal-logistic = "dutch_sentiment.jina_ordinal_logistic_experiment:main"
 sentiment-promote-ordinal = "dutch_sentiment.ordinal_promote:main"
 sentiment-evaluate = "dutch_sentiment.evaluate:main"
 sentiment-benchmark = "dutch_sentiment.benchmark:main"
