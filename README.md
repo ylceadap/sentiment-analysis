@@ -11,7 +11,7 @@ The emphasis is engineering method and honest evidence rather than maximizing on
 - Optional server-side LLM advisor for manual comparison when an API key is configured.
 - Normalized deduplication and deterministic language×label-stratified holdout splitting.
 - Five-fold comparison of Dummy, word TF-IDF, character TF-IDF, combined features, class weighting, and rating masking.
-- Balanced multinomial Logistic Regression with native probabilities and optional linear feature contributions.
+- Two calibrated, class-balanced ordinal Logistic Regression boundaries with validated decision thresholds and optional linear feature contributions.
 - FastAPI `POST /classify` and `GET /health` endpoints.
 - Repeated cold/warm component, service, explanation, and HTTP latency benchmarks.
 - Pytest, coverage, Ruff, a non-root Dockerfile, MLflow tracking, and machine-readable model metadata.
@@ -24,7 +24,7 @@ raw CSV (immutable)
   -> local language identification
   -> normalized deduplication
   -> language + label stratified holdout and training CV
-  -> [normalizer -> word/character TF-IDF -> Logistic Regression]
+  -> [normalizer -> word/character TF-IDF -> two calibrated Logistic Regression boundaries]
   -> joblib model + JSON metadata
   -> FastAPI inference service
 ```
@@ -41,7 +41,7 @@ artifacts/model.joblib            ready-to-serve fitted pipeline
 artifacts/model_metadata.json     hashes, versions, split, metrics, schema
 artifacts/*.json|*.csv            portable audit/experiment/benchmark evidence
 reports/data_audit.md             interpreted full-dataset audit
-reports/model_report.md           experiments, test metrics, errors, latency
+reports/model_report.md           historical multiclass-baseline report
 IMPLEMENTATION_PLAN.md            phase checklist and validation commands
 DECISIONS.md                      alternatives, decisions, consequences
 REQUIREMENTS_TRACEABILITY.md      requirement-to-evidence mapping
@@ -156,7 +156,7 @@ The production submission remains on `main`. Completed or exploratory work stays
 | [`experiment/transformer-embeddings`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/transformer-embeddings) | Frozen multilingual MiniLM and Dutch RobBERT sentence embeddings with Logistic Regression | Did not pass the OOF promotion gates | Frozen; official model unchanged |
 | [`experiment/jina-embeddings`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/jina-embeddings) | Frozen Jina v3 classification embeddings with Logistic Regression | Best OOF macro-F1 0.7108 | Research only; no held-out promotion evaluation and non-commercial model license |
 | [`experiment/llm`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/llm) | Direct DeepSeek V4 Flash few-shot classification | Held-out macro-F1 0.7506 | Separate architecture review required; external API, privacy, cost, latency, and repeated-test-set caveats |
-| `experiment/ordinal-logistic` | Two calibrated cumulative Logistic Regression boundaries with monotonic composition and cross-fitted thresholds | OOF macro-F1 0.6529; Negative recall 0.5917 | Passes the OOF gate; requires a new blind evaluation before promotion |
+| `experiment/ordinal-logistic` | Two calibrated cumulative Logistic Regression boundaries with monotonic composition and cross-fitted thresholds | Held-out macro-F1 0.6406; Negative recall 0.6167 | Promoted on this branch after passing the predefined replacement gate |
 
 Only a candidate that wins on training-only CV/OOF evidence, is frozen, passes a new blind evaluation, satisfies deployment constraints, and passes CI should be proposed for merge into `main`.
 
@@ -174,7 +174,8 @@ Both boundaries reuse the submitted word/character TF-IDF features, balanced Log
 and fold-internal three-fold sigmoid calibration. Independently estimated cumulative probabilities
 are projected onto the monotonic constraint `P(y > Negative) >= P(y > Average)`. Thresholds are
 evaluated with cross-fitting: the thresholds applied to each OOF fold are selected using only the
-other OOF folds. The existing 960 held-out rows are reserved but never evaluated by this command.
+other OOF folds. `make ordinal-logistic` never evaluates the 960 held-out rows; the separate,
+explicit `make promote-ordinal` command performs that comparison after the candidate is frozen.
 
 Run the experiment with:
 
@@ -200,10 +201,12 @@ uses `C=1`, balanced boundary weights, sigmoid calibration, and full-OOF deploym
 | Quadratic weighted kappa | 0.4544 | **0.4755** | +0.0211 |
 | Severe error rate | 0.0167 | **0.0151** | -0.0016 |
 
-The candidate passes the predefined OOF gate and is recommended for a newly collected untouched
-blind evaluation. It is not recommended for production promotion yet. The gain is modest, Negative
-precision falls substantially, Positive recall falls from 0.6732 to 0.5892, and threshold/C
-selection still uses the training partition. The submitted model and API therefore remain unchanged.
+The candidate passed the predefined OOF gate and the subsequent held-out replacement gate. The
+existing 960 rows were not fitted or used for threshold selection, but they have been inspected in
+earlier repository experiments and therefore are no longer described as a new blind benchmark.
+On this branch, the promoted ordinal artifact is now the model loaded by the CLI and API. A newly
+collected, adjudicated blind set remains the right next step before making stronger generalization
+claims.
 
 ### Rating-leakage result
 
@@ -211,39 +214,55 @@ Masking ratings reduced mean macro-F1 by 0.0014, much less than either experimen
 
 ## Selected model and held-out metrics
 
-The selected model combines word unigrams/bigrams and character 3–5-grams with class-balanced Logistic Regression. It was favored for macro-F1, minority-class behavior, native probabilities, size, CPU latency, simple serialization, and inspectable coefficients.
+The selected model combines word unigrams/bigrams and character 3–5-grams with two class-balanced
+Logistic Regression boundaries: `Negative` versus `Average + Positive`, and
+`Negative + Average` versus `Positive`. Each boundary is sigmoid-calibrated; cumulative
+probabilities are projected to satisfy the ordinal constraint, then frozen thresholds `0.75/0.55`
+produce the label. It was promoted because it improved the predefined minority-class and aggregate
+classification metrics while retaining CPU inference, serialization, probabilities, and
+inspectable linear evidence.
 
 | Metric | Held-out value |
 | --- | ---: |
-| Accuracy | 0.6531 |
-| Balanced accuracy | 0.6137 |
-| Macro precision | 0.6744 |
-| Macro recall | 0.6137 |
-| Macro-F1 | **0.6379** |
-| Weighted F1 | 0.6525 |
-| Log loss | 0.7216 |
-| Multiclass Brier score | 0.4462 |
-| Expected calibration error, 10 bins | 0.0470 |
-| Mean prediction confidence | 0.6103 |
+| Accuracy | 0.6500 |
+| Balanced accuracy | 0.6404 |
+| Macro precision | 0.6552 |
+| Macro recall | 0.6404 |
+| Macro-F1 | **0.6406** |
+| Weighted F1 | 0.6461 |
+| Log loss | 0.6889 |
+| Multiclass Brier score | 0.4414 |
+| Expected calibration error, 10 bins | 0.0342 |
+| Mean prediction confidence | 0.6736 |
 
 | Class | Precision | Recall | F1 | Support |
 | --- | ---: | ---: | ---: | ---: |
-| Positive | 0.6682 | 0.6356 | 0.6515 | 450 |
-| Average | 0.6339 | 0.6889 | 0.6603 | 450 |
-| Negative | **0.7209** | **0.5167** | **0.6019** | 60 |
+| Positive | 0.7160 | 0.5378 | 0.6142 | 450 |
+| Average | 0.6117 | 0.7667 | 0.6805 | 450 |
+| Negative | **0.6379** | **0.6167** | **0.6271** | 60 |
 
-Negative is the smallest class; 31/60 held-out Negative reviews were correctly classified, 19 became Average, and 10 became Positive. See `reports/model_report.md` for the full confusion matrix and bounded error analysis.
+Negative is the smallest class; 37/60 held-out Negative reviews were correctly classified, 19
+became Average, and 4 became Positive. Compared with the previous multiclass artifact, accuracy fell
+from 0.6531 to 0.6500 and ordinal MAE moved from 0.36146 to 0.36250 (one additional total ordinal
+error point across 960 rows), while severe Positive/Negative errors fell from 14 to 12 and quadratic
+weighted kappa rose from 0.4388 to 0.4517. The machine-readable comparison is in
+`artifacts/ordinal_logistic/ordinal_logistic_held_out_evaluation.json`.
 
-The probability metrics are descriptive evidence on 960 held-out rows. Logistic Regression provides native probabilities, but the model was not separately calibrated; ECE should not be treated as a guarantee for operational thresholds.
+The probability metrics are descriptive evidence on 960 held-out rows. Both ordinal boundaries use
+training-only sigmoid calibration, but ECE on a reused evaluation set is not an operational
+guarantee.
 
 ### One model, evaluated by language
 
 | Detected language | Support | Accuracy | Balanced accuracy | Macro-F1 | Negative F1 / support |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Dutch | 863 | 0.6489 | 0.6158 | **0.6381** | 0.6139 / 58 |
-| English | 97 | 0.6907 | 0.3615 | **0.3289** | 0.0000 / 2 |
+| Dutch | 863 | 0.6466 | 0.6463 | **0.6437** | 0.6379 / 58 |
+| English | 97 | 0.6804 | 0.3444 | **0.2907** | 0.0000 / 2 |
 
-These are evaluation slices of the same model, not separately trained models. English accuracy is dominated by 65 Average examples: the model predicted 64 correctly, but only 3/30 English Positive and 0/2 English Negative examples correctly. This is why every confident English prediction carries a reliability warning.
+These are evaluation slices of the same model, not separately trained models. English accuracy is
+dominated by 65 Average examples: the ordinal model predicted all 65 correctly, but only 1/30
+English Positive and 0/2 English Negative examples correctly. This is why every English prediction
+carries a reliability warning.
 
 ## Latency evidence
 
@@ -306,14 +325,14 @@ curl -sS -X POST http://localhost:8000/classify \
   -d '{"review":"Deze film was verrassend goed, met sterke acteurs en een mooi einde.","explain":false}'
 ```
 
-The response contains one exact allowed label plus native Logistic Regression probabilities:
+The response contains one exact allowed label plus the composed ordinal probabilities:
 
 ```json
 {
   "label": "Average",
-  "model_version": "0.1.0+...",
+  "model_version": "0.1.0+ordinal.0d0f0f84",
   "detected_language": "dutch",
-  "probabilities": {"Average": 0.5469199, "Negative": 0.1340675, "Positive": 0.3190127},
+  "probabilities": {"Average": 0.6413132, "Negative": 0.0404957, "Positive": 0.3181911},
   "latency_ms": 5.32,
   "warnings": [],
   "explanation": null
@@ -415,7 +434,7 @@ Then repeat the health and classify curl commands. The image uses Python 3.11 sl
 
 - Git commits track implementation phases.
 - Raw data, split content, fitted model, and package versions are hashed/recorded.
-- `artifacts/model_metadata.json` includes the MLflow run, training timestamp, Git commit, language config, label classes, schema, split evidence, and held-out metrics.
+- `artifacts/model_metadata.json` includes the training timestamp, Git commit, language config, label classes, schema, split evidence, thresholds, promotion checks, previous-model evidence, and held-out metrics.
 - The original CSV remains unchanged and is rehashed during verification.
 - `joblib`/pickle artifacts can execute code while loading. Only load the repository's locally controlled artifact; never accept an untrusted uploaded model.
 - The submitted local model does not require secrets or hosted services. The optional LLM advisor
@@ -426,7 +445,7 @@ Then repeat the health and classify curl commands. The image uses Python 3.11 sl
 
 - Lingua can misclassify mixed, translated, short, or named-entity-heavy text.
 - Sparse n-grams do not deeply understand sarcasm, negation scope, or long-range composition.
-- English has only 485 raw rows, including 10 Negative rows; its held-out macro-F1 is 0.3289 and English Negative support is only 2.
+- English has only 485 raw rows, including 10 Negative rows; its held-out macro-F1 is 0.2907 and English Negative support is only 2.
 - Negative remains scarce overall: 300 raw and 60 held-out rows.
 - Source labels and their possible derivation from ratings were not independently verified.
 - There are no timestamps/source IDs for drift or lineage analysis.

@@ -1,5 +1,10 @@
 # Model Report
 
+> Historical baseline: this report describes the previous multiclass artifact. The promoted
+> ordinal model, its 960-row comparison, and its trade-offs are documented in `README.md`,
+> `artifacts/final_metrics.json`, and
+> `artifacts/ordinal_logistic/ordinal_logistic_held_out_evaluation.json`.
+
 ## 1. Executive summary
 
 The final system uses `combined_balanced_ratings`. Selection is based on stratified cross-validation macro-F1 over the training partition, with Negative-class behavior, latency, size, probability support, and explanation feasibility treated as engineering constraints. The held-out test set is used only after selection.
