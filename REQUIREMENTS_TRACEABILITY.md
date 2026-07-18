@@ -15,7 +15,7 @@ The challenge PDF is the authoritative source. `Required` and `Bonus` below refl
 | Inference latency considered | Required | Single-pass inference; cold/warm component and end-to-end benchmark with p50/p95 | `benchmark.json`; before/after evidence in README | Complete |
 | Prediction explanation | Bonus | Optional local linear feature contributions with source labels | Model test and live API example | Complete |
 | Data/model versioning | Bonus | Git, raw/model SHA-256, MLflow run, config, split hashes, versioned metadata | Git log; `model_metadata.json`; reports | Complete |
-| Serve in Docker | Bonus | Non-root API image excluding the raw dataset | Dockerfile review; build/run checks if possible | Blocked for runtime verification: Docker unavailable |
+| Serve in Docker | Bonus | Non-root API image excluding the raw dataset | GitHub Actions image build, container startup, and `/health` check | Complete; verified in [CI run 1](https://github.com/ylceadap/sentiment-analysis/actions/runs/29649585086) |
 | Small usable app and run instructions | Required | FastAPI service, task commands, evaluator-focused README | Live health/classify checks; README | Complete |
 
 ## Expanded engineering safeguards

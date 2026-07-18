@@ -46,7 +46,8 @@
 - **Decision:** create and inspect a serving image definition, but report runtime verification as unavailable unless a Docker executable becomes available.
 - **Reasoning:** Docker is not installed in the current environment and successful container execution must not be fabricated.
 - **Consequences:** local API verification remains required; Docker commands will still be documented.
-- **Limitations:** build-time dependency or runtime issues cannot be ruled out without an actual engine.
+- **Limitations:** the original machine still cannot run Docker locally.
+- **Follow-up verification:** GitHub Actions run 1 later built the serving image, started the container, and passed its `/health` check on Linux.
 
 ## D007 — Use a local SQLite MLflow backend
 

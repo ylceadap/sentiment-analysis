@@ -311,7 +311,7 @@ make docker-run
 
 Then repeat the health and classify curl commands. The image uses Python 3.11 slim, installs only the core serving dependencies (not MLflow, pandas, pyarrow, matplotlib, or training tools), runs as a non-root user, includes a health check, and copies the model/metadata but excludes the raw CSV, PDF, tests, reports, Git data, and MLflow database.
 
-**Verification status:** Docker runtime was not verified because no Docker executable/engine is installed in the execution environment. The Dockerfile and build context were reviewed statically; do not interpret this as a successful image build.
+**Verification status:** the local development environment has no Docker engine, but GitHub Actions successfully built the image, started the container, and reached `/health` on 2026-07-18 ([CI run 1](https://github.com/ylceadap/sentiment-analysis/actions/runs/29649585086)).
 
 ## Traceability and security
 
