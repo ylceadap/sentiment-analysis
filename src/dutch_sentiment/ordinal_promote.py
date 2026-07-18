@@ -32,7 +32,19 @@ def _git_commit() -> str | None:
 
 def _git_dirty() -> bool | None:
     result = subprocess.run(
-        ["git", "status", "--porcelain"], capture_output=True, text=True, check=False
+        [
+            "git",
+            "status",
+            "--porcelain",
+            "--untracked-files=no",
+            "--",
+            "src",
+            "configs",
+            "pyproject.toml",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
     )
     return bool(result.stdout.strip()) if result.returncode == 0 else None
 
