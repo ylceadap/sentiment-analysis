@@ -10,7 +10,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 from .constants import EXPECTED_COLUMNS, LABELS
-from .language import DutchLanguageDetector, LanguageStatus
+from .language import DutchLanguageDetector
 from .text import normalize_text
 
 
@@ -67,16 +67,24 @@ def deduplicate_reviews(frame: pd.DataFrame) -> tuple[pd.DataFrame, int, int]:
 
 
 def make_holdout_split(
-    frame: pd.DataFrame, *, test_size: float = 0.2, random_seed: int = 42
+    frame: pd.DataFrame,
+    *,
+    test_size: float = 0.2,
+    random_seed: int = 42,
+    stratify_columns: tuple[str, ...] = ("Label",),
 ) -> PreparedSplit:
     """Create a deterministic shuffled stratified split after normalized deduplication."""
     clean, duplicate_rows, conflicting_groups = deduplicate_reviews(frame)
+    missing = sorted(set(stratify_columns) - set(clean.columns))
+    if missing:
+        raise ValueError(f"Missing stratification columns: {missing}")
+    strata = clean[list(stratify_columns)].astype(str).agg("::".join, axis=1)
     train, test = train_test_split(
         clean,
         test_size=test_size,
         random_state=random_seed,
         shuffle=True,
-        stratify=clean["Label"],
+        stratify=strata,
     )
     overlap = set(train["normalized_review"]) & set(test["normalized_review"])
     if overlap:
@@ -89,10 +97,10 @@ def make_holdout_split(
     )
 
 
-def filter_dutch_reviews(
+def annotate_review_languages(
     frame: pd.DataFrame, detector: DutchLanguageDetector
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Return confidently Dutch rows and row-level language evidence."""
+    """Attach row-level local language evidence without excluding training rows."""
     records: list[dict[str, object]] = []
     for index, text in frame["Reviews"].items():
         result = detector.detect(str(text))
@@ -109,5 +117,5 @@ def filter_dutch_reviews(
     work = frame.copy()
     work["source_row"] = work.index + 2
     work = work.join(evidence)
-    filtered = work.loc[work["language_status"].eq(LanguageStatus.DUTCH.value)].copy()
-    return filtered.reset_index(drop=True), work.reset_index(drop=True)
+    annotated = work.reset_index(drop=True)
+    return annotated, annotated.copy()

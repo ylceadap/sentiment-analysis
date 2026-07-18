@@ -87,3 +87,11 @@
 - **Reasoning:** the existing local environment was 837 MB and unnecessarily pulled MLflow, pyarrow, matplotlib, and database tooling into the serving image.
 - **Consequences:** smaller and lower-risk serving images without duplicating version constraints.
 - **Limitations:** audit/training commands require the documented `train` extra.
+
+## D012 — Train one shared model on all supplied Dutch and English rows
+
+- **Alternatives considered:** keep filtering English; train separate language models; train one model on all supplied rows with language-aware evaluation.
+- **Decision:** supersede D008's training filter. Retain every deduplicated supplied row, use one shared feature/model pipeline, jointly stratify language and label for holdout/CV, and accept both Dutch and English at inference. English responses include a reliability warning.
+- **Reasoning:** the supplied dataset contains 485 consistently detected English reviews, Dutch and English share useful lexical/character patterns, and a single mixed model follows the user's explicit scope without pretending the small English segment supports a separate model.
+- **Consequences:** the training population grows from 4,313 to 4,798 deduplicated reviews; overall and per-language held-out metrics are both required; English requests no longer receive HTTP 422.
+- **Limitations:** English labels are highly imbalanced—only 10 raw English Negative rows—so English and especially English-Negative metrics remain descriptive rather than conclusive. Confidently detected languages other than Dutch or English remain unsupported.

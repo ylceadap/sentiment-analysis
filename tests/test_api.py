@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from dutch_sentiment.api import MAX_REVIEW_CHARACTERS, create_app
+from dutch_sentiment.constants import ENGLISH_RELIABILITY_WARNING
 from dutch_sentiment.service import NonDutchReviewError, PredictionResult
 
 
@@ -12,16 +13,18 @@ class FakeService:
     model_version = "fake-v1"
 
     def classify(self, review: str, *, explain: bool = False) -> PredictionResult:
-        if "English" in review:
-            raise NonDutchReviewError("The review was confidently detected as non-Dutch.")
+        if "French" in review:
+            raise NonDutchReviewError("The review was confidently detected as unsupported.")
         if "explode" in review:
             raise RuntimeError("sensitive internal message")
+        is_english = "English" in review
         result = PredictionResult(
             label="Positive",
             model_version=self.model_version,
-            detected_language="dutch",
+            detected_language="english" if is_english else "dutch",
             probabilities={"Positive": 0.8, "Average": 0.15, "Negative": 0.05},
             latency_ms=1.25,
+            warnings=(ENGLISH_RELIABILITY_WARNING,) if is_english else (),
         )
         if explain:
             return replace(result, explanation={"supporting_word_features": []})
@@ -44,6 +47,8 @@ def test_health_and_successful_classification(client: TestClient) -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["label"] == "Positive"
+    assert body["detected_language"] == "dutch"
+    assert body["warnings"] == []
     assert body["explanation"] == {"supporting_word_features": []}
 
 
@@ -58,9 +63,15 @@ def test_missing_and_oversized_input_rejected(client: TestClient) -> None:
     assert response.status_code == 422
 
 
-def test_non_dutch_and_internal_errors_are_safe(client: TestClient) -> None:
-    non_dutch = client.post("/classify", json={"review": "English review text"})
-    assert non_dutch.status_code == 422
+def test_english_is_accepted_with_warning_and_other_errors_are_safe(
+    client: TestClient,
+) -> None:
+    english = client.post("/classify", json={"review": "English review text"})
+    assert english.status_code == 200
+    assert english.json()["detected_language"] == "english"
+    assert english.json()["warnings"] == [ENGLISH_RELIABILITY_WARNING]
+    unsupported = client.post("/classify", json={"review": "French review text"})
+    assert unsupported.status_code == 422
     internal = client.post("/classify", json={"review": "laat explode gebeuren"})
     assert internal.status_code == 500
     assert "sensitive" not in internal.text

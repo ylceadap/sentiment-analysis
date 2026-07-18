@@ -35,7 +35,7 @@ def predict_review(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--review", required=True, help="One Dutch movie review")
+    parser.add_argument("--review", required=True, help="One Dutch or English movie review")
     parser.add_argument("--model", default="artifacts/model.joblib")
     parser.add_argument("--explain", action="store_true")
     return parser.parse_args()

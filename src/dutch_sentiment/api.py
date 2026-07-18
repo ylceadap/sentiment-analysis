@@ -1,4 +1,4 @@
-"""FastAPI application exposing the trained Dutch sentiment model."""
+"""FastAPI application exposing the Dutch-primary bilingual sentiment model."""
 
 from __future__ import annotations
 
@@ -42,6 +42,7 @@ class ClassifyResponse(BaseModel):
     detected_language: str
     probabilities: dict[Label, float]
     latency_ms: float
+    warnings: tuple[str, ...] = ()
     explanation: dict[str, Any] | None = None
 
 
@@ -74,7 +75,7 @@ def create_app(
         yield
 
     app = FastAPI(
-        title="Dutch Movie Review Sentiment",
+        title="Dutch-primary Movie Review Sentiment",
         version="0.1.0",
         lifespan=lifespan,
     )
@@ -92,7 +93,7 @@ def create_app(
             result = request.app.state.service.classify(payload.review, explain=payload.explain)
         except NonDutchReviewError as exc:
             LOGGER.info(
-                "classification_rejected request_id=%s input_length=%d category=non_dutch",
+                "classification_rejected request_id=%s input_length=%d category=unsupported_language",
                 request_id,
                 len(payload.review),
             )

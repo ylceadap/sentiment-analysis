@@ -4,6 +4,7 @@ import pandas as pd
 
 from dutch_sentiment.audit import audit_dataset, render_markdown
 from dutch_sentiment.config import load_config
+from dutch_sentiment.constants import ENGLISH_RELIABILITY_WARNING
 from dutch_sentiment.language import LanguageResult, LanguageStatus
 from dutch_sentiment.metrics import classification_metrics
 from dutch_sentiment.model import ModelInference
@@ -18,6 +19,8 @@ class FixedDetector:
     def detect(self, text: str) -> LanguageResult:
         if text.startswith("English"):
             return LanguageResult(LanguageStatus.NON_DUTCH, "english", 0.01, 0.99, 0.98)
+        if text.startswith("French"):
+            return LanguageResult(LanguageStatus.NON_DUTCH, "french", 0.01, 0.99, 0.98)
         return LanguageResult(LanguageStatus.DUTCH, "dutch", 0.99, 0.99, 0.98)
 
 
@@ -84,19 +87,23 @@ def test_metrics_include_minority_class_and_confusion_matrix() -> None:
     assert 0 <= metrics["mean_prediction_confidence"] <= 1
 
 
-def test_inference_service_success_explanation_and_non_dutch() -> None:
+def test_inference_service_accepts_english_with_warning_and_rejects_unsupported() -> None:
     service = InferenceService(FixedModel(), FixedDetector())  # type: ignore[arg-type]
     result = service.classify("Deze film is heel goed", explain=True)
     assert result.label == "Positive"
     assert result.model_version == "fixed-v1"
     assert result.detected_language == "dutch"
+    assert result.warnings == ()
     assert result.explanation == {"feature": "Deze"}
+    english = service.classify("English review with obvious language")
+    assert english.detected_language == "english"
+    assert english.warnings == (ENGLISH_RELIABILITY_WARNING,)
     try:
-        service.classify("English review with obvious language")
+        service.classify("French review with obvious language")
     except NonDutchReviewError as exc:
-        assert "non-Dutch" in str(exc)
+        assert "unsupported language" in str(exc)
     else:
-        raise AssertionError("Expected confident non-Dutch input to be rejected")
+        raise AssertionError("Expected unsupported-language input to be rejected")
 
 
 def test_load_config_accepts_mapping_and_rejects_non_mapping(tmp_path: Path) -> None:

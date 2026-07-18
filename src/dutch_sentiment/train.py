@@ -22,7 +22,7 @@ from sklearn.model_selection import StratifiedKFold, cross_validate
 from . import __version__
 from .config import load_config
 from .constants import MAX_REVIEW_CHARACTERS
-from .data import filter_dutch_reviews, load_dataset, make_holdout_split, sha256_file
+from .data import annotate_review_languages, load_dataset, make_holdout_split, sha256_file
 from .language import DutchLanguageDetector
 from .metrics import CV_SCORING, classification_metrics
 from .model import ModelSpec, SentimentModel, build_pipeline
@@ -60,6 +60,24 @@ def _experiment_specs() -> list[ModelSpec]:
     ]
 
 
+def _metrics_by_language(
+    languages: list[str],
+    labels: list[str],
+    predictions: list[str],
+    probabilities: list[dict[str, float]],
+) -> dict[str, dict[str, Any]]:
+    """Return descriptive held-out slices for each detected language."""
+    slices: dict[str, dict[str, Any]] = {}
+    for language in sorted(set(languages)):
+        indices = [index for index, value in enumerate(languages) if value == language]
+        slices[language] = classification_metrics(
+            [labels[index] for index in indices],
+            [predictions[index] for index in indices],
+            [probabilities[index] for index in indices],
+        )
+    return slices
+
+
 def _log_candidate(
     spec: ModelSpec,
     pipeline: Any,
@@ -90,14 +108,28 @@ def run_training(config_path: str | Path) -> dict[str, Any]:
     report_dir.mkdir(parents=True, exist_ok=True)
     raw = load_dataset(config["data_path"])
     detector = DutchLanguageDetector(**config["language"])
-    dutch, language_evidence = filter_dutch_reviews(raw, detector)
-    split = make_holdout_split(dutch, test_size=float(config["test_size"]), random_seed=seed)
+    annotated, language_evidence = annotate_review_languages(raw, detector)
+    detected_languages = set(annotated["detected_language"].dropna())
+    unsupported_languages = sorted(detected_languages - {"dutch", "english"})
+    if unsupported_languages:
+        raise ValueError(
+            f"Training data contains unsupported detected languages: {unsupported_languages}"
+        )
+    split = make_holdout_split(
+        annotated,
+        test_size=float(config["test_size"]),
+        random_seed=seed,
+        stratify_columns=("detected_language", "Label"),
+    )
     train_reviews = split.train["Reviews"].astype(str).tolist()
     train_labels = split.train["Label"].astype(str).tolist()
     test_reviews = split.test["Reviews"].astype(str).tolist()
     test_labels = split.test["Label"].astype(str).tolist()
+    train_strata = split.train[["detected_language", "Label"]].astype(str).agg("::".join, axis=1)
+    test_languages = split.test["detected_language"].fillna("unknown").astype(str).tolist()
     model_config = {**config["model"], "random_seed": seed}
     cv = StratifiedKFold(n_splits=int(config["cv_folds"]), shuffle=True, random_state=seed)
+    cv_splits = list(cv.split(train_reviews, train_strata))
 
     tracking_uri = str(config["mlflow_tracking_uri"])
     if "://" in tracking_uri:
@@ -115,7 +147,9 @@ def run_training(config_path: str | Path) -> dict[str, Any]:
         "random_seed": seed,
         "cv_folds": int(config["cv_folds"]),
         "training_rows": len(split.train),
-        "dutch_rows": len(dutch),
+        "input_rows_after_language_annotation": len(annotated),
+        "detected_dutch_rows": int(annotated["detected_language"].eq("dutch").sum()),
+        "detected_english_rows": int(annotated["detected_language"].eq("english").sum()),
         "git_commit": git_commit or "unavailable",
         "git_dirty": git_dirty if git_dirty is not None else "unavailable",
     }
@@ -127,7 +161,7 @@ def run_training(config_path: str | Path) -> dict[str, Any]:
             pipeline,
             train_reviews,
             train_labels,
-            cv=cv,
+            cv=cv_splits,
             scoring=CV_SCORING,
             n_jobs=1,
             error_score="raise",
@@ -170,6 +204,9 @@ def run_training(config_path: str | Path) -> dict[str, Any]:
         predictions = model.predict(test_reviews)
         probabilities = model.predict_proba(test_reviews)
         metrics = classification_metrics(test_labels, predictions, probabilities)
+        metrics["by_language"] = _metrics_by_language(
+            test_languages, test_labels, predictions, probabilities
+        )
         mlflow.log_metrics(
             {key: value for key, value in metrics.items() if isinstance(value, float)}
         )
@@ -179,12 +216,15 @@ def run_training(config_path: str | Path) -> dict[str, Any]:
         model_size = model_path.stat().st_size
 
         misclassified = []
-        for review, actual, predicted in zip(test_reviews, test_labels, predictions, strict=True):
+        for review, actual, predicted, language in zip(
+            test_reviews, test_labels, predictions, test_languages, strict=True
+        ):
             if actual != predicted:
                 misclassified.append(
                     {
                         "actual": actual,
                         "predicted": predicted,
+                        "detected_language": language,
                         "excerpt": " ".join(review.split())[:160],
                     }
                 )
@@ -193,13 +233,28 @@ def run_training(config_path: str | Path) -> dict[str, Any]:
             "random_seed": seed,
             "test_size": float(config["test_size"]),
             "raw_rows": len(raw),
-            "confident_dutch_rows": len(dutch),
+            "annotated_rows": len(annotated),
+            "stratification_columns": ["detected_language", "Label"],
             "training_rows": len(split.train),
             "test_rows": len(split.test),
             "duplicate_rows_removed": split.duplicate_rows_removed,
             "conflicting_groups_removed": split.conflicting_groups_removed,
             "train_label_counts": split.train["Label"].value_counts().to_dict(),
             "test_label_counts": split.test["Label"].value_counts().to_dict(),
+            "train_language_counts": split.train["detected_language"].value_counts().to_dict(),
+            "test_language_counts": split.test["detected_language"].value_counts().to_dict(),
+            "train_language_label_counts": {
+                f"{language}::{label}": int(count)
+                for (language, label), count in split.train.groupby(["detected_language", "Label"])
+                .size()
+                .items()
+            },
+            "test_language_label_counts": {
+                f"{language}::{label}": int(count)
+                for (language, label), count in split.test.groupby(["detected_language", "Label"])
+                .size()
+                .items()
+            },
             "train_normalized_sha256": _hash_values(split.train["normalized_review"].tolist()),
             "test_normalized_sha256": _hash_values(split.test["normalized_review"].tolist()),
         }
@@ -217,7 +272,9 @@ def run_training(config_path: str | Path) -> dict[str, Any]:
             "mlflow_run_id": final_run.info.run_id,
             "label_classes": list(model.pipeline.named_steps["classifier"].classes_),
             "expected_input_schema": {
-                "review": (f"non-empty Dutch string <= {MAX_REVIEW_CHARACTERS} characters")
+                "review": (
+                    f"non-empty Dutch or English string <= {MAX_REVIEW_CHARACTERS} characters"
+                )
             },
             "language_configuration": config["language"],
             "split": split_metadata,
@@ -236,7 +293,7 @@ def run_training(config_path: str | Path) -> dict[str, Any]:
         language_summary = pd.crosstab(
             language_evidence["Label"], language_evidence["language_status"]
         )
-        language_summary.to_csv(output_dir / "language_filter_summary.csv")
+        language_summary.to_csv(output_dir / "language_summary.csv")
         mlflow.log_artifacts(str(output_dir), artifact_path="evidence")
 
     build_model_report(output_dir, report_dir / "model_report.md")

@@ -3,7 +3,20 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from dutch_sentiment.data import deduplicate_reviews, load_dataset, make_holdout_split
+from dutch_sentiment.data import (
+    annotate_review_languages,
+    deduplicate_reviews,
+    load_dataset,
+    make_holdout_split,
+)
+from dutch_sentiment.language import LanguageResult, LanguageStatus
+
+
+class TwoLanguageDetector:
+    def detect(self, text: str) -> LanguageResult:
+        language = "english" if text.startswith("English") else "dutch"
+        status = LanguageStatus.NON_DUTCH if language == "english" else LanguageStatus.DUTCH
+        return LanguageResult(status, language, 0.01 if language == "english" else 0.99, 0.99, 0.98)
 
 
 def _write_csv(path: Path, rows: list[tuple[str, str]]) -> None:
@@ -42,6 +55,21 @@ def test_deduplication_removes_same_label_and_conflicting_groups() -> None:
     assert conflicting_groups == 1
 
 
+def test_language_annotation_retains_dutch_and_english_rows() -> None:
+    frame = pd.DataFrame(
+        {
+            "Reviews": ["Nederlandse recensie", "English movie review"],
+            "Label": ["Positive", "Average"],
+        }
+    )
+    annotated, evidence = annotate_review_languages(  # type: ignore[arg-type]
+        frame, TwoLanguageDetector()
+    )
+    assert len(annotated) == len(frame)
+    assert annotated["detected_language"].tolist() == ["dutch", "english"]
+    assert evidence["language_status"].tolist() == ["dutch", "non_dutch"]
+
+
 def test_holdout_is_deterministic_stratified_and_has_no_normalized_overlap() -> None:
     rows = []
     for label in ("Positive", "Average", "Negative"):
@@ -52,3 +80,22 @@ def test_holdout_is_deterministic_stratified_and_has_no_normalized_overlap() -> 
     assert first.test["Reviews"].tolist() == second.test["Reviews"].tolist()
     assert not set(first.train["normalized_review"]) & set(first.test["normalized_review"])
     assert first.test["Label"].value_counts().max() - first.test["Label"].value_counts().min() <= 1
+
+
+def test_holdout_can_jointly_stratify_language_and_label() -> None:
+    rows = []
+    for language in ("dutch", "english"):
+        for label in ("Positive", "Average", "Negative"):
+            rows.extend(
+                (f"{language} {label} unieke review {index}", label, language)
+                for index in range(10)
+            )
+    frame = pd.DataFrame(rows, columns=["Reviews", "Label", "detected_language"])
+    split = make_holdout_split(
+        frame,
+        test_size=0.2,
+        random_seed=7,
+        stratify_columns=("detected_language", "Label"),
+    )
+    counts = split.test.groupby(["detected_language", "Label"]).size()
+    assert counts.eq(2).all()

@@ -45,6 +45,28 @@ def build_model_report(artifact_dir: str | Path, output: str | Path) -> None:
         if per_class_rows
         else "Pending."
     )
+    language_metric_rows = []
+    for language_name, values in metrics.get("by_language", {}).items():
+        language_per_class = values.get("per_class", {})
+        language_metric_rows.append(
+            {
+                "detected_language": language_name,
+                "support": sum(
+                    float(item.get("support", 0)) for item in language_per_class.values()
+                ),
+                "accuracy": values.get("accuracy"),
+                "balanced_accuracy": values.get("balanced_accuracy"),
+                "macro_f1": values.get("macro_f1"),
+                "negative_f1": language_per_class.get("Negative", {}).get("f1-score"),
+                "negative_support": language_per_class.get("Negative", {}).get("support"),
+                "log_loss": values.get("log_loss"),
+            }
+        )
+    language_metrics_md = (
+        pd.DataFrame(language_metric_rows).round(4).to_markdown(index=False)
+        if language_metric_rows
+        else "Pending."
+    )
     latency_rows = []
     for name, values in benchmark.get("measurements", {}).items():
         latency_rows.append(
@@ -100,10 +122,12 @@ The final system uses `{selected.get("name", "pending")}`. Selection is based on
 - Original labels: {json.dumps(audit.get("labels", {}), ensure_ascii=False)}
 - Text is label-ordered, so sequential splitting is invalid.
 
-## 3. Language-filter results
+## 3. Language composition and unified training policy
 
 - Status counts: {json.dumps(language.get("status_counts", {}), ensure_ascii=False)}
 - Status by label: {json.dumps(language.get("status_by_label", {}), ensure_ascii=False)}
+- Every deduplicated Dutch and English row is retained in one shared model; no language-specific model is trained.
+- Holdout and CV splits jointly stratify detected language and label.
 - Detector output is not a gold annotation; manual bounded examples are in `reports/data_audit.md`.
 
 ## 4. Data-quality findings
@@ -139,6 +163,12 @@ The pipeline prevents normalized duplicate overlap, fits all vectorizers inside 
 
 These probability metrics are descriptive evidence on the held-out set. Logistic Regression supplies native probabilities, but no separate calibration model was fitted; the calibration estimate is not an operational guarantee.
 
+### Held-out metrics by detected language
+
+{language_metrics_md}
+
+Language slices evaluate the same shared model and are not separately trained models. English results require extra caution because the source has only 485 English rows and 10 English Negative rows; the held-out English-Negative support is especially small.
+
 ## 10. Per-class metrics
 
 {per_class_md}
@@ -165,7 +195,7 @@ Excerpts are deliberately capped and whitespace-normalized.
 
 {error_md}
 
-Observed failures may combine ambiguous sentiment, label noise, sparse Negative evidence, language-detection errors, and bag-of-ngrams limitations. Feature contributions do not establish causal reasons.
+Observed failures may combine ambiguous sentiment, label noise, sparse Negative evidence, cross-language imbalance, and bag-of-ngrams limitations. Feature contributions do not establish causal reasons.
 
 ## 15–16. Inference latency, size, and load time
 
@@ -188,6 +218,7 @@ Selected specification: `{json.dumps(selected, ensure_ascii=False)}`. It is a CP
 ## 19. Limitations
 
 - Language detection is uncertain for short, mixed, or named-entity-heavy text.
+- English predictions are supported but less reliable because English supervision is limited and highly class-imbalanced.
 - Sparse n-grams do not deeply model negation scope, irony, or long-range composition.
 - Negative has limited raw and held-out support.
 - The supplied labels and their construction were not independently verified.
@@ -195,7 +226,7 @@ Selected specification: `{json.dumps(selected, ensure_ascii=False)}`. It is a CP
 
 ## 20. Sensible production improvements
 
-Collect adjudicated Dutch labels, monitor language/label drift, calibrate and threshold behavior against business costs, add safe model registry promotion, and compare a compact Dutch transformer only after establishing a larger trustworthy benchmark.
+Collect adjudicated Dutch and English labels, monitor metrics and drift by language/label, calibrate and threshold behavior against business costs, add safe model registry promotion, and compare a compact multilingual transformer only after establishing a larger trustworthy benchmark.
 """
     output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
