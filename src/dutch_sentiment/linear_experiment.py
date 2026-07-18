@@ -232,6 +232,9 @@ The English slice is descriptive and small. LinearSVC candidates do not provide 
 
 
 def run_experiment(config_path: str | Path) -> dict[str, Any]:
+    git_branch = _git_value("branch", "--show-current")
+    git_commit = _git_value("rev-parse", "HEAD")
+    git_dirty_at_start = bool(_git_value("status", "--porcelain"))
     config = load_config(config_path)
     training_config = load_config(config["training_config"])
     seed = int(training_config["random_seed"])
@@ -290,9 +293,9 @@ def run_experiment(config_path: str | Path) -> dict[str, Any]:
     output_csv.parent.mkdir(parents=True, exist_ok=True)
     results.to_csv(output_csv, index=False)
     evidence = {
-        "git_branch": _git_value("branch", "--show-current"),
-        "git_commit": _git_value("rev-parse", "HEAD"),
-        "git_dirty": bool(_git_value("status", "--porcelain")),
+        "git_branch": git_branch,
+        "git_commit": git_commit,
+        "git_dirty": git_dirty_at_start,
         "raw_rows": len(raw),
         "training_rows": len(split.train),
         "cv_folds": len(folds),
