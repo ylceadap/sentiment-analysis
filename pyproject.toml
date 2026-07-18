@@ -37,6 +37,7 @@ sentiment-audit = "dutch_sentiment.audit:main"
 sentiment-train = "dutch_sentiment.train:main"
 sentiment-evaluate = "dutch_sentiment.evaluate:main"
 sentiment-benchmark = "dutch_sentiment.benchmark:main"
+sentiment-linear-experiment = "dutch_sentiment.linear_experiment:main"
 sentiment-predict = "dutch_sentiment.predict:main"
 sentiment-serve = "dutch_sentiment.api:run"
 

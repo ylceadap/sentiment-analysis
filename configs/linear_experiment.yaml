@@ -1,0 +1,9 @@
+training_config: configs/training.yaml
+output_csv: artifacts/linear_model_experiment.csv
+output_report: reports/linear_model_experiment.md
+logistic_c_values: [0.5, 1.0, 2.0, 4.0]
+linear_svc_c_values: [0.5, 1.0, 2.0]
+promotion:
+  minimum_macro_f1_improvement: 0.01
+  maximum_dutch_macro_f1_drop: 0.01
+  maximum_negative_f1_drop: 0.0
