@@ -9,6 +9,7 @@ from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
     classification_report,
+    cohen_kappa_score,
     confusion_matrix,
     f1_score,
     log_loss,
@@ -18,6 +19,8 @@ from sklearn.metrics import (
 )
 
 from .constants import LABELS
+
+ORDINAL_VALUES: dict[str, int] = {"Negative": 1, "Average": 2, "Positive": 3}
 
 CV_SCORING = {
     "accuracy": "accuracy",
@@ -67,6 +70,9 @@ def classification_metrics(
         output_dict=True,
         zero_division=0,
     )
+    true_ordinal = np.asarray([ORDINAL_VALUES[label] for label in y_true])
+    predicted_ordinal = np.asarray([ORDINAL_VALUES[label] for label in y_pred])
+    ordinal_distance = np.abs(true_ordinal - predicted_ordinal)
     metrics: dict[str, Any] = {
         "accuracy": float(accuracy_score(y_true, y_pred)),
         "balanced_accuracy": float(balanced_accuracy_score(y_true, y_pred)),
@@ -77,6 +83,12 @@ def classification_metrics(
         "per_class": {label: report[label] for label in LABELS},
         "confusion_matrix": confusion_matrix(y_true, y_pred, labels=list(LABELS)).tolist(),
         "label_order": list(LABELS),
+        "ordinal_mae": float(ordinal_distance.mean()),
+        "quadratic_weighted_kappa": float(
+            cohen_kappa_score(true_ordinal, predicted_ordinal, weights="quadratic")
+        ),
+        "adjacent_error_rate": float(np.mean(ordinal_distance == 1)),
+        "severe_error_rate": float(np.mean(ordinal_distance == 2)),
     }
     if probabilities is not None:
         metrics.update(_probability_metrics(y_true, probabilities))

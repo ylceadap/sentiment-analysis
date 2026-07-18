@@ -35,6 +35,7 @@ dev = [
 [project.scripts]
 sentiment-audit = "dutch_sentiment.audit:main"
 sentiment-train = "dutch_sentiment.train:main"
+sentiment-ordinal-experiment = "dutch_sentiment.ordinal_experiment:main"
 sentiment-evaluate = "dutch_sentiment.evaluate:main"
 sentiment-benchmark = "dutch_sentiment.benchmark:main"
 sentiment-predict = "dutch_sentiment.predict:main"

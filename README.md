@@ -156,8 +156,35 @@ The production submission remains on `main`. Completed or exploratory work stays
 | [`experiment/transformer-embeddings`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/transformer-embeddings) | Frozen multilingual MiniLM and Dutch RobBERT sentence embeddings with Logistic Regression | Did not pass the OOF promotion gates | Frozen; official model unchanged |
 | [`experiment/jina-embeddings`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/jina-embeddings) | Frozen Jina v3 classification embeddings with Logistic Regression | Best OOF macro-F1 0.7108 | Research only; no held-out promotion evaluation and non-commercial model license |
 | [`experiment/llm`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/llm) | Direct DeepSeek V4 Flash few-shot classification | Held-out macro-F1 0.7506 | Separate architecture review required; external API, privacy, cost, latency, and repeated-test-set caveats |
+| `experiment/ordinal-regression` | Ordered-label metrics, probability-cost decisions, and TF-IDF Ridge regression on Negative=1, Average=2, Positive=3 | Baseline OOF macro-F1 0.6485 remained best | Research only; ordinal candidates did not pass the promotion gate |
 
 Only a candidate that wins on training-only CV/OOF evidence, is frozen, passes a new blind evaluation, satisfies deployment constraints, and passes CI should be proposed for merge into `main`.
+
+### Ordinal-label experiment
+
+The three labels have a natural order even though the submitted multiclass classifier treats
+them as nominal classes. The isolated ordinal experiment encodes `Negative=1`, `Average=2`,
+and `Positive=3`, while retaining macro-F1 and per-class metrics. It adds ordinal MAE,
+quadratic weighted kappa, adjacent-error rate, and the severe `Positive ↔ Negative` error
+rate. Run it with:
+
+```bash
+make ordinal-experiment
+```
+
+The command uses the original training partition only. It produces five-fold OOF predictions,
+searches Ridge decision thresholds using those OOF predictions, and writes detailed evidence to
+`artifacts/ordinal/ordinal_experiment.json` and a flat comparison to
+`artifacts/ordinal/ordinal_experiment.csv`. It reserves the existing held-out rows without
+evaluating them.
+
+The multiclass baseline remained selected. Its OOF macro-F1 was 0.6485, ordinal MAE 0.3468,
+quadratic weighted kappa 0.4544, and severe-error rate 0.0167. The strongest continuous candidate,
+balanced Ridge with alpha 10, reduced severe errors to 0.0065 and raised Negative recall from
+0.5042 to 0.5500, but macro-F1 fell to 0.5961, ordinal MAE worsened to 0.4007, and kappa fell to
+0.4038. Cost-sensitive decisions reduced severe errors further but lost substantially more
+Negative recall or macro-F1. No candidate therefore met the predefined promotion gate, and the
+submitted model and API remain unchanged.
 
 ### Rating-leakage result
 

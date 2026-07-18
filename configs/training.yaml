@@ -16,3 +16,25 @@ model:
   char_max_features: 50000
   min_df: 2
   max_df: 0.98
+ordinal:
+  output_dir: artifacts/ordinal
+  ridge_alphas: [0.1, 1.0, 10.0]
+  severe_costs: [2, 3, 4]
+  threshold_values:
+    - 1.20
+    - 1.30
+    - 1.40
+    - 1.50
+    - 1.60
+    - 1.70
+    - 1.80
+    - 1.90
+    - 2.00
+    - 2.10
+    - 2.20
+    - 2.30
+    - 2.40
+    - 2.50
+    - 2.60
+    - 2.70
+    - 2.80

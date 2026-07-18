@@ -1,0 +1,707 @@
+{
+  "status": "training_oof_only",
+  "held_out_test_evaluated": false,
+  "label_values": {
+    "Negative": 1,
+    "Average": 2,
+    "Positive": 3
+  },
+  "selection_gate": {
+    "negative_precision_minimum": 0.6,
+    "negative_recall_minimum": 0.5041666666666667,
+    "macro_f1_maximum_drop": 0.01,
+    "promotion_requires_lower_ordinal_mae": true,
+    "promotion_requires_higher_quadratic_weighted_kappa": true,
+    "promotion_requires_lower_severe_error_rate": true
+  },
+  "data": {
+    "raw_sha256": "2788b987e2c9fa4fd6459a1798a6e7d1dd63ddb5618c10907712d39042cc4be2",
+    "oof_training_rows": 3838,
+    "reserved_held_out_rows": 960,
+    "cv_folds": 5,
+    "random_seed": 42
+  },
+  "selected_candidate": "baseline_argmax",
+  "promotion_recommended": false,
+  "candidates": {
+    "baseline_argmax": {
+      "kind": "multiclass_logistic_regression",
+      "parameters": {},
+      "metrics": {
+        "accuracy": 0.6698801459093278,
+        "balanced_accuracy": 0.6220114569822741,
+        "macro_precision": 0.6892780310415777,
+        "macro_recall": 0.6220114569822741,
+        "macro_f1": 0.6484564362831063,
+        "weighted_f1": 0.6691424620468925,
+        "per_class": {
+          "Positive": {
+            "precision": 0.6761585706309324,
+            "recall": 0.6731517509727627,
+            "f1-score": 0.6746518105849583,
+            "support": 1799.0
+          },
+          "Average": {
+            "precision": 0.6583421891604676,
+            "recall": 0.688715953307393,
+            "f1-score": 0.6731866340668297,
+            "support": 1799.0
+          },
+          "Negative": {
+            "precision": 0.7333333333333333,
+            "recall": 0.5041666666666667,
+            "f1-score": 0.5975308641975309,
+            "support": 240.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            1211,
+            569,
+            19
+          ],
+          [
+            535,
+            1239,
+            25
+          ],
+          [
+            45,
+            74,
+            121
+          ]
+        ],
+        "label_order": [
+          "Positive",
+          "Average",
+          "Negative"
+        ],
+        "ordinal_mae": 0.34679520583637313,
+        "quadratic_weighted_kappa": 0.45438237885393873,
+        "adjacent_error_rate": 0.31344450234497134,
+        "severe_error_rate": 0.016675351745700884
+      }
+    },
+    "cost_sensitive_severe_2": {
+      "kind": "cost_sensitive_decision",
+      "parameters": {
+        "adjacent_cost": 1,
+        "severe_cost": 2
+      },
+      "metrics": {
+        "accuracy": 0.662324127149557,
+        "balanced_accuracy": 0.5672904700142054,
+        "macro_precision": 0.7430645847642011,
+        "macro_recall": 0.5672904700142054,
+        "macro_f1": 0.6054861500605121,
+        "weighted_f1": 0.6550843110248675,
+        "per_class": {
+          "Positive": {
+            "precision": 0.7410124724871606,
+            "recall": 0.5614230127848805,
+            "f1-score": 0.6388361796331435,
+            "support": 1799.0
+          },
+          "Average": {
+            "precision": 0.6090604026845637,
+            "recall": 0.8071150639244025,
+            "f1-score": 0.6942385847477887,
+            "support": 1799.0
+          },
+          "Negative": {
+            "precision": 0.8791208791208791,
+            "recall": 0.3333333333333333,
+            "f1-score": 0.48338368580060426,
+            "support": 240.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            1010,
+            783,
+            6
+          ],
+          [
+            342,
+            1452,
+            5
+          ],
+          [
+            11,
+            149,
+            80
+          ]
+        ],
+        "label_order": [
+          "Positive",
+          "Average",
+          "Negative"
+        ],
+        "ordinal_mae": 0.34210526315789475,
+        "quadratic_weighted_kappa": 0.45235538246774,
+        "adjacent_error_rate": 0.33324648254299116,
+        "severe_error_rate": 0.004429390307451798
+      }
+    },
+    "cost_sensitive_severe_3": {
+      "kind": "cost_sensitive_decision",
+      "parameters": {
+        "adjacent_cost": 1,
+        "severe_cost": 3
+      },
+      "metrics": {
+        "accuracy": 0.6354872329338197,
+        "balanced_accuracy": 0.5120977703662528,
+        "macro_precision": 0.7512786215273466,
+        "macro_recall": 0.5120977703662528,
+        "macro_f1": 0.5365585271928678,
+        "weighted_f1": 0.6168139121909121,
+        "per_class": {
+          "Positive": {
+            "precision": 0.7688073394495413,
+            "recall": 0.46581434130072263,
+            "f1-score": 0.5801315334025614,
+            "support": 1799.0
+          },
+          "Average": {
+            "precision": 0.5759376160415893,
+            "recall": 0.8621456364647027,
+            "f1-score": 0.6905609973285841,
+            "support": 1799.0
+          },
+          "Negative": {
+            "precision": 0.9090909090909091,
+            "recall": 0.20833333333333334,
+            "f1-score": 0.3389830508474576,
+            "support": 240.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            838,
+            958,
+            3
+          ],
+          [
+            246,
+            1551,
+            2
+          ],
+          [
+            6,
+            184,
+            50
+          ]
+        ],
+        "label_order": [
+          "Positive",
+          "Average",
+          "Negative"
+        ],
+        "ordinal_mae": 0.36685773840541946,
+        "quadratic_weighted_kappa": 0.39142107549130656,
+        "adjacent_error_rate": 0.36216779572694113,
+        "severe_error_rate": 0.002344971339239187
+      }
+    },
+    "cost_sensitive_severe_4": {
+      "kind": "cost_sensitive_decision",
+      "parameters": {
+        "adjacent_cost": 1,
+        "severe_cost": 4
+      },
+      "metrics": {
+        "accuracy": 0.6164669098488796,
+        "balanced_accuracy": 0.4865357297263912,
+        "macro_precision": 0.7582961811206697,
+        "macro_recall": 0.4865357297263912,
+        "macro_f1": 0.49727784224494814,
+        "weighted_f1": 0.5848498137098803,
+        "per_class": {
+          "Positive": {
+            "precision": 0.8094117647058824,
+            "recall": 0.38243468593663144,
+            "f1-score": 0.5194412986032465,
+            "support": 1799.0
+          },
+          "Average": {
+            "precision": 0.5563858695652174,
+            "recall": 0.9105058365758755,
+            "f1-score": 0.6907020872865275,
+            "support": 1799.0
+          },
+          "Negative": {
+            "precision": 0.9090909090909091,
+            "recall": 0.16666666666666666,
+            "f1-score": 0.28169014084507044,
+            "support": 240.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            688,
+            1109,
+            2
+          ],
+          [
+            159,
+            1638,
+            2
+          ],
+          [
+            3,
+            197,
+            40
+          ]
+        ],
+        "label_order": [
+          "Positive",
+          "Average",
+          "Negative"
+        ],
+        "ordinal_mae": 0.38483585200625325,
+        "quadratic_weighted_kappa": 0.34729279647418854,
+        "adjacent_error_rate": 0.3822303282959875,
+        "severe_error_rate": 0.0013027618551328818
+      }
+    },
+    "ridge_unweighted_alpha_0.1": {
+      "kind": "ordinal_ridge_regression",
+      "parameters": {
+        "label_values": {
+          "Negative": 1,
+          "Average": 2,
+          "Positive": 3
+        },
+        "alpha": 0.1,
+        "class_weighting": "unweighted",
+        "lower_threshold": 1.8,
+        "upper_threshold": 2.5
+      },
+      "metrics": {
+        "accuracy": 0.6039603960396039,
+        "balanced_accuracy": 0.5269895312210487,
+        "macro_precision": 0.5705959282857107,
+        "macro_recall": 0.5269895312210487,
+        "macro_f1": 0.5411326481637189,
+        "weighted_f1": 0.6008328691439884,
+        "per_class": {
+          "Positive": {
+            "precision": 0.6662171274443696,
+            "recall": 0.5491939966648138,
+            "f1-score": 0.6020719073735528,
+            "support": 1799.0
+          },
+          "Average": {
+            "precision": 0.5718864468864469,
+            "recall": 0.6942745969983324,
+            "f1-score": 0.627165453175998,
+            "support": 1799.0
+          },
+          "Negative": {
+            "precision": 0.47368421052631576,
+            "recall": 0.3375,
+            "f1-score": 0.39416058394160586,
+            "support": 240.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            988,
+            790,
+            21
+          ],
+          [
+            481,
+            1249,
+            69
+          ],
+          [
+            14,
+            145,
+            81
+          ]
+        ],
+        "label_order": [
+          "Positive",
+          "Average",
+          "Negative"
+        ],
+        "ordinal_mae": 0.4051589369463262,
+        "quadratic_weighted_kappa": 0.3814538608763851,
+        "adjacent_error_rate": 0.38692027097446585,
+        "severe_error_rate": 0.009119332985930172
+      },
+      "continuous_score_summary": {
+        "minimum": 0.9347217948606608,
+        "mean": 2.406280292364426,
+        "maximum": 3.864772850990666
+      }
+    },
+    "ridge_balanced_alpha_0.1": {
+      "kind": "ordinal_ridge_regression",
+      "parameters": {
+        "label_values": {
+          "Negative": 1,
+          "Average": 2,
+          "Positive": 3
+        },
+        "alpha": 0.1,
+        "class_weighting": "balanced",
+        "lower_threshold": 1.8,
+        "upper_threshold": 2.5
+      },
+      "metrics": {
+        "accuracy": 0.6031787389265242,
+        "balanced_accuracy": 0.5312480699153851,
+        "macro_precision": 0.5694526448963536,
+        "macro_recall": 0.5312480699153851,
+        "macro_f1": 0.5434922857377821,
+        "weighted_f1": 0.600235259382291,
+        "per_class": {
+          "Positive": {
+            "precision": 0.6675767918088737,
+            "recall": 0.5436353529738743,
+            "f1-score": 0.5992647058823529,
+            "support": 1799.0
+          },
+          "Average": {
+            "precision": 0.5711678832116789,
+            "recall": 0.6959421901056142,
+            "f1-score": 0.6274116762716111,
+            "support": 1799.0
+          },
+          "Negative": {
+            "precision": 0.4696132596685083,
+            "recall": 0.3541666666666667,
+            "f1-score": 0.40380047505938244,
+            "support": 240.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            978,
+            798,
+            23
+          ],
+          [
+            474,
+            1252,
+            73
+          ],
+          [
+            13,
+            142,
+            85
+          ]
+        ],
+        "label_order": [
+          "Positive",
+          "Average",
+          "Negative"
+        ],
+        "ordinal_mae": 0.40620114643043254,
+        "quadratic_weighted_kappa": 0.38263554539772016,
+        "adjacent_error_rate": 0.38744137571651904,
+        "severe_error_rate": 0.009379885356956748
+      },
+      "continuous_score_summary": {
+        "minimum": 0.9123277063765072,
+        "mean": 2.401186163940243,
+        "maximum": 3.8584924948774377
+      }
+    },
+    "ridge_unweighted_alpha_1": {
+      "kind": "ordinal_ridge_regression",
+      "parameters": {
+        "label_values": {
+          "Negative": 1,
+          "Average": 2,
+          "Positive": 3
+        },
+        "alpha": 1.0,
+        "class_weighting": "unweighted",
+        "lower_threshold": 2.0,
+        "upper_threshold": 2.4
+      },
+      "metrics": {
+        "accuracy": 0.614382490880667,
+        "balanced_accuracy": 0.5741198814156012,
+        "macro_precision": 0.5560507206970718,
+        "macro_recall": 0.5741198814156012,
+        "macro_f1": 0.5636480415102955,
+        "weighted_f1": 0.6138112839578669,
+        "per_class": {
+          "Positive": {
+            "precision": 0.6456487754038561,
+            "recall": 0.688715953307393,
+            "f1-score": 0.666487358795051,
+            "support": 1799.0
+          },
+          "Average": {
+            "precision": 0.6124314442413162,
+            "recall": 0.5586436909394108,
+            "f1-score": 0.5843023255813954,
+            "support": 1799.0
+          },
+          "Negative": {
+            "precision": 0.41007194244604317,
+            "recall": 0.475,
+            "f1-score": 0.44015444015444016,
+            "support": 240.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            1239,
+            526,
+            34
+          ],
+          [
+            664,
+            1005,
+            130
+          ],
+          [
+            16,
+            110,
+            114
+          ]
+        ],
+        "label_order": [
+          "Positive",
+          "Average",
+          "Negative"
+        ],
+        "ordinal_mae": 0.3986451276706618,
+        "quadratic_weighted_kappa": 0.43848245195954094,
+        "adjacent_error_rate": 0.3725898905680042,
+        "severe_error_rate": 0.013027618551328817
+      },
+      "continuous_score_summary": {
+        "minimum": 1.205502310364577,
+        "mean": 2.4051629059543242,
+        "maximum": 3.5462780623415973
+      }
+    },
+    "ridge_balanced_alpha_1": {
+      "kind": "ordinal_ridge_regression",
+      "parameters": {
+        "label_values": {
+          "Negative": 1,
+          "Average": 2,
+          "Positive": 3
+        },
+        "alpha": 1.0,
+        "class_weighting": "balanced",
+        "lower_threshold": 1.9,
+        "upper_threshold": 2.4
+      },
+      "metrics": {
+        "accuracy": 0.6208963001563315,
+        "balanced_accuracy": 0.5895844913841023,
+        "macro_precision": 0.5931067205225099,
+        "macro_recall": 0.5895844913841023,
+        "macro_f1": 0.5912474682267405,
+        "weighted_f1": 0.6210434318089829,
+        "per_class": {
+          "Positive": {
+            "precision": 0.6535388127853882,
+            "recall": 0.6364647026125625,
+            "f1-score": 0.6448887637285272,
+            "support": 1799.0
+          },
+          "Average": {
+            "precision": 0.602377093462993,
+            "recall": 0.6197887715397443,
+            "f1-score": 0.6109589041095891,
+            "support": 1799.0
+          },
+          "Negative": {
+            "precision": 0.5234042553191489,
+            "recall": 0.5125,
+            "f1-score": 0.5178947368421053,
+            "support": 240.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            1145,
+            630,
+            24
+          ],
+          [
+            596,
+            1115,
+            88
+          ],
+          [
+            11,
+            106,
+            123
+          ]
+        ],
+        "label_order": [
+          "Positive",
+          "Average",
+          "Negative"
+        ],
+        "ordinal_mae": 0.38822303282959875,
+        "quadratic_weighted_kappa": 0.441577901882355,
+        "adjacent_error_rate": 0.3699843668577384,
+        "severe_error_rate": 0.009119332985930172
+      },
+      "continuous_score_summary": {
+        "minimum": 0.9798538146674816,
+        "mean": 2.3657974224170086,
+        "maximum": 3.5943041005838463
+      }
+    },
+    "ridge_unweighted_alpha_10": {
+      "kind": "ordinal_ridge_regression",
+      "parameters": {
+        "label_values": {
+          "Negative": 1,
+          "Average": 2,
+          "Positive": 3
+        },
+        "alpha": 10.0,
+        "class_weighting": "unweighted",
+        "lower_threshold": 2.2,
+        "upper_threshold": 2.4
+      },
+      "metrics": {
+        "accuracy": 0.6406982803543513,
+        "balanced_accuracy": 0.5711691680563277,
+        "macro_precision": 0.5847612363269777,
+        "macro_recall": 0.5711691680563277,
+        "macro_f1": 0.5770990853715775,
+        "weighted_f1": 0.6389717757308048,
+        "per_class": {
+          "Positive": {
+            "precision": 0.668586387434555,
+            "recall": 0.7098387993329628,
+            "f1-score": 0.6885953087085468,
+            "support": 1799.0
+          },
+          "Average": {
+            "precision": 0.6328671328671329,
+            "recall": 0.60366870483602,
+            "f1-score": 0.6179231863442389,
+            "support": 1799.0
+          },
+          "Negative": {
+            "precision": 0.4528301886792453,
+            "recall": 0.4,
+            "f1-score": 0.4247787610619469,
+            "support": 240.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            1277,
+            500,
+            22
+          ],
+          [
+            619,
+            1086,
+            94
+          ],
+          [
+            14,
+            130,
+            96
+          ]
+        ],
+        "label_order": [
+          "Positive",
+          "Average",
+          "Negative"
+        ],
+        "ordinal_mae": 0.36868160500260555,
+        "quadratic_weighted_kappa": 0.46540423101227346,
+        "adjacent_error_rate": 0.349921834288692,
+        "severe_error_rate": 0.009379885356956748
+      },
+      "continuous_score_summary": {
+        "minimum": 1.883769976459285,
+        "mean": 2.4048238621720643,
+        "maximum": 2.8761754937635184
+      }
+    },
+    "ridge_balanced_alpha_10": {
+      "kind": "ordinal_ridge_regression",
+      "parameters": {
+        "label_values": {
+          "Negative": 1,
+          "Average": 2,
+          "Positive": 3
+        },
+        "alpha": 10.0,
+        "class_weighting": "balanced",
+        "lower_threshold": 1.9,
+        "upper_threshold": 2.3
+      },
+      "metrics": {
+        "accuracy": 0.60578426263679,
+        "balanced_accuracy": 0.5896701871410043,
+        "macro_precision": 0.6219247082920806,
+        "macro_recall": 0.5896701871410043,
+        "macro_f1": 0.5960798645239124,
+        "weighted_f1": 0.600431908020296,
+        "per_class": {
+          "Positive": {
+            "precision": 0.6736434108527132,
+            "recall": 0.4830461367426348,
+            "f1-score": 0.5626416315959858,
+            "support": 1799.0
+          },
+          "Average": {
+            "precision": 0.566538296961917,
+            "recall": 0.735964424680378,
+            "f1-score": 0.6402321083172147,
+            "support": 1799.0
+          },
+          "Negative": {
+            "precision": 0.6255924170616114,
+            "recall": 0.55,
+            "f1-score": 0.5853658536585366,
+            "support": 240.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            869,
+            910,
+            20
+          ],
+          [
+            416,
+            1324,
+            59
+          ],
+          [
+            5,
+            103,
+            132
+          ]
+        ],
+        "label_order": [
+          "Positive",
+          "Average",
+          "Negative"
+        ],
+        "ordinal_mae": 0.4007295466388744,
+        "quadratic_weighted_kappa": 0.4037736306809945,
+        "adjacent_error_rate": 0.3877019280875456,
+        "severe_error_rate": 0.006513809275664409
+      },
+      "continuous_score_summary": {
+        "minimum": 1.2577872882707113,
+        "mean": 2.221576979246886,
+        "maximum": 2.8562553088483202
+      }
+    }
+  }
+}
