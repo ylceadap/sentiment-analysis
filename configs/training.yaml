@@ -16,3 +16,8 @@ model:
   char_max_features: 50000
   min_df: 2
   max_df: 0.98
+ordinal_logistic:
+  output_dir: artifacts/ordinal_logistic
+  c_values: [0.5, 1.0, 2.0]
+  calibration_folds: 3
+  threshold_values: [0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75]

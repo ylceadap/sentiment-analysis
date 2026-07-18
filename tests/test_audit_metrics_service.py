@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from dutch_sentiment.audit import audit_dataset, render_markdown
 from dutch_sentiment.config import load_config
@@ -84,6 +85,10 @@ def test_metrics_include_minority_class_and_confusion_matrix() -> None:
     metrics = classification_metrics(actual, predicted, probabilities)
     assert metrics["per_class"]["Negative"]["support"] == 2.0
     assert metrics["confusion_matrix"] == [[1, 0, 0], [1, 0, 0], [0, 1, 1]]
+    assert metrics["ordinal_mae"] == pytest.approx(0.5)
+    assert metrics["adjacent_error_rate"] == pytest.approx(0.5)
+    assert metrics["severe_error_rate"] == pytest.approx(0.0)
+    assert "quadratic_weighted_kappa" in metrics
     assert metrics["log_loss"] > 0
     assert 0 <= metrics["expected_calibration_error_10_bin"] <= 1
     assert 0 <= metrics["mean_prediction_confidence"] <= 1

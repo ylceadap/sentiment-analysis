@@ -156,8 +156,54 @@ The production submission remains on `main`. Completed or exploratory work stays
 | [`experiment/transformer-embeddings`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/transformer-embeddings) | Frozen multilingual MiniLM and Dutch RobBERT sentence embeddings with Logistic Regression | Did not pass the OOF promotion gates | Frozen; official model unchanged |
 | [`experiment/jina-embeddings`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/jina-embeddings) | Frozen Jina v3 classification embeddings with Logistic Regression | Best OOF macro-F1 0.7108 | Research only; no held-out promotion evaluation and non-commercial model license |
 | [`experiment/llm`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/llm) | Direct DeepSeek V4 Flash few-shot classification | Held-out macro-F1 0.7506 | Separate architecture review required; external API, privacy, cost, latency, and repeated-test-set caveats |
+| `experiment/ordinal-logistic` | Two calibrated cumulative Logistic Regression boundaries with monotonic composition and cross-fitted thresholds | OOF macro-F1 0.6529; Negative recall 0.5917 | Passes the OOF gate; requires a new blind evaluation before promotion |
 
 Only a candidate that wins on training-only CV/OOF evidence, is frozen, passes a new blind evaluation, satisfies deployment constraints, and passes CI should be proposed for merge into `main`.
+
+### Ordinal logistic experiment
+
+The ordinal experiment retains a classification objective while representing the natural label
+order through two boundaries:
+
+```text
+Negative vs Average + Positive
+Negative + Average vs Positive
+```
+
+Both boundaries reuse the submitted word/character TF-IDF features, balanced Logistic Regression,
+and fold-internal three-fold sigmoid calibration. Independently estimated cumulative probabilities
+are projected onto the monotonic constraint `P(y > Negative) >= P(y > Average)`. Thresholds are
+evaluated with cross-fitting: the thresholds applied to each OOF fold are selected using only the
+other OOF folds. The existing 960 held-out rows are reserved but never evaluated by this command.
+
+Run the experiment with:
+
+```bash
+make ordinal-logistic
+```
+
+Detailed evidence is written to `artifacts/ordinal_logistic/ordinal_logistic_experiment.json` and
+`artifacts/ordinal_logistic/ordinal_logistic_experiment.csv`. The selected training-only candidate
+uses `C=1`, balanced boundary weights, sigmoid calibration, and full-OOF deployment thresholds
+`0.75/0.55`.
+
+| OOF metric | Multiclass baseline | Selected ordinal candidate | Change |
+| --- | ---: | ---: | ---: |
+| Macro-F1 | 0.6485 | **0.6529** | +0.0044 |
+| Macro-F1 fold std | 0.0269 | **0.0154** | -0.0115 |
+| Balanced accuracy | 0.6220 | **0.6497** | +0.0277 |
+| Accuracy | 0.6699 | **0.6733** | +0.0034 |
+| Negative precision | **0.7333** | 0.6256 | -0.1078 |
+| Negative recall | 0.5042 | **0.5917** | +0.0875 |
+| Negative F1 | 0.5975 | **0.6081** | +0.0106 |
+| Ordinal MAE | 0.3468 | **0.3418** | -0.0050 |
+| Quadratic weighted kappa | 0.4544 | **0.4755** | +0.0211 |
+| Severe error rate | 0.0167 | **0.0151** | -0.0016 |
+
+The candidate passes the predefined OOF gate and is recommended for a newly collected untouched
+blind evaluation. It is not recommended for production promotion yet. The gain is modest, Negative
+precision falls substantially, Positive recall falls from 0.6732 to 0.5892, and threshold/C
+selection still uses the training partition. The submitted model and API therefore remain unchanged.
 
 ### Rating-leakage result
 
