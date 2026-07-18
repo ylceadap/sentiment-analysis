@@ -52,6 +52,13 @@ def test_health_and_successful_classification(client: TestClient) -> None:
     assert body["explanation"] == {"supporting_word_features": []}
 
 
+def test_root_serves_interactive_web_app(client: TestClient) -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "Dutch Movie Review Sentiment" in response.text
+    assert "/static/app.js" in response.text
+
+
 def test_openapi_documents_classification_contract_and_examples(client: TestClient) -> None:
     response = client.get("/openapi.json")
     assert response.status_code == 200

@@ -12,6 +12,8 @@ from typing import Annotated, Any, Literal
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .constants import LABELS, MAX_REVIEW_CHARACTERS
@@ -127,6 +129,13 @@ def create_app(
         version="0.1.0",
         lifespan=lifespan,
     )
+    static_dir = Path(__file__).resolve().parent / "static"
+    if static_dir.exists():
+        app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+    @app.get("/", include_in_schema=False)
+    async def index() -> FileResponse:
+        return FileResponse(static_dir / "index.html")
 
     @app.get("/health", response_model=HealthResponse)
     async def health(request: Request) -> HealthResponse:

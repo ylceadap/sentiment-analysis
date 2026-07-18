@@ -224,6 +224,12 @@ Start the API:
 make serve
 ```
 
+The default browser entry point is a small interactive app for manual inference:
+
+```text
+http://localhost:8000/
+```
+
 Interactive OpenAPI documentation, including English field descriptions and runnable request/response examples, is available at:
 
 ```text
