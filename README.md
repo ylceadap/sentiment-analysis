@@ -107,6 +107,12 @@ evidence to `artifacts/jina_ordinal_logistic/` and
 `reports/jina_ordinal_logistic_experiment.md`. It does not evaluate the reserved holdout rows,
 replace `artifacts/model.joblib`, or train a separate English model.
 
+The Colab run selected `jina_v3_classification__ordinal_composed_argmax_C_2`. On training-only
+OOF evidence it reached macro-F1 0.7299, Negative precision/recall/F1
+0.8089/0.7583/0.7828, ordinal MAE 0.2952, quadratic weighted kappa 0.5817, and severe error
+rate 0.0036. It passed every predefined OOF gate, but remains research-only because Jina v3 is
+CC-BY-NC-4.0 and no new blind test has been run.
+
 ## Train and predict: shortest workflow
 
 Train from the supplied CSV and regenerate the fitted model, metadata, comparison table, and report:
