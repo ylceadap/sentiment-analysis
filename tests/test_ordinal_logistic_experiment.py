@@ -8,7 +8,11 @@ from dutch_sentiment.ordinal_logistic_experiment import (
     probability_argmax_labels,
     project_monotonic_boundaries,
 )
-from dutch_sentiment.ordinal_promote import ordinal_diagnostics, promotion_gate
+from dutch_sentiment.ordinal_promote import (
+    _promotion_baseline,
+    ordinal_diagnostics,
+    promotion_gate,
+)
 
 
 def test_monotonic_projection_pools_only_violations() -> None:
@@ -104,3 +108,14 @@ def test_ordinal_diagnostics_are_reported_separately() -> None:
         "quadratic_weighted_kappa_not_lower": True,
         "severe_error_rate_not_higher": True,
     }
+
+
+def test_repeated_promotion_keeps_original_baseline() -> None:
+    original = {"macro_f1": 0.64}
+    promoted = {"macro_f1": 0.65}
+    metadata = {
+        "experiment": {"name": "ordinal_crossfit_threshold"},
+        "previous_model": {"held_out_metrics": original},
+    }
+    assert _promotion_baseline(promoted, metadata) == original
+    assert _promotion_baseline(original, {"experiment": {"name": "multiclass"}}) == original

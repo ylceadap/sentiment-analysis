@@ -98,6 +98,16 @@ def ordinal_diagnostics(candidate: dict[str, Any], baseline: dict[str, Any]) -> 
     }
 
 
+def _promotion_baseline(final_metrics: dict[str, Any], metadata: dict[str, Any]) -> dict[str, Any]:
+    """Keep repeated promotion runs anchored to the original multiclass artifact."""
+    if metadata.get("experiment", {}).get("name") == "ordinal_crossfit_threshold":
+        previous_metrics = metadata.get("previous_model", {}).get("held_out_metrics")
+        if not previous_metrics:
+            raise RuntimeError("Promoted ordinal metadata is missing previous-model metrics")
+        return dict(previous_metrics)
+    return dict(final_metrics)
+
+
 def _metrics_by_language(
     languages: list[str],
     labels: list[str],
@@ -164,7 +174,10 @@ def run_ordinal_promotion(config_path: str | Path) -> dict[str, Any]:
     )
 
     baseline_path = output_dir / "final_metrics.json"
-    baseline_metrics = json.loads(baseline_path.read_text(encoding="utf-8"))
+    old_metadata_path = output_dir / "model_metadata.json"
+    old_metadata = json.loads(old_metadata_path.read_text(encoding="utf-8"))
+    current_metrics = json.loads(baseline_path.read_text(encoding="utf-8"))
+    baseline_metrics = _promotion_baseline(current_metrics, old_metadata)
     baseline_metrics.update(_ordinal_metrics_from_confusion(baseline_metrics))
     checks = promotion_gate(candidate_metrics, baseline_metrics)
     diagnostics = ordinal_diagnostics(candidate_metrics, baseline_metrics)
@@ -195,14 +208,15 @@ def run_ordinal_promotion(config_path: str | Path) -> dict[str, Any]:
         return comparison
 
     model_path = output_dir / "model.joblib"
-    old_metadata_path = output_dir / "model_metadata.json"
-    old_metadata = json.loads(old_metadata_path.read_text(encoding="utf-8"))
-    previous_model = {
-        "model_version": old_metadata.get("model_version"),
-        "model_sha256": old_metadata.get("model_sha256"),
-        "experiment": old_metadata.get("experiment"),
-        "held_out_metrics": baseline_metrics,
-    }
+    if old_metadata.get("experiment", {}).get("name") == "ordinal_crossfit_threshold":
+        previous_model = old_metadata["previous_model"]
+    else:
+        previous_model = {
+            "model_version": old_metadata.get("model_version"),
+            "model_sha256": old_metadata.get("model_sha256"),
+            "experiment": old_metadata.get("experiment"),
+            "held_out_metrics": baseline_metrics,
+        }
     model.save(model_path)
     model_hash = sha256_file(model_path)
     model_size = model_path.stat().st_size
