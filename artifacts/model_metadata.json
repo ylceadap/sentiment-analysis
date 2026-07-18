@@ -1,14 +1,15 @@
 {
   "package_version": "0.1.0",
-  "model_version": "0.1.0+889d5a9f",
-  "training_timestamp_utc": "2026-07-18T09:24:23.524553+00:00",
-  "git_commit": "889d5a9fa75bccd3ae7c5178e0051a61f40728f2",
+  "model_version": "0.1.0+537f39e2",
+  "training_timestamp_utc": "2026-07-18T09:44:39.840959+00:00",
+  "git_commit": "537f39e23a2c43a35a52638648d707b63c160ecf",
+  "git_dirty": false,
   "python_version": "3.11.7",
   "sklearn_version": "1.9.0",
   "raw_data_sha256": "2788b987e2c9fa4fd6459a1798a6e7d1dd63ddb5618c10907712d39042cc4be2",
-  "model_sha256": "e1eac0ebd0b20133e5537b53c13673b57fca0a32936063739697dd04c96b22b0",
-  "model_size_bytes": 2922196,
-  "mlflow_run_id": "354ffc08cadc4894b603b6bffed9ecfe",
+  "model_sha256": "e0f7c6f912640df057a680e47bc052a0da2782cbac459df9f656ee86b3a2da39",
+  "model_size_bytes": 2922221,
+  "mlflow_run_id": "50f01b30219b4690a93a50907e5b6e10",
   "label_classes": [
     "Average",
     "Negative",
@@ -99,6 +100,10 @@
       "Positive",
       "Average",
       "Negative"
-    ]
+    ],
+    "log_loss": 0.7317970795880541,
+    "multiclass_brier_score": 0.4531728539276883,
+    "expected_calibration_error_10_bin": 0.04914807647740436,
+    "mean_prediction_confidence": 0.6015891587485515
   }
 }

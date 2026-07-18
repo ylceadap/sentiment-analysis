@@ -108,7 +108,7 @@ class SentimentModel:
             raise RuntimeError("Selected classifier does not provide native probabilities")
         values = classifier.predict_proba(transformed)[0]
         return {
-            str(label): round(float(probability), 6)
+            str(label): float(probability)
             for label, probability in zip(classifier.classes_, values, strict=True)
         }
 
@@ -119,10 +119,7 @@ class SentimentModel:
         values = self.pipeline.predict_proba(reviews)
         classes = classifier.classes_.tolist()
         return [
-            {
-                label: round(float(probability), 6)
-                for label, probability in zip(classes, row, strict=True)
-            }
+            {label: float(probability) for label, probability in zip(classes, row, strict=True)}
             for row in values
         ]
 
