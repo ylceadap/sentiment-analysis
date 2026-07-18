@@ -1,4 +1,4 @@
-.PHONY: install install-embeddings audit train embedding-experiment evaluate benchmark predict test coverage lint format serve mlflow docker-build docker-run
+.PHONY: install install-embeddings audit train embedding-experiment jina-ordinal-logistic evaluate benchmark predict test coverage lint format serve mlflow docker-build docker-run
 
 PYTHON := .venv/bin/python
 
@@ -17,6 +17,9 @@ train:
 
 embedding-experiment:
 	$(PYTHON) -m dutch_sentiment.embedding_experiment --config configs/embedding_experiment.yaml
+
+jina-ordinal-logistic:
+	$(PYTHON) -m dutch_sentiment.jina_ordinal_logistic_experiment --config configs/jina_ordinal_logistic.yaml
 
 evaluate:
 	.venv/bin/sentiment-evaluate

@@ -44,6 +44,7 @@ sentiment-train = "dutch_sentiment.train:main"
 sentiment-evaluate = "dutch_sentiment.evaluate:main"
 sentiment-benchmark = "dutch_sentiment.benchmark:main"
 sentiment-embedding-experiment = "dutch_sentiment.embedding_experiment:main"
+sentiment-jina-ordinal-logistic = "dutch_sentiment.jina_ordinal_logistic_experiment:main"
 sentiment-predict = "dutch_sentiment.predict:main"
 sentiment-serve = "dutch_sentiment.api:run"
 

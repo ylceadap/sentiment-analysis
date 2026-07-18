@@ -94,6 +94,19 @@ The first run downloads the encoder and creates an ignored local cache under `.c
 
 The Colab run outputs are tracked in `artifacts/jina_embedding_experiment_results.csv`, `artifacts/jina_embedding_experiment_decision.json`, `reports/jina_embedding_experiment.md`, and `reports/jina_embedding_validation.md`.
 
+This branch also contains a follow-up Colab experiment that keeps the same frozen Jina embeddings
+and compares the standard multiclass Logistic Regression head with a two-boundary ordinal Logistic
+Regression head:
+
+```bash
+make jina-ordinal-logistic
+```
+
+Run `notebooks/jina_ordinal_logistic_experiment.ipynb` on Colab GPU. It writes training-only OOF
+evidence to `artifacts/jina_ordinal_logistic/` and
+`reports/jina_ordinal_logistic_experiment.md`. It does not evaluate the reserved holdout rows,
+replace `artifacts/model.joblib`, or train a separate English model.
+
 ## Train and predict: shortest workflow
 
 Train from the supplied CSV and regenerate the fitted model, metadata, comparison table, and report:
