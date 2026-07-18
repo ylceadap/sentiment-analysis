@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .constants import LABELS, MAX_REVIEW_CHARACTERS
 from .language import DutchLanguageDetector
+from .llm_recommender import LLMRecommendationResult, LLMRecommender
 from .model import SentimentModel
 from .service import InferenceService, NonDutchReviewError
 
@@ -102,9 +103,29 @@ class HealthResponse(BaseModel):
     model_ready: Literal[True]
 
 
+class LLMRecommendationResponse(BaseModel):
+    status: Literal["ok", "unavailable", "error"]
+    provider: str
+    model: str
+    label: Label | None = None
+    rationale: str | None = None
+    confidence: float | None = None
+    latency_ms: float | None = None
+    warning: str | None = None
+
+
+class RecommendationResponse(BaseModel):
+    model_prediction: ClassifyResponse
+    llm_recommendation: LLMRecommendationResponse
+    agreement: bool | None = Field(
+        description="Whether both systems returned the same label; null when LLM is unavailable."
+    )
+
+
 def create_app(
     *,
     service: InferenceService | Any | None = None,
+    llm_recommender: LLMRecommender | Any | None = None,
     model_path: str | Path | None = None,
 ) -> FastAPI:
     """Build an app that can inject a lightweight service in API tests."""
@@ -121,6 +142,7 @@ def create_app(
             app.state.service = InferenceService(model, detector)
         else:
             app.state.service = service
+        app.state.llm_recommender = llm_recommender or LLMRecommender.from_environment()
         LOGGER.info("model_loaded version=%s", app.state.service.model_version)
         yield
 
@@ -184,6 +206,30 @@ def create_app(
             result.latency_ms,
         )
         return ClassifyResponse(**result.__dict__)
+
+    @app.post(
+        "/recommendations",
+        response_model=RecommendationResponse,
+        summary="Compare model and LLM recommendations",
+        description=(
+            "Return the reproducible submitted model prediction and, when configured, an "
+            "advisory LLM sentiment recommendation for the same review."
+        ),
+    )
+    async def recommendations(payload: ClassifyRequest, request: Request) -> RecommendationResponse:
+        model_prediction = await classify(payload, request)
+        llm_result: LLMRecommendationResult = request.app.state.llm_recommender.recommend(
+            payload.review,
+            detected_language=model_prediction.detected_language,
+        )
+        agreement = (
+            model_prediction.label == llm_result.label if llm_result.status == "ok" else None
+        )
+        return RecommendationResponse(
+            model_prediction=model_prediction,
+            llm_recommendation=LLMRecommendationResponse(**llm_result.__dict__),
+            agreement=agreement,
+        )
 
     return app
 

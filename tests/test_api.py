@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from dutch_sentiment.api import MAX_REVIEW_CHARACTERS, create_app
 from dutch_sentiment.constants import ENGLISH_RELIABILITY_WARNING
+from dutch_sentiment.llm_recommender import LLMRecommendationResult
 from dutch_sentiment.service import NonDutchReviewError, PredictionResult
 
 
@@ -31,9 +32,25 @@ class FakeService:
         return result
 
 
+class FakeLLMRecommender:
+    def recommend(self, review: str, *, detected_language: str) -> LLMRecommendationResult:
+        return LLMRecommendationResult(
+            status="ok",
+            provider="fake",
+            model="fake-llm",
+            label="Positive",
+            rationale=f"Matched {detected_language} positive language.",
+            confidence=0.77,
+            latency_ms=2.5,
+            warning="LLM output is advisory only.",
+        )
+
+
 @pytest.fixture()
 def client() -> TestClient:
-    with TestClient(create_app(service=FakeService())) as test_client:
+    with TestClient(
+        create_app(service=FakeService(), llm_recommender=FakeLLMRecommender())
+    ) as test_client:
         yield test_client
 
 
@@ -55,8 +72,20 @@ def test_health_and_successful_classification(client: TestClient) -> None:
 def test_root_serves_interactive_web_app(client: TestClient) -> None:
     response = client.get("/")
     assert response.status_code == 200
-    assert "Dutch Movie Review Sentiment" in response.text
+    assert "Model and LLM Review" in response.text
     assert "/static/app.js" in response.text
+
+
+def test_recommendations_returns_model_and_llm_advice(client: TestClient) -> None:
+    response = client.post(
+        "/recommendations", json={"review": "Deze film was verrassend goed.", "explain": False}
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["model_prediction"]["label"] == "Positive"
+    assert body["llm_recommendation"]["status"] == "ok"
+    assert body["llm_recommendation"]["label"] == "Positive"
+    assert body["agreement"] is True
 
 
 def test_openapi_documents_classification_contract_and_examples(client: TestClient) -> None:
