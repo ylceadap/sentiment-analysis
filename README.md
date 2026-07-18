@@ -83,7 +83,7 @@ make mlflow      # open local MLflow UI on port 5000
 
 ### Frozen sentence-embedding experiments
 
-This branch also contains a train-only experiment with two revision-pinned CPU encoders: multilingual MiniLM and Dutch RobBERT. It trains one Logistic Regression classifier on all Dutch and English training rows, searches class weights and the Negative threshold only with five-fold out-of-fold predictions, and never evaluates the existing held-out test.
+This branch contains a train-only experiment with the revision-pinned Jina Embeddings v3 classification encoder. It trains one Logistic Regression classifier on all Dutch and English training rows, searches class weights and the Negative threshold only with five-fold out-of-fold predictions, and never evaluates the existing held-out test.
 
 ```bash
 make install-embeddings
@@ -91,6 +91,8 @@ make embedding-experiment
 ```
 
 The first run downloads the encoder and creates an ignored local cache under `.cache/`; later runs reuse it. On this branch the experiment uses revision-pinned Jina Embeddings v3 with its `classification` adapter, a 1,024-token limit, and 512-dimensional output. It still trains one LogisticRegression on all Dutch and English rows and selects only from train-set OOF evidence. Jina v3 is CC-BY-NC-4.0, so this is explicitly a non-commercial research experiment.
+
+The Colab run outputs are tracked in `artifacts/jina_embedding_experiment_results.csv`, `artifacts/jina_embedding_experiment_decision.json`, `reports/jina_embedding_experiment.md`, and `reports/jina_embedding_validation.md`.
 
 ## Train and predict: shortest workflow
 

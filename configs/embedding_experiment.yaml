@@ -14,6 +14,8 @@ models:
   - name: jina_v3_classification
     model_id: jinaai/jina-embeddings-v3
     revision: ab036b023d30b4d1138c4c3bfa9f0c445ab455d6
+    remote_code_dependency: jinaai/xlm-roberta-flash-implementation
+    remote_code_revision: 845308d0fd72a8406a3e378450e1a09522790419
     language_scope: multilingual_including_dutch_and_english
     trust_remote_code: true
     task: classification

@@ -387,6 +387,7 @@ def _write_report(
         if advance
         else "Stop: no frozen-embedding candidate cleared every predeclared OOF gate."
     )
+    encoding_device = selected.get("encoding_device", "unknown device")
     content = f"""# Jina v3 classification-embedding experiment
 
 ## Decision
@@ -402,7 +403,7 @@ Best experimental candidate: `{selected["name"]}`. CV Macro-F1 is {selected["cv_
 ## Method
 
 - Recreated and hash-verified the frozen 3,838-row training split and 960-row holdout split.
-- Encoded Dutch and English training reviews together using two frozen, revision-pinned CPU encoders.
+- Encoded Dutch and English training reviews together using one frozen, revision-pinned Jina v3 classification encoder; this run used `{encoding_device}`.
 - Used the same five stratified folds for all candidates; labels never fitted the encoders.
 - Selected C, class weight, and Negative threshold only from out-of-fold predictions.
 - Did not compute holdout metrics, replace `artifacts/model.joblib`, or train an English-only model.
@@ -456,9 +457,34 @@ def run_experiment(config_path: str | Path) -> dict[str, Any]:
             _embedding_rows(model_spec, embeddings, labels, languages, folds, config, runtime)
         )
     selected, checks, advance = _select(rows, baseline, config["promotion_gates"])
+    selected_model = next(
+        spec for spec in config["models"] if spec["model_id"] == selected["model_id"]
+    )
     decision = {
         "advance_to_gpu_finetuning": advance,
+        "metric_gates_passed": advance,
+        "production_promotion_eligible": False,
+        "license": selected_model["license"],
         "selected_candidate": selected["name"],
+        "selected_metrics": {
+            key: selected[key]
+            for key in (
+                "cv_macro_f1_mean",
+                "cv_macro_f1_std",
+                "oof_accuracy",
+                "negative_precision",
+                "negative_recall",
+                "negative_f1",
+                "dutch_macro_f1",
+                "english_macro_f1",
+            )
+        },
+        "provenance": {
+            "embedding_model": selected_model["model_id"],
+            "embedding_revision": selected_model["revision"],
+            "remote_code_dependency": selected_model.get("remote_code_dependency"),
+            "remote_code_revision": selected_model.get("remote_code_revision"),
+        },
         "gate_checks": checks,
         "official_model_replaced": False,
         "heldout_evaluated": False,
