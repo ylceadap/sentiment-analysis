@@ -192,6 +192,15 @@ All normalization and TF-IDF fitting happens inside CV folds. The official TF-ID
 
 Full metrics, standard deviations, MLflow run IDs, and artifact sizes are in `artifacts/experiment_comparison.csv`.
 
+### Final five presentation models
+
+The frozen presentation set is Production TF-IDF, TF-IDF Ordinal, Jina Logistic, Jina Ordinal, and
+DeepSeek V4 Flash 24-shot. `make final-compare` evaluates all five against the same 960-row held-out
+split, saves aligned row-level predictions and metrics under `artifacts/final_five/`, and logs one
+MLflow comparison run. This split was not used for fitting, but it has been reported previously, so
+the result is explicitly a reused-heldout comparison rather than a new blind test. See
+`reports/final_five_model_comparison.md` for the ranking once generated.
+
 ### Archived research index
 
 The production submission remains on `main`, the only long-lived branch. Completed research is

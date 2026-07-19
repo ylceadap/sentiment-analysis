@@ -32,6 +32,7 @@ train = [
   "tabulate>=0.9,<1",
 ]
 embeddings = [
+  "einops>=0.8,<1",
   "numpy>=1.26,<2",
   "sentence-transformers>=5,<6",
   "torch==2.2.2; platform_system == 'Darwin' and platform_machine == 'x86_64'",
@@ -53,6 +54,7 @@ sentiment-jina-ordinal-logistic = "dutch_sentiment.experiments.jina_ordinal:main
 sentiment-predict = "dutch_sentiment.predict:main"
 sentiment-serve = "dutch_sentiment.api:run"
 sentiment-blind-evaluate = "dutch_sentiment.blind_evaluation:main"
+sentiment-final-compare = "dutch_sentiment.final_comparison:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

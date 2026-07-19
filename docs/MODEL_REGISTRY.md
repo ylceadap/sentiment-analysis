@@ -5,25 +5,31 @@ alone does not make an experiment a production model.
 
 ## Registered model policy
 
-| Registered model | Alias | Tier | Deployment status |
+| Registered model | Alias | Presentation | Deployment status |
 | --- | --- | --- | --- |
-| `sentiment-production` | `champion` | Production | Active local service model |
-| `sentiment-dummy-prior` | `baseline` | Baseline | Evaluation only |
-| `sentiment-word-logreg` | `benchmark` | Benchmark | Frozen |
-| `sentiment-char-logreg` | `benchmark` | Benchmark | Frozen |
-| `sentiment-combined-logreg` | `benchmark` | Benchmark | Frozen |
-| `sentiment-combined-balanced` | `benchmark` | Benchmark | Selected training candidate; final fit is `sentiment-production` |
-| `sentiment-combined-balanced-masked` | `benchmark` | Ablation | Frozen |
-| `sentiment-linear-svc` | `frozen-challenger` | Challenger | Promotion gate failed |
-| `sentiment-frozen-robbert-embeddings` | `research-only` | Research | Not self-contained; promotion gates failed |
-| `sentiment-deepseek-v4-flash-24shot` | `external-advisor` | External API | No model weights stored; architecture review required |
-| `sentiment-jina-v3-logreg` | `research-only` | Research | Evidence-only registry entry; no blind test; Jina v3 is non-commercial |
-| `sentiment-jina-v3-ordinal-logistic` | `research-only` | Research | Strongest local OOF evidence; no blind test; Jina v3 is non-commercial |
-| `sentiment-tfidf-ordinal-logistic` | `frozen-challenger` | Challenger | Branch artifact; needs a new blind test before production promotion |
+| `sentiment-production` | `champion` | Selected: production | Active local service model |
+| `sentiment-tfidf-ordinal-logistic` | `frozen-challenger` | Selected: challenger | Reused-heldout comparison; not promoted |
+| `sentiment-jina-v3-logreg` | `research-only` | Selected: research | Jina v3 is non-commercial; external encoder required |
+| `sentiment-jina-v3-ordinal-logistic` | `research-only` | Selected: research | Jina v3 is non-commercial; external encoder required |
+| `sentiment-deepseek-v4-flash-24shot` | `external-advisor` | Selected: external API | Provider weights not stored; architecture review required |
+| `sentiment-dummy-prior` | `baseline` | Test-only | Evaluation baseline |
+| `sentiment-word-logreg` | `benchmark` | Test-only | Frozen benchmark |
+| `sentiment-char-logreg` | `benchmark` | Test-only | Frozen benchmark |
+| `sentiment-combined-logreg` | `benchmark` | Test-only | Frozen benchmark |
+| `sentiment-combined-balanced` | `benchmark` | Test-only | Training candidate; final fit is `sentiment-production` |
+| `sentiment-combined-balanced-masked` | `benchmark` | Test-only | Frozen ablation |
+| `sentiment-linear-svc` | `frozen-challenger` | Test-only | Promotion gate failed |
+| `sentiment-frozen-robbert-embeddings` | `research-only` | Test-only | Not self-contained; promotion gates failed |
 
 Only `sentiment-production@champion` is approved for the submitted service. Aliases on separate
 registered-model names are descriptive; the governance tags are the authoritative eligibility
 record.
+
+Presentation selection and deployment authority are independent. Exactly five Registry records carry
+`presentation.selected=true`; every other model carries `presentation.role=test-only`. This does not
+create five production models: `sentiment-production@champion` remains the sole served champion.
+Their unified result is stored in the `dutch-sentiment-final-comparison` experiment and the portable
+`artifacts/final_five/` evidence directory.
 
 Every registered model also has one `artifact.tier`:
 
@@ -43,7 +49,8 @@ embeddings, DeepSeek classification, ordinal regression, ordinal logistic, and J
 The top Jina entries are now also visible in the registry as research-only records, not deployable
 champions. The ordinal-logistic evidence run also retains its branch model artifact, but it remains a
 challenger because the reused holdout is not a new blind benchmark. Jina results remain research-only
-because no blind evaluation was run and Jina Embeddings v3 uses a non-commercial license.
+because Jina Embeddings v3 uses a non-commercial license and the unified evaluation reuses the
+existing held-out split rather than introducing a new blind set.
 That license is acceptable for this non-commercial assignment research and remains recorded in tags.
 
 `sentiment-deepseek-v4-flash-24shot` is historical 24-shot experiment evidence. The production UI's

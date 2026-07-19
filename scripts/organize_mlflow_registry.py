@@ -259,6 +259,28 @@ MODEL_POLICIES = {
     ),
 }
 
+PRESENTATION_SELECTED = {
+    "sentiment-production": "production",
+    "sentiment-tfidf-ordinal-logistic": "challenger",
+    "sentiment-jina-v3-logreg": "research",
+    "sentiment-jina-v3-ordinal-logistic": "research",
+    "sentiment-deepseek-v4-flash-24shot": "external-api",
+}
+
+
+def _presentation_tags(name: str) -> dict[str, str]:
+    """Separate presentation selection from production deployment eligibility."""
+    if name in PRESENTATION_SELECTED:
+        return {
+            "presentation.selected": "true",
+            "presentation.role": PRESENTATION_SELECTED[name],
+            "presentation.evaluation_scope": "reused-heldout",
+        }
+    return {
+        "presentation.selected": "false",
+        "presentation.role": "test-only",
+    }
+
 
 EVIDENCE = (
     ExperimentEvidence(
@@ -457,6 +479,10 @@ def audit_governance(
             issues.append(f"{name}: deployable model is not self-contained")
         if tier == "evidence-only" and model.tags.get("deployment.eligible") != "false":
             issues.append(f"{name}: evidence-only record is deployment eligible")
+        expected_presentation = _presentation_tags(name)
+        for key, value in expected_presentation.items():
+            if model.tags.get(key) != value:
+                issues.append(f"{name}: {key} {model.tags.get(key)!r} != {value!r}")
     if champion_names != ["sentiment-production"]:
         issues.append(f"expected one production champion, found {champion_names}")
 
@@ -567,6 +593,9 @@ def apply_model_policies(
         client.update_registered_model(name, description=policy.description)
         client.update_model_version(name, "1", description=policy.description)
         for key, value in policy.tags.items():
+            client.set_registered_model_tag(name, key, value)
+            client.set_model_version_tag(name, "1", key, value)
+        for key, value in _presentation_tags(name).items():
             client.set_registered_model_tag(name, key, value)
             client.set_model_version_tag(name, "1", key, value)
         client.set_registered_model_alias(name, policy.alias, "1")
