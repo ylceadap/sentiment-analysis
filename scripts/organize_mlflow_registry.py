@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 import tempfile
 from dataclasses import dataclass
@@ -192,8 +193,9 @@ MODEL_POLICIES = {
         alias="research-only",
         description=(
             "Frozen Jina v3 classification embeddings with Logistic Regression. Registered as "
-            "research evidence only: no self-contained serving artifact is stored, no blind test "
-            "was run, and Jina v3 is licensed for non-commercial use."
+            "research evidence only: a reused-heldout presentation result and frozen head are "
+            "stored, but no new blind test or self-contained encoder artifact exists, and Jina v3 "
+            "is licensed for non-commercial use."
         ),
         tags={
             "artifact.kind": "evidence-only-mlflow-entry",
@@ -201,7 +203,7 @@ MODEL_POLICIES = {
             "governance.tier": "research",
             "governance.status": "research-only",
             "deployment.eligible": "false",
-            "evaluation.scope": "training-oof",
+            "evaluation.scope": "training-oof-and-reused-heldout",
             "source.branch": "experiment/jina-embeddings",
             "license.use": "cc-by-nc-4.0",
             "blind_test.completed": "false",
@@ -215,9 +217,9 @@ MODEL_POLICIES = {
         alias="research-only",
         description=(
             "Frozen Jina v3 classification embeddings with a two-boundary ordinal Logistic "
-            "Regression head. Registered as the strongest local OOF research candidate, not a "
-            "production model: no blind test was run, no self-contained serving artifact is "
-            "stored, and Jina v3 is licensed for non-commercial use."
+            "Regression head. Its reused-heldout presentation result and frozen head are stored, "
+            "but it remains research-only: no new blind test or self-contained encoder artifact "
+            "exists, and Jina v3 is licensed for non-commercial use."
         ),
         tags={
             "artifact.kind": "evidence-only-mlflow-entry",
@@ -225,7 +227,7 @@ MODEL_POLICIES = {
             "governance.tier": "research",
             "governance.status": "research-only",
             "deployment.eligible": "false",
-            "evaluation.scope": "training-oof",
+            "evaluation.scope": "training-oof-and-reused-heldout",
             "source.branch": "experiment/jina-ordinal-logistic",
             "license.use": "cc-by-nc-4.0",
             "blind_test.completed": "false",
@@ -258,6 +260,63 @@ MODEL_POLICIES = {
         source_catalog_id="ordinal-logistic-v1",
     ),
 }
+
+PRESENTATION_SELECTED = {
+    "sentiment-production": "production",
+    "sentiment-tfidf-ordinal-logistic": "challenger",
+    "sentiment-jina-v3-logreg": "research",
+    "sentiment-jina-v3-ordinal-logistic": "research",
+    "sentiment-deepseek-v4-flash-24shot": "external-api",
+}
+
+PRESENTATION_REGISTRY_BY_DISPLAY_NAME = {
+    "Current Production TF-IDF": "sentiment-production",
+    "TF-IDF Ordinal": "sentiment-tfidf-ordinal-logistic",
+    "Jina Logistic": "sentiment-jina-v3-logreg",
+    "Jina Ordinal": "sentiment-jina-v3-ordinal-logistic",
+    "DeepSeek V4 Flash 24-shot": "sentiment-deepseek-v4-flash-24shot",
+}
+
+
+def _presentation_tags(name: str) -> dict[str, str]:
+    """Separate presentation selection from production deployment eligibility."""
+    if name in PRESENTATION_SELECTED:
+        return {
+            "presentation.selected": "true",
+            "presentation.role": PRESENTATION_SELECTED[name],
+            "presentation.evaluation_scope": "reused-heldout",
+        }
+    return {
+        "presentation.selected": "false",
+        "presentation.role": "test-only",
+        "presentation.results_stored": "false",
+    }
+
+
+def _final_comparison_tags(result_path: Path) -> dict[str, dict[str, str]]:
+    """Build Registry tags from the validated final comparison artifact."""
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    if result.get("evaluation_scope") != "reused-heldout-presentation-comparison":
+        raise RuntimeError("Final comparison has an unexpected evaluation scope")
+    run_id = str(result.get("mlflow_run_id", ""))
+    if not run_id:
+        raise RuntimeError("Final comparison has not been logged to MLflow")
+    rows = result.get("ranking", [])
+    if len(rows) != len(PRESENTATION_REGISTRY_BY_DISPLAY_NAME):
+        raise RuntimeError("Final comparison does not contain exactly five ranked models")
+    tags: dict[str, dict[str, str]] = {}
+    for row in rows:
+        registry_name = PRESENTATION_REGISTRY_BY_DISPLAY_NAME.get(str(row.get("model")))
+        if registry_name is None:
+            raise RuntimeError(f"Unexpected final comparison model: {row.get('model')!r}")
+        tags[registry_name] = {
+            "presentation.results_stored": "true",
+            "presentation.comparison_run_id": run_id,
+            "presentation.rank": str(int(row["rank"])),
+            "presentation.macro_f1": str(row["macro_f1"]),
+            "presentation.accuracy": str(row["accuracy"]),
+        }
+    return tags
 
 
 EVIDENCE = (
@@ -457,6 +516,10 @@ def audit_governance(
             issues.append(f"{name}: deployable model is not self-contained")
         if tier == "evidence-only" and model.tags.get("deployment.eligible") != "false":
             issues.append(f"{name}: evidence-only record is deployment eligible")
+        expected_presentation = _presentation_tags(name)
+        for key, value in expected_presentation.items():
+            if model.tags.get(key) != value:
+                issues.append(f"{name}: {key} {model.tags.get(key)!r} != {value!r}")
     if champion_names != ["sentiment-production"]:
         issues.append(f"expected one production champion, found {champion_names}")
 
@@ -569,7 +632,36 @@ def apply_model_policies(
         for key, value in policy.tags.items():
             client.set_registered_model_tag(name, key, value)
             client.set_model_version_tag(name, "1", key, value)
+        for key, value in _presentation_tags(name).items():
+            client.set_registered_model_tag(name, key, value)
+            client.set_model_version_tag(name, "1", key, value)
         client.set_registered_model_alias(name, policy.alias, "1")
+
+
+def apply_final_comparison_tags(client: MlflowClient, result_path: Path) -> None:
+    """Attach the stored comparison run and frozen ranking to selected Registry models."""
+    comparison_tags = _final_comparison_tags(result_path)
+    for name, tags in comparison_tags.items():
+        for key, value in tags.items():
+            client.set_registered_model_tag(name, key, value)
+            client.set_model_version_tag(name, "1", key, value)
+
+
+def audit_final_comparison_tags(client: MlflowClient, result_path: Path) -> list[str]:
+    """Return mismatches between the stored final result and Registry ranking tags."""
+    issues: list[str] = []
+    models = {model.name: model for model in client.search_registered_models()}
+    for name, expected in _final_comparison_tags(result_path).items():
+        model = models.get(name)
+        if model is None:
+            continue
+        version = client.get_model_version(name, "1")
+        for key, value in expected.items():
+            if model.tags.get(key) != value:
+                issues.append(f"{name}: registry {key} {model.tags.get(key)!r} != {value!r}")
+            if version.tags.get(key) != value:
+                issues.append(f"{name}: version {key} {version.tags.get(key)!r} != {value!r}")
+    return issues
 
 
 def archive_experiment_evidence(client: MlflowClient, experiment_name: str) -> None:
@@ -621,6 +713,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tracking-uri", default="sqlite:///mlflow.db")
     parser.add_argument("--experiment", default="dutch-sentiment-research-evidence")
     parser.add_argument(
+        "--final-comparison",
+        type=Path,
+        default=Path("artifacts/final_five/comparison.json"),
+    )
+    parser.add_argument(
         "--audit-only", action="store_true", help="Check policy without mutating MLflow state."
     )
     return parser.parse_args()
@@ -635,7 +732,9 @@ def main() -> None:
         archive_experiment_evidence(client, args.experiment)
         evidence_runs = _evidence_runs_by_catalog_id(client, args.experiment)
         apply_model_policies(client, evidence_runs)
+        apply_final_comparison_tags(client, args.final_comparison)
     issues = audit_governance(client, args.experiment, repository_root=Path.cwd())
+    issues.extend(audit_final_comparison_tags(client, args.final_comparison))
     if issues:
         raise RuntimeError("MLflow governance audit failed:\n- " + "\n- ".join(issues))
     print(

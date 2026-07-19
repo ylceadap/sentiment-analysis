@@ -192,6 +192,26 @@ All normalization and TF-IDF fitting happens inside CV folds. The official TF-ID
 
 Full metrics, standard deviations, MLflow run IDs, and artifact sizes are in `artifacts/experiment_comparison.csv`.
 
+### Final five presentation models
+
+The frozen presentation set is Production TF-IDF, TF-IDF Ordinal, Jina Logistic, Jina Ordinal, and
+DeepSeek V4 Flash 24-shot. `make final-compare` evaluates all five against the same 960-row held-out
+split, saves aligned row-level predictions and metrics under `artifacts/final_five/`, and logs one
+MLflow comparison run. This split was not used for fitting, but it has been reported previously, so
+the result is explicitly a reused-heldout comparison rather than a new blind test. See
+`reports/final_five_model_comparison.md` for full metrics and caveats.
+
+| Rank | Frozen presentation model | Macro-F1 | Accuracy | Negative precision / recall |
+| ---: | --- | ---: | ---: | ---: |
+| 1 | DeepSeek V4 Flash 24-shot | **0.7506** | 0.7208 | 0.7746 / 0.9167 |
+| 2 | Jina Ordinal | **0.7104** | 0.6896 | 0.7273 / 0.8000 |
+| 3 | Jina Logistic | **0.6715** | 0.6719 | 0.5408 / 0.8833 |
+| 4 | TF-IDF Ordinal | **0.6406** | 0.6500 | 0.6379 / 0.6167 |
+| 5 | Current Production TF-IDF | **0.6379** | 0.6531 | 0.7209 / 0.5167 |
+
+The comparison is stored in MLflow run `688b28b059dd477693b87104c32fbb9a`. Ranking does not change
+deployment authority: `sentiment-production@champion` remains the only formal production model.
+
 ### Archived research index
 
 The production submission remains on `main`, the only long-lived branch. Completed research is
@@ -285,7 +305,8 @@ panel is disabled unless the server can load a key from an environment variable 
 local key file.
 
 The UI uses the `zero-shot-advisor-v1` runtime prompt. The historical MLflow 24-shot result remains a
-separate evidence record; research and challenger models are intentionally absent from this console.
+separate evidence record. The console shows the five-model ranking as a read-only evidence table,
+but research and challenger models are not live inference choices.
 
 Interactive OpenAPI documentation, including English field descriptions and runnable request/response examples, is available at:
 
@@ -382,17 +403,19 @@ Verified commands:
 
 ```bash
 make test
-# 55 passed
+# 70 passed
 
 make coverage
-# 77% total branch coverage
-# Training orchestration, reporting, benchmark, shared experiments, and ordinal math are tested
+# 75% total branch coverage
+# API, final comparison, training, reporting, shared experiments, and ordinal paths are tested
 
 make lint
 # Ruff lint passed; all files formatted
 ```
 
-The lower aggregate is caused by un-unit-tested CLI orchestration in training/benchmark/report generation; those paths were executed end to end and produced the tracked artifacts. Critical request, transformation, language, model, audit, and metric logic has direct tests.
+The remaining uncovered lines are concentrated in heavyweight research CLI loops and failure-only
+branches. Critical request, transformation, language, model, final-comparison, audit, metric, and
+artifact contracts have direct tests.
 
 ## MLflow
 

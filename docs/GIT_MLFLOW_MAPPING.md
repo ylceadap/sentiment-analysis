@@ -23,6 +23,15 @@ The archive tag points to `f52ad65` so it also preserves the later registry and 
 work. The alternate lineage is retained as a tag for ancestry recovery but does not represent a
 separate trained model.
 
+## Unified presentation comparison
+
+MLflow run `688b28b059dd477693b87104c32fbb9a` in experiment
+`dutch-sentiment-final-comparison` stores the five-model reused-heldout comparison. Its portable
+counterparts are `artifacts/final_five/comparison.json`, `comparison.csv`, the 960-row aligned
+prediction file, the frozen Jina heads, and `reports/final_five_model_comparison.md`. All five
+selected Registry records point back to this run through `presentation.comparison_run_id`; the
+remaining eight records are `presentation.role=test-only`.
+
 ## Registry boundary
 
 - `sentiment-production@champion` is the only model approved for the public service.
@@ -31,4 +40,3 @@ separate trained model.
 - The local `mlflow.db` and `mlruns/` are intentionally outside Git and require independent backup.
 - A Git branch may be deleted only after its archive tag is on `origin` and its evidence row above is
   verified against MLflow.
-

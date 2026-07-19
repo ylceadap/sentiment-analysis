@@ -137,10 +137,46 @@
           <div class="error hidden" id="error-box"></div>
         </section>
       </section>
-      <p class="governance-note">
-        Research-only Jina, RobBERT, ordinal, and benchmark models are intentionally not exposed in
-        this production console. Their evidence remains available in MLflow.
-      </p>
+
+      <section class="panel evidence-panel" aria-labelledby="comparison-title">
+        <div class="evidence-header">
+          <div>
+            <p class="eyebrow">Frozen presentation evidence</p>
+            <h2 id="comparison-title">Five-model held-out comparison</h2>
+            <p>
+              One shared 960-row reused held-out split. Ranking is descriptive evidence, not a new
+              blind test or a production promotion decision.
+            </p>
+          </div>
+          <span class="evidence-scope">Reused held-out · Macro-F1 rank</span>
+        </div>
+        <div class="table-scroll" tabindex="0" aria-label="Scrollable final model comparison">
+          <table>
+            <caption class="sr-only">
+              Final five presentation models ranked by Macro-F1 on the reused held-out split.
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Rank</th>
+                <th scope="col">Model</th>
+                <th scope="col">Role</th>
+                <th scope="col">Macro-F1</th>
+                <th scope="col">Accuracy</th>
+                <th scope="col">Negative P / R</th>
+              </tr>
+            </thead>
+            <tbody id="comparison-body">
+              <tr>
+                <td colspan="6" class="table-message">Loading tracked comparison evidence…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="governance-note" id="comparison-note">
+          Live UI: Production TF-IDF plus the optional zero-shot LLM advisor. Jina, TF-IDF Ordinal,
+          and DeepSeek 24-shot are frozen evaluation evidence only.
+        </p>
+      </section>
     </main>
     <script src="/static/app.js" defer></script>
   </body>

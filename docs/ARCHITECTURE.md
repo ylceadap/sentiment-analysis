@@ -24,11 +24,17 @@ flowchart LR
     classical --> selection["Macro-F1 selection\nminority and stability guardrails"]
     multiclass --> research["OOF research comparison"]
     ordinal --> research
+    heldout --> comparison["Frozen five-model presentation comparison"]
+    classical --> comparison
+    multiclass --> comparison
+    ordinal --> comparison
+    comparison --> finalfive["Predictions + metrics + report\nMLflow final-comparison run"]
     selection --> finalfit["Fit selected classical model"]
     finalfit --> heldout
     heldout --> artifact["Trusted model.joblib\nmetadata + metrics + errors"]
     research --> evidence["CSV + JSON + Markdown\nMLflow evidence runs"]
     artifact --> registry["MLflow Registry\nsentiment-production@champion"]
+    finalfive --> comparisonapi["GET /model-comparison\nread-only evidence"]
 ```
 
 The held-out split is not used for embedding or ordinal selection. Later research comparisons that
@@ -90,6 +96,10 @@ flowchart TB
     ordinalexp --> runtime
     ordinalexp --> utilities
     ordinalexp --> ordinalmath["models/ordinal.py\nmonotonic projection and equations"]
+    finalcompare["final_comparison.py\nfive frozen candidates on reused held-out"] --> prepared
+    finalcompare --> runtime
+    finalcompare --> ordinalmath
+    finalcompare --> metrics
     embed --> metrics
     ordinalexp --> metrics
 
@@ -114,7 +124,8 @@ flowchart LR
     portable --> review["Git-reviewable evidence"]
 ```
 
-Docker copies only source code, the trusted production model, metadata, and release manifest. Raw
+Docker copies only source code, the trusted production model, metadata, release manifest, and the
+bounded final-five comparison JSON used by the read-only UI table. Raw
 data, reports, tests, caches, secrets, notebooks, MLflow state, and training dependencies remain
 outside the image. GitHub Actions builds the image, starts the container, verifies health and
 classification, and checks that the reported model version matches the release manifest.
@@ -145,5 +156,6 @@ copies the exact source-run artifact; CI performs the file-only verification wit
 
 The browser calls `/recommendations`, which always invokes the formal production classifier and may
 also invoke the external `zero-shot-advisor-v1` DeepSeek profile. The historical 24-shot DeepSeek
-entry is evaluation evidence and is not the prompt used by the UI. Research-only Jina, RobBERT,
-ordinal, benchmark, and ablation models are not exposed through the production interface.
+entry is evaluation evidence and is not the prompt used by the UI. `/model-comparison` reads the
+tracked bounded result JSON for the static ranking table; it never loads research models. Jina and
+ordinal models are not live inference choices. RobBERT, benchmarks, and ablations remain test-only.

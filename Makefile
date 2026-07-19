@@ -1,4 +1,4 @@
-.PHONY: install install-core install-locked install-embeddings audit train embedding-experiment jina-ordinal-logistic evaluate benchmark predict test coverage lint format serve mlflow mlflow-organize mlflow-audit model-release-verify model-release-export blind-evaluate docker-build docker-run
+.PHONY: install install-core install-locked install-embeddings audit train embedding-experiment jina-ordinal-logistic final-compare final-compare-log evaluate benchmark predict test coverage lint format serve mlflow mlflow-organize mlflow-audit model-release-verify model-release-export blind-evaluate docker-build docker-run
 
 PYTHON := .venv/bin/python
 
@@ -29,6 +29,12 @@ embedding-experiment:
 
 jina-ordinal-logistic:
 	$(PYTHON) -m dutch_sentiment.experiments.jina_ordinal --config configs/models/jina_ordinal.yaml
+
+final-compare:
+	$(PYTHON) -m dutch_sentiment.final_comparison --config configs/final_five_comparison.yaml --log-mlflow
+
+final-compare-log:
+	$(PYTHON) -m dutch_sentiment.final_comparison --config configs/final_five_comparison.yaml --log-existing
 
 evaluate:
 	.venv/bin/sentiment-evaluate

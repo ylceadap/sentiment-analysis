@@ -487,6 +487,163 @@ pre {
   line-height: 1.5;
 }
 
+.evidence-panel {
+  margin-top: 22px;
+  overflow: hidden;
+}
+
+.evidence-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px;
+}
+
+.evidence-header .eyebrow {
+  margin-bottom: 7px;
+}
+
+.evidence-header h2 {
+  font-size: 1.35rem;
+}
+
+.evidence-header p:not(.eyebrow) {
+  max-width: 760px;
+  margin-top: 8px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.evidence-scope {
+  flex: 0 0 auto;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: var(--primary-dark);
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  font-weight: 850;
+}
+
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border-block: 1px solid var(--border);
+}
+
+.table-scroll:focus-visible {
+  outline: 3px solid rgba(21, 94, 239, 0.35);
+  outline-offset: -3px;
+}
+
+table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+th,
+td {
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px;
+  text-align: left;
+}
+
+thead th {
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+tbody th {
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+tbody tr {
+  transition: background-color 180ms ease;
+}
+
+tbody tr:hover {
+  background: #f8fbff;
+}
+
+tbody tr:last-child th,
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.production-row {
+  background: #f8fafc;
+}
+
+.rank-cell,
+.metric-value {
+  color: #334155;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.rank-cell {
+  color: var(--primary-dark);
+}
+
+.role-badge {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--muted);
+  padding: 5px 8px;
+  font-size: 0.72rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.role-production {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: var(--positive);
+}
+
+.role-research,
+.role-challenger {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: var(--primary-dark);
+}
+
+.role-external-evidence {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.table-message {
+  padding: 24px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.evidence-panel > .governance-note {
+  margin: 0;
+  padding: 16px 22px 18px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
 @media (max-width: 1040px) {
   .layout,
   .comparison-grid {
@@ -510,6 +667,11 @@ pre {
 
   .service-card {
     width: 100%;
+  }
+
+  .evidence-header {
+    flex-direction: column;
+    gap: 14px;
   }
 }
 

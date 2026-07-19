@@ -95,13 +95,51 @@ def encode_or_load(
         model.max_seq_length = int(model_spec["max_sequence_length"])
     if device == "cuda" and bool(config.get("use_fp16_on_cuda", True)):
         model.half()
-    embeddings = model.encode(
-        reviews,
-        batch_size=int(config["batch_size"]),
-        show_progress_bar=True,
-        convert_to_numpy=True,
-        normalize_embeddings=normalized,
-    ).astype(np.float32, copy=False)
+    shard_size = int(config.get("cache_shard_size", 0))
+    if shard_size > 0:
+        # Approximate token length with character length so global sorting stays
+        # compatible across SentenceTransformer versions without a private API.
+        order = np.argsort([-len(review) for review in reviews], kind="stable")
+        ordered_reviews = [reviews[index] for index in order]
+        parts = cache.with_suffix(".sorted.parts")
+        parts.mkdir(parents=True, exist_ok=True)
+        encoded_parts: list[np.ndarray] = []
+        for start in range(0, len(ordered_reviews), shard_size):
+            stop = min(start + shard_size, len(ordered_reviews))
+            shard_reviews = ordered_reviews[start:stop]
+            shard_hash = hash_reviews(shard_reviews)
+            shard_path = parts / f"{start:06d}-{stop:06d}.npz"
+            if shard_path.is_file():
+                with np.load(shard_path, allow_pickle=False) as stored:
+                    if str(stored["review_hash"].item()) != shard_hash:
+                        raise RuntimeError(f"Embedding shard hash mismatch: {shard_path}")
+                    encoded_parts.append(stored["embeddings"].astype(np.float32, copy=False))
+                continue
+            shard = model.encode(
+                shard_reviews,
+                batch_size=int(config["batch_size"]),
+                show_progress_bar=True,
+                convert_to_numpy=True,
+                normalize_embeddings=normalized,
+            ).astype(np.float32, copy=False)
+            np.savez_compressed(
+                shard_path,
+                embeddings=shard,
+                review_hash=np.asarray(shard_hash),
+                start=np.asarray(start),
+                stop=np.asarray(stop),
+            )
+            encoded_parts.append(shard)
+        sorted_embeddings = np.concatenate(encoded_parts, axis=0)
+        embeddings = sorted_embeddings[np.argsort(order)]
+    else:
+        embeddings = model.encode(
+            reviews,
+            batch_size=int(config["batch_size"]),
+            show_progress_bar=True,
+            convert_to_numpy=True,
+            normalize_embeddings=normalized,
+        ).astype(np.float32, copy=False)
     np.savez_compressed(
         cache,
         embeddings=embeddings,

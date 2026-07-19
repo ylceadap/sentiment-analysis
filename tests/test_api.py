@@ -85,8 +85,23 @@ async def test_root_serves_interactive_web_app(client: httpx.AsyncClient) -> Non
     response = await client.get("/")
     assert response.status_code == 200
     assert "Model and LLM Review" in response.text
-    assert "Research-only Jina" in response.text
+    assert "Five-model held-out comparison" in response.text
+    assert "Live UI: Production TF-IDF" in response.text
     assert "/static/app.js" in response.text
+
+
+@pytest.mark.anyio
+async def test_model_comparison_exposes_evidence_not_live_model_selection(
+    client: httpx.AsyncClient,
+) -> None:
+    response = await client.get("/model-comparison")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["evaluation_scope"] == "reused-heldout-presentation-comparison"
+    assert body["heldout_rows"] == 960
+    assert len(body["ranking"]) == 5
+    assert body["production_model"] == "Current Production TF-IDF"
+    assert body["ranking"][0]["model"] == "DeepSeek V4 Flash 24-shot"
 
 
 @pytest.mark.anyio

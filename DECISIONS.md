@@ -144,13 +144,16 @@
 - **Consequences:** CI checks the tracked release; local promotion additionally requires MLflow.
 - **Limitations:** the local Registry remains the source of promotion authority and needs its external backup.
 
-## D018 — Keep research models out of the production UI
+## D018 — Keep research inference out of the production UI
 
 - **Alternatives considered:** expose all Registry entries in one selector; create a research UI; keep one
   formal model plus a visibly advisory external comparison.
-- **Decision:** the production UI exposes only the verified TF-IDF champion and optional versioned
-  `zero-shot-advisor-v1`. Jina, RobBERT, ordinal, benchmark, and ablation models remain in MLflow.
+- **Decision:** the production UI runs only the verified TF-IDF champion and optional versioned
+  `zero-shot-advisor-v1`. It may display the frozen five-model ranking as read-only evidence, but
+  Jina, TF-IDF Ordinal, and historical DeepSeek 24-shot are never live inference choices. RobBERT,
+  benchmark, and ablation models remain MLflow-only test evidence.
 - **Reasoning:** model visibility must not imply production approval. The historical DeepSeek 24-shot
   result is also kept separate because the runtime prompt is not that evaluated configuration.
-- **Consequences:** the UI contract is simple and honest; research comparison stays offline.
+- **Consequences:** the inference contract stays simple and honest while the requested final ranking
+  is visible without implying deployment approval.
 - **Limitations:** adding an approved challenger to the UI requires a deliberate new endpoint and review.
