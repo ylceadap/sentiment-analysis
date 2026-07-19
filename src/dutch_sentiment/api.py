@@ -19,8 +19,8 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from . import __version__
 from .constants import LABELS, MAX_REVIEW_CHARACTERS
 from .language import DutchLanguageDetector
-from .llm_recommender import LLMRecommendationResult, LLMRecommender
-from .model import SentimentModel
+from .models.classical import SentimentModel
+from .models.llm_advisor import LLMRecommendationResult, LLMRecommender
 from .service import InferenceService, NonDutchReviewError
 
 LOGGER = logging.getLogger(__name__)

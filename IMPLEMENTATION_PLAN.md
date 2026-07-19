@@ -213,3 +213,18 @@ document the complete architecture without changing the formal model or frozen e
 
 **Status:** complete except Docker runtime execution, which remains unavailable because no Docker
 executable is installed. Presentation deletion remains subject to explicit user confirmation.
+
+## Phase 9 — Single-branch model platform consolidation
+
+**Objective:** make `main` the only long-lived code line and separate model families through packages,
+configuration, MLflow lifecycle metadata, and immutable archive tags.
+
+- [x] Create and push dated archive tags for every completed experiment line.
+- [x] Map Git SHAs and archive tags to the eight MLflow evidence runs.
+- [x] Merge the repository-governance foundation with the current Web UI and LLM advisor.
+- [x] Separate deployable model implementations under `models/`.
+- [x] Separate research orchestration under `experiments/`.
+- [x] Add canonical production, challenger, research, and advisor configurations under
+  `configs/models/` while preserving legacy paths.
+- [x] Verify the reorganized package with 55 passing tests and 77% total branch coverage.
+- [ ] Complete validation, merge the integration PR, and remove archived branches/worktrees.

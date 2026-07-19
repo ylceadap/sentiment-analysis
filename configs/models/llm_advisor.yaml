@@ -1,0 +1,11 @@
+model_family: external_llm_advisor
+lifecycle: advisory_only
+registry_model: sentiment-deepseek-v4-flash-24shot
+registry_alias: external-advisor
+provider: deepseek
+model: deepseek-v4-flash
+base_url: https://api.deepseek.com
+temperature: 0.0
+credential_policy: server_side_environment_or_ignored_secret_file
+deployment_policy: never_replace_formal_classifier
+

@@ -8,7 +8,7 @@ from typing import Any
 
 from .constants import ENGLISH_RELIABILITY_WARNING
 from .language import DutchLanguageDetector, LanguageStatus
-from .model import SentimentModel
+from .models.base import ClassifierModel
 
 
 class NonDutchReviewError(ValueError):
@@ -31,7 +31,7 @@ class PredictionResult:
 class InferenceService:
     """Apply language policy and one loaded immutable model per request."""
 
-    def __init__(self, model: SentimentModel, detector: DutchLanguageDetector) -> None:
+    def __init__(self, model: ClassifierModel, detector: DutchLanguageDetector) -> None:
         """Bind one immutable fitted model to one local language detector."""
         self.model = model
         self.detector = detector

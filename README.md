@@ -36,10 +36,11 @@ module-dependency, artifact, MLflow, and Docker architecture.
 ## Repository map
 
 ```text
-configs/training.yaml             central experiment configuration
-src/dutch_sentiment/              audit, data, language, model, API, benchmark code
-src/dutch_sentiment/experiment_*  shared frozen-split, hash, metric, and gate utilities
-src/dutch_sentiment/ordinal.py    ordinal probability equations and diagnostics
+configs/training.yaml             shared data and classical-training configuration
+configs/models/                   one canonical configuration per model family
+src/dutch_sentiment/models/       classical, ordinal, embedding, and LLM implementations
+src/dutch_sentiment/experiments/  experiment data, shared gates, and research orchestration
+src/dutch_sentiment/*.py          stable API, service, CLI, and compatibility imports
 tests/                            deterministic unit and API tests
 requirements/verified-py311.lock  exact verified Python 3.11 environment
 artifacts/model.joblib            ready-to-serve fitted pipeline
@@ -53,6 +54,7 @@ REQUIREMENTS_TRACEABILITY.md      requirement-to-evidence mapping
 Dockerfile                        non-root serving image
 docs/ARCHITECTURE.md              complete system and module architecture
 docs/REPOSITORY_LAYOUT.md         file classification and protection policy
+docs/GIT_MLFLOW_MAPPING.md        archive-tag to MLflow evidence mapping
 ```
 
 ## Requirements and installation
@@ -95,18 +97,18 @@ make mlflow      # open local MLflow UI on port 5000
 
 ### Frozen sentence-embedding experiments
 
-This branch contains a train-only experiment with the revision-pinned Jina Embeddings v3 classification encoder. It trains one Logistic Regression classifier on all Dutch and English training rows, searches class weights and the Negative threshold only with five-fold out-of-fold predictions, and never evaluates the existing held-out test.
+The repository contains a train-only experiment with the revision-pinned Jina Embeddings v3 classification encoder. It trains one Logistic Regression classifier on all Dutch and English training rows, searches class weights and the Negative threshold only with five-fold out-of-fold predictions, and never evaluates the existing held-out test.
 
 ```bash
 make install-embeddings
 make embedding-experiment
 ```
 
-The first run downloads the encoder and creates an ignored local cache under `.cache/`; later runs reuse it. On this branch the experiment uses revision-pinned Jina Embeddings v3 with its `classification` adapter, a 1,024-token limit, and 512-dimensional output. It still trains one LogisticRegression on all Dutch and English rows and selects only from train-set OOF evidence. Jina v3 is CC-BY-NC-4.0, so this is explicitly a non-commercial research experiment.
+The first run downloads the encoder and creates an ignored local cache under `.cache/`; later runs reuse it. The experiment uses revision-pinned Jina Embeddings v3 with its `classification` adapter, a 1,024-token limit, and 512-dimensional output. It still trains one LogisticRegression on all Dutch and English rows and selects only from train-set OOF evidence. Jina v3 is CC-BY-NC-4.0, so this is explicitly a non-commercial research experiment.
 
 The Colab run outputs are tracked in `artifacts/jina_embedding_experiment_results.csv`, `artifacts/jina_embedding_experiment_decision.json`, `reports/jina_embedding_experiment.md`, and `reports/jina_embedding_validation.md`.
 
-This branch also contains a follow-up Colab experiment that keeps the same frozen Jina embeddings
+The repository also contains a follow-up Colab experiment that keeps the same frozen Jina embeddings
 and compares the standard multiclass Logistic Regression head with a two-boundary ordinal Logistic
 Regression head:
 
@@ -374,10 +376,10 @@ Verified commands:
 
 ```bash
 make test
-# 43 passed
+# 55 passed
 
 make coverage
-# 76% total branch coverage
+# 77% total branch coverage
 # Training orchestration, reporting, benchmark, shared experiments, and ordinal math are tested
 
 make lint

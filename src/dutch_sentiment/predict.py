@@ -10,7 +10,7 @@ from typing import Any
 
 from .constants import MAX_REVIEW_CHARACTERS
 from .language import DutchLanguageDetector
-from .model import SentimentModel
+from .models.classical import SentimentModel
 from .service import InferenceService, NonDutchReviewError
 
 

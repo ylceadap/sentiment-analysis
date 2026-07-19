@@ -18,7 +18,7 @@ import numpy as np
 from .api import create_app
 from .data import sha256_file
 from .language import DutchLanguageDetector
-from .model import SentimentModel
+from .models.classical import SentimentModel
 from .reporting import build_model_report
 from .service import InferenceService
 

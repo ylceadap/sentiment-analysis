@@ -73,21 +73,23 @@ the fitted pipeline to prevent training/serving drift.
 flowchart TB
     api["api.py\nHTTP contract and lifespan"] --> service["service.py\nlanguage policy and timing"]
     service --> language["language.py\nlocal detection"]
-    service --> model["model.py\nclassical pipeline and inference"]
+    service --> contract["models/base.py\nserving protocol"]
+    contract --> model["models/classical.py\nTF-IDF production model"]
     model --> text["text.py\nnormalization"]
+    api --> advisor["models/llm_advisor.py\nexternal advisory model"]
 
     train["train.py\ntracked model selection and final fit"] --> data["data.py\nload, deduplicate, split"]
     train --> model
     train --> metrics["metrics.py\nclassification and probability evidence"]
     train --> reporting["reporting.py\ndurable report generation"]
 
-    embed["embedding_experiment.py\nmulticlass embedding experiment"] --> prepared["experiment_data.py\nfrozen split and folds"]
-    embed --> runtime["embedding_runtime.py\nrevision-aware cache and encoder"]
-    embed --> utilities["experiment_utils.py\nhashes, alignment, slices, gates"]
-    ordinalexp["jina_ordinal_logistic_experiment.py\nordinal experiment orchestration"] --> prepared
+    embed["experiments/embedding.py\nmulticlass embedding experiment"] --> prepared["experiments/data.py\nfrozen split and folds"]
+    embed --> runtime["models/embeddings.py\nrevision-aware cache and encoder"]
+    embed --> utilities["experiments/common.py\nhashes, alignment, slices, gates"]
+    ordinalexp["experiments/jina_ordinal.py\nordinal experiment orchestration"] --> prepared
     ordinalexp --> runtime
     ordinalexp --> utilities
-    ordinalexp --> ordinalmath["ordinal.py\nmonotonic projection and equations"]
+    ordinalexp --> ordinalmath["models/ordinal.py\nmonotonic projection and equations"]
     embed --> metrics
     ordinalexp --> metrics
 
@@ -116,3 +118,19 @@ Docker copies only source code, the trusted production model, and model metadata
 tests, caches, secrets, notebooks, MLflow state, and training dependencies remain outside the image.
 The current environment has no Docker executable, so image execution remains statically reviewed but
 not runtime-verified.
+
+## Git and model lifecycle
+
+```mermaid
+flowchart LR
+    feature["Short-lived agent branch"] --> pr["Reviewed pull request"]
+    pr --> main["main\nonly long-lived code branch"]
+    experiment["Completed experiment branch"] --> tag["Immutable archive tag"]
+    experiment --> run["MLflow evidence run"]
+    run --> registry["Champion / challenger / research alias"]
+    tag --> cleanup["Delete long-lived experiment branch"]
+    registry --> service["Service loads champion only"]
+```
+
+Model families are separated by packages and configuration, not by permanent Git branches. See
+`docs/GIT_MLFLOW_MAPPING.md` for the archived source-to-run mapping.

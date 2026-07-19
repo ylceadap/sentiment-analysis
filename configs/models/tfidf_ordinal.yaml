@@ -1,0 +1,20 @@
+model_family: tfidf_ordinal_logistic
+lifecycle: frozen_challenger
+registry_model: sentiment-tfidf-ordinal-logistic
+registry_alias: frozen-challenger
+archive_tag: archive/ordinal-logistic/2026-07-19
+mlflow_catalog_id: ordinal-logistic-v1
+heldout_policy: new_blind_test_required_before_promotion
+boundaries:
+  lower: Negative vs Average+Positive
+  upper: Negative+Average vs Positive
+  class_weight: balanced
+  calibration: sigmoid
+selection:
+  negative_precision_minimum: 0.60
+  macro_f1_maximum_drop: 0.01
+  priority:
+    - negative_recall_descending
+    - macro_f1_descending
+    - ordinal_mae_ascending
+

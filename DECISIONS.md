@@ -120,3 +120,16 @@
 - **Reasoning:** the shared mechanics must not drift, but hiding model-specific decisions in an overly generic framework would make leakage and selection logic harder to audit.
 - **Consequences:** the embedding and Jina ordinal orchestrators are smaller and their common invariants have direct tests.
 - **Limitations:** report composition and model-specific fit loops remain intentionally separate.
+
+## D016 — Separate models by package and configuration, not permanent Git branches
+
+- **Alternatives considered:** retain one branch per model; merge every experiment branch wholesale;
+  keep one stable code line with archived experiment tags and MLflow evidence.
+- **Decision:** keep `main` as the only long-lived code branch. Put deployable algorithms in
+  `models/`, research orchestration in `experiments/`, and lifecycle-specific settings in
+  `configs/models/`. Tag completed experiment tips before deleting their branches.
+- **Reasoning:** branch ancestry had mixed model families and made a branch name look like a model
+  identity. MLflow already provides the correct run, artifact, and lifecycle boundary.
+- **Consequences:** models can be compared from one checkout, the service has one stable contract,
+  and old experiment code remains recoverable through remote archive tags.
+- **Limitations:** the local MLflow database still needs an independent backup or shared backend.

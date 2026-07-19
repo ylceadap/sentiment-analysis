@@ -8,7 +8,9 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from dutch_sentiment import embedding_experiment, jina_ordinal_logistic_experiment, train
+from dutch_sentiment import train
+from dutch_sentiment.experiments import embedding as embedding_experiment
+from dutch_sentiment.experiments import jina_ordinal as jina_ordinal_logistic_experiment
 
 
 def _prepared() -> SimpleNamespace:

@@ -22,10 +22,10 @@ from . import __version__
 from .config import load_config
 from .constants import MAX_REVIEW_CHARACTERS
 from .data import annotate_review_languages, load_dataset, make_holdout_split, sha256_file
-from .experiment_utils import hash_values
+from .experiments.common import hash_values
 from .language import DutchLanguageDetector
 from .metrics import CV_SCORING, classification_metrics
-from .model import ModelSpec, SentimentModel, build_pipeline
+from .models.classical import ModelSpec, SentimentModel, build_pipeline
 from .reporting import build_model_report
 
 LOGGER = logging.getLogger(__name__)

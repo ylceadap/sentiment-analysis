@@ -25,10 +25,10 @@ train:
 	.venv/bin/sentiment-train --config configs/training.yaml
 
 embedding-experiment:
-	$(PYTHON) -m dutch_sentiment.embedding_experiment --config configs/embedding_experiment.yaml
+	$(PYTHON) -m dutch_sentiment.experiments.embedding --config configs/models/jina_logreg.yaml
 
 jina-ordinal-logistic:
-	$(PYTHON) -m dutch_sentiment.jina_ordinal_logistic_experiment --config configs/jina_ordinal_logistic.yaml
+	$(PYTHON) -m dutch_sentiment.experiments.jina_ordinal --config configs/models/jina_ordinal.yaml
 
 evaluate:
 	.venv/bin/sentiment-evaluate
