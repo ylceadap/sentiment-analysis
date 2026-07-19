@@ -5,16 +5,28 @@ const submitButton = document.querySelector("#submit-button");
 const characterCount = document.querySelector("#character-count");
 const healthStatus = document.querySelector("#health-status");
 const statusDot = document.querySelector("#status-dot");
-const latency = document.querySelector("#latency");
-const emptyState = document.querySelector("#empty-state");
-const resultContent = document.querySelector("#result-content");
-const predictionLabel = document.querySelector("#prediction-label");
+const agreementStatus = document.querySelector("#agreement-status");
+const agreementCopy = document.querySelector("#agreement-copy");
+const modelLatency = document.querySelector("#model-latency");
+const modelEmpty = document.querySelector("#model-empty");
+const modelContent = document.querySelector("#model-content");
+const modelLabel = document.querySelector("#model-label");
 const languagePill = document.querySelector("#language-pill");
-const warningBox = document.querySelector("#warning-box");
-const errorBox = document.querySelector("#error-box");
+const modelWarning = document.querySelector("#model-warning");
 const probabilities = document.querySelector("#probabilities");
 const explanationDetails = document.querySelector("#explanation-details");
 const explanationOutput = document.querySelector("#explanation-output");
+const llmLatency = document.querySelector("#llm-latency");
+const llmEmpty = document.querySelector("#llm-empty");
+const llmContent = document.querySelector("#llm-content");
+const llmLabel = document.querySelector("#llm-label");
+const llmStatus = document.querySelector("#llm-status");
+const llmModelName = document.querySelector("#llm-model-name");
+const llmRationale = document.querySelector("#llm-rationale");
+const llmConfidenceRow = document.querySelector("#llm-confidence-row");
+const llmConfidence = document.querySelector("#llm-confidence");
+const llmWarning = document.querySelector("#llm-warning");
+const errorBox = document.querySelector("#error-box");
 
 const labels = ["Positive", "Average", "Negative"];
 
@@ -22,19 +34,21 @@ function setCharacterCount() {
   characterCount.textContent = `${reviewInput.value.length} / ${reviewInput.maxLength}`;
 }
 
+function iconMarkup() {
+  return '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>';
+}
+
 function setLoading(isLoading) {
   submitButton.disabled = isLoading;
-  submitButton.textContent = isLoading ? "Classifying..." : "Classify";
-  if (!isLoading) {
-    submitButton.insertAdjacentHTML(
-      "afterbegin",
-      '<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" /></svg>',
-    );
-  }
+  submitButton.innerHTML = isLoading ? "Comparing..." : `${iconMarkup()} Compare`;
 }
 
 function formatPercent(value) {
   return `${Math.round(value * 1000) / 10}%`;
+}
+
+function formatLatency(value) {
+  return typeof value === "number" ? `${value.toFixed(2)} ms` : "-- ms";
 }
 
 function renderProbabilities(values) {
@@ -56,22 +70,24 @@ function renderProbabilities(values) {
   });
 }
 
-function showResult(data) {
-  errorBox.classList.add("hidden");
-  emptyState.classList.add("hidden");
-  resultContent.classList.remove("hidden");
+function applyLabel(element, label) {
+  element.className = `prediction-label ${label || ""}`;
+  element.textContent = label || "--";
+}
 
-  predictionLabel.className = `prediction-label ${data.label}`;
-  predictionLabel.textContent = data.label;
+function showModelResult(data) {
+  modelEmpty.classList.add("hidden");
+  modelContent.classList.remove("hidden");
+  applyLabel(modelLabel, data.label);
   languagePill.textContent = data.detected_language;
-  latency.textContent = `${data.latency_ms.toFixed(2)} ms`;
+  modelLatency.textContent = formatLatency(data.latency_ms);
   renderProbabilities(data.probabilities);
 
   if (data.warnings.length > 0) {
-    warningBox.textContent = data.warnings.join(" ");
-    warningBox.classList.remove("hidden");
+    modelWarning.textContent = data.warnings.join(" ");
+    modelWarning.classList.remove("hidden");
   } else {
-    warningBox.classList.add("hidden");
+    modelWarning.classList.add("hidden");
   }
 
   if (data.explanation) {
@@ -82,9 +98,54 @@ function showResult(data) {
   }
 }
 
+function showLLMResult(data) {
+  llmEmpty.classList.add("hidden");
+  llmContent.classList.remove("hidden");
+  llmModelName.textContent = `${data.provider} / ${data.model}`;
+  llmLatency.textContent = formatLatency(data.latency_ms);
+  llmStatus.textContent = data.status;
+  llmStatus.className = `status-pill ${data.status}`;
+
+  if (data.status === "ok") {
+    applyLabel(llmLabel, data.label);
+    llmRationale.textContent = data.rationale || "No rationale returned.";
+    if (typeof data.confidence === "number") {
+      llmConfidence.textContent = formatPercent(data.confidence);
+      llmConfidenceRow.classList.remove("hidden");
+    } else {
+      llmConfidenceRow.classList.add("hidden");
+    }
+  } else {
+    applyLabel(llmLabel, null);
+    llmRationale.textContent =
+      data.status === "unavailable"
+        ? "The server is running without LLM credentials."
+        : "The LLM request failed. The submitted local model result is still valid.";
+    llmConfidenceRow.classList.add("hidden");
+  }
+
+  if (data.warning) {
+    llmWarning.textContent = data.warning;
+    llmWarning.classList.remove("hidden");
+  } else {
+    llmWarning.classList.add("hidden");
+  }
+}
+
+function showAgreement(value) {
+  if (value === true) {
+    agreementStatus.textContent = "Agree";
+    agreementCopy.textContent = "The submitted model and LLM advisor returned the same label.";
+  } else if (value === false) {
+    agreementStatus.textContent = "Disagree";
+    agreementCopy.textContent = "Treat this as a review case. The submitted local model remains the formal output.";
+  } else {
+    agreementStatus.textContent = "Model only";
+    agreementCopy.textContent = "The LLM advisor is not available for this request.";
+  }
+}
+
 function showError(message) {
-  resultContent.classList.add("hidden");
-  emptyState.classList.add("hidden");
   errorBox.textContent = message;
   errorBox.classList.remove("hidden");
 }
@@ -108,6 +169,7 @@ reviewInput.addEventListener("input", setCharacterCount);
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  errorBox.classList.add("hidden");
   const review = reviewInput.value.trim();
   if (!review) {
     showError("Review text must not be empty.");
@@ -116,7 +178,7 @@ form.addEventListener("submit", async (event) => {
 
   setLoading(true);
   try {
-    const response = await fetch("/classify", {
+    const response = await fetch("/recommendations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ review, explain: explainInput.checked }),
@@ -125,7 +187,9 @@ form.addEventListener("submit", async (event) => {
     if (!response.ok) {
       throw new Error(data.detail || "Classification failed.");
     }
-    showResult(data);
+    showModelResult(data.model_prediction);
+    showLLMResult(data.llm_recommendation);
+    showAgreement(data.agreement);
   } catch (error) {
     showError(error.message || "Classification failed.");
   } finally {

@@ -7,7 +7,8 @@ The emphasis is engineering method and honest evidence rather than maximizing on
 ## What is included
 
 - Conservative Unicode/HTML/whitespace normalization inside the serialized sklearn pipeline.
-- Local Lingua language identification; no hosted API or LLM dependency.
+- Local Lingua language identification; the submitted model has no hosted API or LLM dependency.
+- Optional server-side LLM advisor for manual comparison when an API key is configured.
 - Normalized deduplication and deterministic language×label-stratified holdout splitting.
 - Five-fold comparison of Dummy, word TF-IDF, character TF-IDF, combined features, class weighting, and rating masking.
 - Balanced multinomial Logistic Regression with native probabilities and optional linear feature contributions.
@@ -230,6 +231,11 @@ The default browser entry point is a small interactive app for manual inference:
 http://localhost:8000/
 ```
 
+The browser app compares the submitted local model with an optional advisory LLM
+recommendation. The local model is always available and remains the formal output. The LLM
+panel is disabled unless the server can load a key from an environment variable or an ignored
+local key file.
+
 Interactive OpenAPI documentation, including English field descriptions and runnable request/response examples, is available at:
 
 ```text
@@ -269,6 +275,26 @@ The response contains one exact allowed label plus native Logistic Regression pr
 ```
 
 Set `"explain": true` to receive supporting/opposing word n-grams plus separately labeled technical character n-grams. These are linear contributions, not causal explanations.
+
+Compare the submitted model with the optional LLM advisor:
+
+```bash
+curl -sS -X POST http://localhost:8000/recommendations \
+  -H 'Content-Type: application/json' \
+  -d '{"review":"Deze film was verrassend goed, met sterke acteurs en een mooi einde.","explain":false}'
+```
+
+Enable the LLM panel for local manual use by putting the key in the ignored local secrets file:
+
+```bash
+mkdir -p .secrets
+printf '%s\n' 'your-deepseek-key' > .secrets/deepseek_api_key
+make serve
+```
+
+The LLM advisor uses an OpenAI-compatible chat completions call. Optional overrides are
+`DEEPSEEK_API_KEY`, `LLM_API_KEY`, `DEEPSEEK_API_KEY_FILE`, `LLM_API_KEY_FILE`,
+`LLM_PROVIDER`, `LLM_BASE_URL`, `LLM_MODEL`, and `LLM_TIMEOUT_SECONDS`.
 
 English input is accepted by the same model and carries an explicit warning:
 
@@ -346,7 +372,9 @@ Then repeat the health and classify curl commands. The image uses Python 3.11 sl
 - `artifacts/model_metadata.json` includes the MLflow run, training timestamp, Git commit, language config, label classes, schema, split evidence, and held-out metrics.
 - The original CSV remains unchanged and is rehashed during verification.
 - `joblib`/pickle artifacts can execute code while loading. Only load the repository's locally controlled artifact; never accept an untrusted uploaded model.
-- No secrets or hosted services are required.
+- The submitted local model does not require secrets or hosted services. The optional LLM advisor
+  reads a server-side key from environment variables or the ignored `.secrets/deepseek_api_key`
+  file and should be used only for manual comparison.
 
 ## Limitations and sensible next steps
 

@@ -5,41 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Dutch-primary movie review sentiment classifier for Positive, Average, and Negative labels."
+      content="Compare the submitted local model prediction with an optional LLM sentiment recommendation."
     />
-    <title>Dutch Sentiment Classifier</title>
+    <title>Sentiment Decision Console</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
     <main class="shell">
-      <section class="hero" aria-labelledby="page-title">
+      <section class="topbar" aria-labelledby="page-title">
         <div>
-          <p class="eyebrow">Workspace365 assignment API</p>
-          <h1 id="page-title">Dutch Movie Review Sentiment</h1>
+          <p class="eyebrow">Sentiment analysis console</p>
+          <h1 id="page-title">Model and LLM Review</h1>
           <p class="intro">
-            Classify one Dutch or English movie review with the trained local model.
+            Compare the reproducible submitted model with an optional advisory LLM pass.
           </p>
         </div>
-        <div class="status-card" aria-live="polite">
+        <div class="service-card" aria-live="polite">
           <span class="status-dot" id="status-dot" aria-hidden="true"></span>
           <div>
-            <span class="status-label">Service</span>
+            <span class="meta-label">Service</span>
             <strong id="health-status">Checking...</strong>
           </div>
         </div>
       </section>
 
-      <section class="workspace" aria-label="Sentiment classification workspace">
+      <section class="layout" aria-label="Sentiment recommendation workspace">
         <form class="panel input-panel" id="classify-form">
           <div class="panel-header">
             <div>
-              <h2>Review Input</h2>
-              <p>Paste one review exactly as it would appear in a dataset row.</p>
+              <h2>Review</h2>
+              <p>Submit one Dutch or English movie review.</p>
             </div>
             <label class="toggle">
               <input type="checkbox" id="explain" />
-              <span>Explain</span>
+              <span>Explain model</span>
             </label>
           </div>
 
@@ -59,46 +59,83 @@
               <svg aria-hidden="true" viewBox="0 0 24 24">
                 <path d="M5 12h14M13 6l6 6-6 6" />
               </svg>
-              Classify
+              Compare
             </button>
           </div>
         </form>
 
-        <aside class="panel result-panel" aria-live="polite">
-          <div class="panel-header">
-            <div>
-              <h2>Prediction</h2>
-              <p>Model output, language detection, and confidence distribution.</p>
-            </div>
-            <span class="latency" id="latency">-- ms</span>
+        <section class="results" aria-live="polite">
+          <div class="panel verdict-panel">
+            <span class="meta-label">Agreement</span>
+            <strong id="agreement-status">Waiting for input</strong>
+            <p id="agreement-copy">The local model will always run. LLM advice appears only when configured.</p>
           </div>
 
-          <div class="empty-state" id="empty-state">
-            <svg aria-hidden="true" viewBox="0 0 24 24">
-              <path d="M4 5h16v14H4z" />
-              <path d="M8 9h8M8 13h5" />
-            </svg>
-            <p>Enter a review to see the predicted sentiment.</p>
-          </div>
+          <div class="comparison-grid">
+            <article class="panel result-card" id="model-card">
+              <div class="card-title">
+                <div>
+                  <span class="meta-label">Submitted model</span>
+                  <h2>Local TF-IDF Logistic Regression</h2>
+                </div>
+                <span class="latency" id="model-latency">-- ms</span>
+              </div>
 
-          <div class="result-content hidden" id="result-content">
-            <div class="label-row">
-              <span class="prediction-label" id="prediction-label">--</span>
-              <span class="language-pill" id="language-pill">--</span>
-            </div>
+              <div class="empty-state" id="model-empty">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M4 5h16v14H4z" />
+                  <path d="M8 9h8M8 13h5" />
+                </svg>
+                <p>Run a comparison to see the submitted model result.</p>
+              </div>
 
-            <div class="warning hidden" id="warning-box"></div>
+              <div class="result-content hidden" id="model-content">
+                <div class="label-row">
+                  <span class="prediction-label" id="model-label">--</span>
+                  <span class="language-pill" id="language-pill">--</span>
+                </div>
+                <div class="warning hidden" id="model-warning"></div>
+                <div class="probabilities" id="probabilities"></div>
+                <details class="explanation hidden" id="explanation-details">
+                  <summary>Model feature explanation</summary>
+                  <pre id="explanation-output"></pre>
+                </details>
+              </div>
+            </article>
 
-            <div class="probabilities" id="probabilities"></div>
+            <article class="panel result-card" id="llm-card">
+              <div class="card-title">
+                <div>
+                  <span class="meta-label">LLM advisor</span>
+                  <h2 id="llm-model-name">Optional external model</h2>
+                </div>
+                <span class="latency" id="llm-latency">-- ms</span>
+              </div>
 
-            <details class="explanation hidden" id="explanation-details">
-              <summary>Feature explanation</summary>
-              <pre id="explanation-output"></pre>
-            </details>
+              <div class="empty-state" id="llm-empty">
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <path d="M12 3v18M5 8h14M7 16h10" />
+                </svg>
+                <p>LLM advice will appear when the server has an API key configured.</p>
+              </div>
+
+              <div class="result-content hidden" id="llm-content">
+                <div class="label-row">
+                  <span class="prediction-label" id="llm-label">--</span>
+                  <span class="status-pill" id="llm-status">--</span>
+                </div>
+                <p class="rationale" id="llm-rationale"></p>
+                <div class="confidence-line hidden" id="llm-confidence-row">
+                  <span>Confidence</span>
+                  <strong id="llm-confidence">--</strong>
+                </div>
+                <div class="warning hidden" id="llm-warning"></div>
+              </div>
+            </article>
           </div>
 
           <div class="error hidden" id="error-box"></div>
-        </aside>
+        </section>
       </section>
     </main>
     <script src="/static/app.js" defer></script>
