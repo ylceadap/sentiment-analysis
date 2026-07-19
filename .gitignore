@@ -16,3 +16,8 @@ mlflow.db
 artifacts/candidate*.joblib
 artifacts/*.tmp
 *.log
+tmp/
+work/
+output/
+reports/*.pptx.inspect.ndjson
+reports/*/slide-*.png

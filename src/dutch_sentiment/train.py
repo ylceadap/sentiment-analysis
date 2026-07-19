@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import logging
 import platform
@@ -23,15 +22,17 @@ from . import __version__
 from .config import load_config
 from .constants import MAX_REVIEW_CHARACTERS
 from .data import annotate_review_languages, load_dataset, make_holdout_split, sha256_file
+from .experiments.common import hash_values
 from .language import DutchLanguageDetector
 from .metrics import CV_SCORING, classification_metrics
-from .model import ModelSpec, SentimentModel, build_pipeline
+from .models.classical import ModelSpec, SentimentModel, build_pipeline
 from .reporting import build_model_report
 
 LOGGER = logging.getLogger(__name__)
 
 
 def _git_commit() -> str | None:
+    """Return the current commit when the project is inside a Git repository."""
     result = subprocess.run(
         ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=False
     )
@@ -39,17 +40,15 @@ def _git_commit() -> str | None:
 
 
 def _git_dirty() -> bool | None:
+    """Report whether tracked or untracked working-tree changes exist."""
     result = subprocess.run(
         ["git", "status", "--porcelain"], capture_output=True, text=True, check=False
     )
     return bool(result.stdout.strip()) if result.returncode == 0 else None
 
 
-def _hash_values(values: list[str]) -> str:
-    return hashlib.sha256("\n".join(values).encode()).hexdigest()
-
-
 def _experiment_specs() -> list[ModelSpec]:
+    """Return the bounded classical-model comparison set."""
     return [
         ModelSpec("dummy_prior", "word", dummy=True),
         ModelSpec("word_logreg", "word"),
@@ -86,6 +85,7 @@ def _log_candidate(
     train_reviews: list[str],
     train_labels: list[str],
 ) -> tuple[str, int]:
+    """Fit one candidate and log its parameters, metrics, and artifact to MLflow."""
     with mlflow.start_run(run_name=spec.name) as run:
         mlflow.log_params({**params, **spec.__dict__})
         mlflow.log_metrics(metrics)
@@ -100,6 +100,7 @@ def _log_candidate(
 
 
 def run_training(config_path: str | Path) -> dict[str, Any]:
+    """Select by training CV, evaluate held-out once, and persist final evidence."""
     config = load_config(config_path)
     seed = int(config["random_seed"])
     output_dir = Path(config["output_dir"])
@@ -255,8 +256,8 @@ def run_training(config_path: str | Path) -> dict[str, Any]:
                 .size()
                 .items()
             },
-            "train_normalized_sha256": _hash_values(split.train["normalized_review"].tolist()),
-            "test_normalized_sha256": _hash_values(split.test["normalized_review"].tolist()),
+            "train_normalized_sha256": hash_values(split.train["normalized_review"].tolist()),
+            "test_normalized_sha256": hash_values(split.test["normalized_review"].tolist()),
         }
         metadata = {
             "package_version": __version__,
@@ -301,12 +302,14 @@ def run_training(config_path: str | Path) -> dict[str, Any]:
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse training CLI arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="configs/training.yaml")
     return parser.parse_args()
 
 
 def main() -> None:
+    """Run the tracked training CLI."""
     args = parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     metadata = run_training(args.config)

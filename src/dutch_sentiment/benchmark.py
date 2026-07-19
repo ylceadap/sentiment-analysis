@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import platform
 import statistics
@@ -11,13 +12,13 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any
 
+import httpx
 import numpy as np
-from fastapi.testclient import TestClient
 
 from .api import create_app
 from .data import sha256_file
 from .language import DutchLanguageDetector
-from .model import SentimentModel
+from .models.classical import SentimentModel
 from .reporting import build_model_report
 from .service import InferenceService
 
@@ -38,6 +39,7 @@ SAMPLES = [
 
 
 def _measure(function: Callable[[str], object], iterations: int, warmup: int) -> dict[str, Any]:
+    """Measure repeated synchronous calls after a fixed warm-up."""
     for index in range(warmup):
         function(SAMPLES[index % len(SAMPLES)])
     values = []
@@ -54,9 +56,39 @@ def _measure(function: Callable[[str], object], iterations: int, warmup: int) ->
     }
 
 
+async def _measure_http(app: Any, iterations: int, warmup: int) -> dict[str, Any]:
+    """Measure the ASGI HTTP route without a deprecated synchronous test client."""
+    values: list[float] = []
+    transport = httpx.ASGITransport(app=app, raise_app_exceptions=True)
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(transport=transport, base_url="http://benchmark") as client,
+    ):
+        for index in range(warmup):
+            response = await client.post(
+                "/classify", json={"review": SAMPLES[index % len(SAMPLES)]}
+            )
+            response.raise_for_status()
+        for index in range(iterations):
+            started = perf_counter()
+            response = await client.post(
+                "/classify", json={"review": SAMPLES[index % len(SAMPLES)]}
+            )
+            response.raise_for_status()
+            values.append((perf_counter() - started) * 1000)
+    return {
+        "iterations": iterations,
+        "mean_ms": statistics.fmean(values),
+        "p50_ms": float(np.percentile(values, 50)),
+        "p95_ms": float(np.percentile(values, 95)),
+        "max_ms": max(values),
+    }
+
+
 def run_benchmark(
     model_path: str | Path, *, iterations: int = 100, warmup: int = 10
 ) -> dict[str, Any]:
+    """Benchmark model cold start and warm component/service/HTTP latency."""
     model_path = Path(model_path)
     started = perf_counter()
     detector = DutchLanguageDetector()
@@ -87,12 +119,9 @@ def run_benchmark(
         ),
     }
     app = create_app(service=service)
-    with TestClient(app) as client:
-        measurements["http_classify"] = _measure(
-            lambda text: client.post("/classify", json={"review": text}).raise_for_status(),
-            max(30, iterations // 2),
-            min(5, warmup),
-        )
+    measurements["http_classify"] = asyncio.run(
+        _measure_http(app, max(30, iterations // 2), min(5, warmup))
+    )
     return {
         "environment": {
             "operating_system": platform.platform(),
@@ -112,6 +141,7 @@ def run_benchmark(
 
 
 def main() -> None:
+    """Run the benchmark CLI and refresh its JSON and Markdown evidence."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default="artifacts/model.joblib")
     parser.add_argument("--output", default="artifacts/benchmark.json")

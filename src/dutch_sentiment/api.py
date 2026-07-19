@@ -16,10 +16,11 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from . import __version__
 from .constants import LABELS, MAX_REVIEW_CHARACTERS
 from .language import DutchLanguageDetector
-from .llm_recommender import LLMRecommendationResult, LLMRecommender
-from .model import SentimentModel
+from .models.classical import SentimentModel
+from .models.llm_advisor import LLMRecommendationResult, LLMRecommender
 from .service import InferenceService, NonDutchReviewError
 
 LOGGER = logging.getLogger(__name__)
@@ -27,6 +28,8 @@ Label = Literal["Positive", "Average", "Negative"]
 
 
 class ClassifyRequest(BaseModel):
+    """Validate the public classification request body."""
+
     model_config = ConfigDict(
         extra="forbid",
         json_schema_extra={
@@ -56,12 +59,15 @@ class ClassifyRequest(BaseModel):
     @field_validator("review")
     @classmethod
     def reject_blank_review(cls, value: str) -> str:
+        """Reject whitespace-only reviews after Pydantic length validation."""
         if not value.strip():
             raise ValueError("review must not be empty or whitespace-only")
         return value
 
 
 class ClassifyResponse(BaseModel):
+    """Define the stable successful classification response contract."""
+
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
@@ -98,12 +104,16 @@ class ClassifyResponse(BaseModel):
 
 
 class HealthResponse(BaseModel):
+    """Define readiness evidence returned by the health endpoint."""
+
     status: Literal["ok"]
     model_version: str
     model_ready: Literal[True]
 
 
 class LLMRecommendationResponse(BaseModel):
+    """Describe the optional external LLM advisory result."""
+
     status: Literal["ok", "unavailable", "error"]
     provider: str
     model: str
@@ -115,6 +125,8 @@ class LLMRecommendationResponse(BaseModel):
 
 
 class RecommendationResponse(BaseModel):
+    """Return the formal model prediction beside optional LLM advice."""
+
     model_prediction: ClassifyResponse
     llm_recommendation: LLMRecommendationResponse
     agreement: bool | None = Field(
@@ -133,6 +145,7 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        """Load and warm production components before marking the app ready."""
         if service is None:
             model = SentimentModel.load(resolved_path)
             detector = DutchLanguageDetector()
@@ -148,7 +161,7 @@ def create_app(
 
     app = FastAPI(
         title="Dutch-primary Movie Review Sentiment",
-        version="0.1.0",
+        version=__version__,
         lifespan=lifespan,
     )
     static_dir = Path(__file__).resolve().parent / "static"
@@ -157,10 +170,12 @@ def create_app(
 
     @app.get("/", include_in_schema=False)
     async def index() -> FileResponse:
+        """Serve the bundled interactive review interface."""
         return FileResponse(static_dir / "index.html")
 
     @app.get("/health", response_model=HealthResponse)
     async def health(request: Request) -> HealthResponse:
+        """Report readiness and the loaded model version."""
         return HealthResponse(
             status="ok", model_version=request.app.state.service.model_version, model_ready=True
         )
@@ -176,6 +191,7 @@ def create_app(
         response_description="The predicted label and supporting inference metadata.",
     )
     async def classify(payload: ClassifyRequest, request: Request) -> ClassifyResponse:
+        """Classify one review while returning safe public errors."""
         request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
         try:
             result = request.app.state.service.classify(payload.review, explain=payload.explain)
@@ -217,6 +233,7 @@ def create_app(
         ),
     )
     async def recommendations(payload: ClassifyRequest, request: Request) -> RecommendationResponse:
+        """Compare the formal classifier with the optional advisory LLM."""
         model_prediction = await classify(payload, request)
         llm_result: LLMRecommendationResult = request.app.state.llm_recommender.recommend(
             payload.review,
@@ -235,5 +252,6 @@ def create_app(
 
 
 def run() -> None:
+    """Start the Uvicorn server using environment-configured port settings."""
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     uvicorn.run(create_app(), host="0.0.0.0", port=int(os.getenv("PORT", "8000")))

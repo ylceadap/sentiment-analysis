@@ -96,3 +96,40 @@
 - **Reasoning:** the supplied dataset contains 485 consistently detected English reviews, Dutch and English share useful lexical/character patterns, and a single mixed model follows the user's explicit scope without pretending the small English segment supports a separate model.
 - **Consequences:** the training population grows from 4,313 to 4,798 deduplicated reviews; overall and per-language held-out metrics are both required; English requests no longer receive HTTP 422.
 - **Limitations:** English labels are highly imbalanced—only 10 raw English Negative rows—so English and especially English-Negative metrics remain descriptive rather than conclusive. Confidently detected languages other than Dutch or English remain unsupported.
+
+## D013 — Use one production champion and evidence-only research runs
+
+- **Alternatives considered:** label every registered candidate as champion; register reports as models; separate deployable artifacts from research evidence.
+- **Decision:** keep only `sentiment-production@champion`. Mark other artifacts as baseline, benchmark, challenger, research-only, or external advisor, and archive branch results in a separate evidence experiment.
+- **Reasoning:** a Registry alias must communicate deployment authority, while a strong metric or report does not prove that a self-contained deployable model exists.
+- **Consequences:** ordinal and Jina evidence is searchable in MLflow without being misrepresented as production-ready.
+- **Limitations:** local SQLite and `mlruns/` remain outside Git and require a separate backup.
+
+## D014 — Align supported Python and all public versions with verified evidence
+
+- **Alternatives considered:** claim untested Python 3.12 support; keep duplicated `0.1.0` strings; use one package version source and a verified lock.
+- **Decision:** support Python 3.11, derive build and API versions from `dutch_sentiment.__version__`, retain compatible dependency groups, and add an exact verified Python 3.11 environment lock.
+- **Reasoning:** support and reproducibility claims should reflect environments that were actually installed and tested.
+- **Consequences:** editable installation, FastAPI metadata, Docker, and training model versions agree.
+- **Limitations:** the lock is platform-specific to the verified macOS x86_64 environment; other platforms resolve from `pyproject.toml`.
+
+## D015 — Share experiment invariants without merging research policies
+
+- **Alternatives considered:** keep two monolithic scripts; merge all experiment behavior; extract stable mechanics while leaving model-specific selection visible.
+- **Decision:** share frozen split preparation, hashes, probability alignment, language/fold summaries, promotion gates, embedding cache mechanics, and ordinal equations. Keep each experiment's candidate construction and ranking policy in its own orchestrator.
+- **Reasoning:** the shared mechanics must not drift, but hiding model-specific decisions in an overly generic framework would make leakage and selection logic harder to audit.
+- **Consequences:** the embedding and Jina ordinal orchestrators are smaller and their common invariants have direct tests.
+- **Limitations:** report composition and model-specific fit loops remain intentionally separate.
+
+## D016 — Separate models by package and configuration, not permanent Git branches
+
+- **Alternatives considered:** retain one branch per model; merge every experiment branch wholesale;
+  keep one stable code line with archived experiment tags and MLflow evidence.
+- **Decision:** keep `main` as the only long-lived code branch. Put deployable algorithms in
+  `models/`, research orchestration in `experiments/`, and lifecycle-specific settings in
+  `configs/models/`. Tag completed experiment tips before deleting their branches.
+- **Reasoning:** branch ancestry had mixed model families and made a branch name look like a model
+  identity. MLflow already provides the correct run, artifact, and lifecycle boundary.
+- **Consequences:** models can be compared from one checkout, the service has one stable contract,
+  and old experiment code remains recoverable through remote archive tags.
+- **Limitations:** the local MLflow database still needs an independent backup or shared backend.

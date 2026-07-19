@@ -1,0 +1,15 @@
+model_family: tfidf_logistic_regression
+lifecycle: production
+registry_model: sentiment-production
+registry_alias: champion
+artifact_path: artifacts/model.joblib
+metadata_path: artifacts/model_metadata.json
+training_config: configs/training.yaml
+features:
+  word_ngrams: [1, 2]
+  character_ngrams: [3, 5]
+classifier:
+  kind: multiclass_logistic_regression
+  class_weight: balanced
+  solver: lbfgs
+
