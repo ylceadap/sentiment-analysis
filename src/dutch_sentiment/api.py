@@ -117,6 +117,9 @@ class LLMRecommendationResponse(BaseModel):
     status: Literal["ok", "unavailable", "error"]
     provider: str
     model: str
+    prompt_profile: str = Field(
+        description="Versioned runtime prompt; historical 24-shot evidence uses another profile."
+    )
     label: Label | None = None
     rationale: str | None = None
     confidence: float | None = None

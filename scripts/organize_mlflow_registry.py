@@ -39,6 +39,9 @@ class ExperimentEvidence:
 
 COMMON_LOCAL_TAGS = {
     "artifact.kind": "local-mlflow-model",
+    "artifact.tier": "deployable",
+    "artifact.self_contained": "true",
+    "weights.stored": "true",
     "data.raw_sha256": "2788b987e2c9fa4fd6459a1798a6e7d1dd63ddb5618c10907712d39042cc4be2",
     "data.train_split_sha256": "aa986ef1d8f35ebf232a015fd0e61d3affb1efbe4a589ec4f8653ae01e8ab7c9",
     "data.heldout_split_sha256": "b76afd73eaeed79bf61903ab8475a08c4565cf523a55e8ae34448d2330e00cbb",
@@ -159,7 +162,9 @@ MODEL_POLICIES = {
             "deployment.eligible": "false",
             "evaluation.scope": "training-oof",
             "source.branch": "experiment/transformer-embeddings",
+            "artifact.tier": "reproducible",
             "artifact.self_contained": "false",
+            "weights.stored": "partial",
         },
     ),
     "sentiment-deepseek-v4-flash-24shot": RegisteredModelPolicy(
@@ -170,6 +175,8 @@ MODEL_POLICIES = {
         ),
         tags={
             "artifact.kind": "remote-api-wrapper",
+            "artifact.tier": "reproducible",
+            "artifact.self_contained": "false",
             "governance.tier": "external-advisor",
             "governance.status": "architecture-review-required",
             "deployment.eligible": "conditional",
@@ -178,6 +185,7 @@ MODEL_POLICIES = {
             "license.use": "provider-terms",
             "privacy.external_processing": "true",
             "weights.stored": "false",
+            "runtime.connected": "false",
         },
     ),
     "sentiment-jina-v3-logreg": RegisteredModelPolicy(
@@ -189,6 +197,7 @@ MODEL_POLICIES = {
         ),
         tags={
             "artifact.kind": "evidence-only-mlflow-entry",
+            "artifact.tier": "evidence-only",
             "governance.tier": "research",
             "governance.status": "research-only",
             "deployment.eligible": "false",
@@ -212,6 +221,7 @@ MODEL_POLICIES = {
         ),
         tags={
             "artifact.kind": "evidence-only-mlflow-entry",
+            "artifact.tier": "evidence-only",
             "governance.tier": "research",
             "governance.status": "research-only",
             "deployment.eligible": "false",
@@ -395,6 +405,96 @@ EVIDENCE = (
 )
 
 
+ARCHIVE_TAGS = {
+    "linear-models-v1": "archive/linear-models/2026-07-19",
+    "negative-imbalance-v1": "archive/negative-imbalance/2026-07-19",
+    "transformer-embeddings-v1": "archive/transformer-embeddings/2026-07-19",
+    "jina-embeddings-v1": "archive/jina-embeddings/2026-07-19",
+    "llm-deepseek-v1": "archive/llm/2026-07-19",
+    "ordinal-regression-v1": "archive/ordinal-regression/2026-07-19",
+    "ordinal-logistic-v1": "archive/ordinal-logistic/2026-07-19",
+    "jina-ordinal-logistic-v1": "archive/jina-ordinal-logistic/2026-07-19",
+}
+
+
+def _source_exists(source: str, root: Path) -> bool:
+    """Check local MLflow model and evidence sources without loading pickle data."""
+    if source.startswith("models:/m-"):
+        model_id = source.removeprefix("models:/")
+        return any(root.glob(f"mlruns/*/models/{model_id}/artifacts/MLmodel"))
+    return Path(source.removeprefix("file://")).exists()
+
+
+def audit_governance(
+    client: MlflowClient, experiment_name: str, *, repository_root: Path
+) -> list[str]:
+    """Return registry, evidence, source, tier, alias, and Git lineage violations."""
+    issues: list[str] = []
+    models = {model.name: model for model in client.search_registered_models()}
+    missing_models = sorted(set(MODEL_POLICIES) - set(models))
+    if missing_models:
+        issues.append(f"missing registered models: {missing_models}")
+
+    champion_names: list[str] = []
+    for name, policy in MODEL_POLICIES.items():
+        model = models.get(name)
+        if model is None:
+            continue
+        aliases = sorted(model.aliases)
+        if aliases != [policy.alias]:
+            issues.append(f"{name}: aliases {aliases} != {[policy.alias]}")
+        if "champion" in aliases:
+            champion_names.append(name)
+        version = client.get_model_version(name, "1")
+        if str(version.status) != "READY":
+            issues.append(f"{name}: model version is not READY")
+        if not _source_exists(str(version.source), repository_root):
+            issues.append(f"{name}: missing model source {version.source}")
+        tier = str(model.tags.get("artifact.tier", ""))
+        if tier not in {"deployable", "reproducible", "evidence-only"}:
+            issues.append(f"{name}: invalid artifact.tier {tier!r}")
+        if tier == "deployable" and model.tags.get("artifact.self_contained") != "true":
+            issues.append(f"{name}: deployable model is not self-contained")
+        if tier == "evidence-only" and model.tags.get("deployment.eligible") != "false":
+            issues.append(f"{name}: evidence-only record is deployment eligible")
+    if champion_names != ["sentiment-production"]:
+        issues.append(f"expected one production champion, found {champion_names}")
+
+    evidence_runs = _evidence_runs_by_catalog_id(client, experiment_name)
+    expected_catalogs = {item.catalog_id for item in EVIDENCE}
+    missing_evidence = sorted(expected_catalogs - set(evidence_runs))
+    if missing_evidence:
+        issues.append(f"missing evidence runs: {missing_evidence}")
+    for catalog_id, run in evidence_runs.items():
+        if catalog_id not in expected_catalogs:
+            continue
+        if str(run.info.status) != "FINISHED":
+            issues.append(f"{catalog_id}: evidence run is not FINISHED")
+        evidence_path = Path(str(run.info.artifact_uri).removeprefix("file://")) / "evidence"
+        if not evidence_path.is_dir() or not any(evidence_path.rglob("*")):
+            issues.append(f"{catalog_id}: evidence artifacts are missing")
+        archive_tag = ARCHIVE_TAGS[catalog_id]
+        tag_check = subprocess.run(
+            ["git", "rev-parse", "--verify", f"refs/tags/{archive_tag}"],
+            cwd=repository_root,
+            capture_output=True,
+            check=False,
+        )
+        if tag_check.returncode != 0:
+            issues.append(f"{catalog_id}: missing archive tag {archive_tag}")
+            continue
+        source_commit = str(run.data.tags.get("source_commit", ""))
+        ancestor = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", source_commit, archive_tag],
+            cwd=repository_root,
+            capture_output=True,
+            check=False,
+        )
+        if not source_commit or ancestor.returncode != 0:
+            issues.append(f"{catalog_id}: source commit is not preserved by {archive_tag}")
+    return issues
+
+
 def _git_bytes(branch: str, path: str) -> bytes | None:
     """Read a tracked file from a branch without changing the working tree."""
     result = subprocess.run(["git", "show", f"{branch}:{path}"], capture_output=True, check=False)
@@ -520,6 +620,9 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tracking-uri", default="sqlite:///mlflow.db")
     parser.add_argument("--experiment", default="dutch-sentiment-research-evidence")
+    parser.add_argument(
+        "--audit-only", action="store_true", help="Check policy without mutating MLflow state."
+    )
     return parser.parse_args()
 
 
@@ -528,12 +631,17 @@ def main() -> None:
     args = parse_args()
     mlflow.set_tracking_uri(args.tracking_uri)
     client = MlflowClient(args.tracking_uri)
-    archive_experiment_evidence(client, args.experiment)
-    evidence_runs = _evidence_runs_by_catalog_id(client, args.experiment)
-    apply_model_policies(client, evidence_runs)
+    if not args.audit_only:
+        archive_experiment_evidence(client, args.experiment)
+        evidence_runs = _evidence_runs_by_catalog_id(client, args.experiment)
+        apply_model_policies(client, evidence_runs)
+    issues = audit_governance(client, args.experiment, repository_root=Path.cwd())
+    if issues:
+        raise RuntimeError("MLflow governance audit failed:\n- " + "\n- ".join(issues))
     print(
-        f"Organized {len(MODEL_POLICIES)} registered models and "
-        f"cataloged {len(EVIDENCE)} experiment evidence records."
+        f"Verified {len(MODEL_POLICIES)} registered models and "
+        f"{len(EVIDENCE)} experiment evidence records"
+        + (" without changes." if args.audit_only else " after applying policy.")
     )
 
 

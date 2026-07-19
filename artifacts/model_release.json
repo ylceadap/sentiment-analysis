@@ -1,0 +1,10 @@
+{
+  "registry_model": "sentiment-production",
+  "registry_alias": "champion",
+  "registry_version": "1",
+  "registry_run_id": "ecfebb8617194b8697ba1b256a70cfb4",
+  "source_run_id": "3ed2ea08efe74502b3e5d47bb0af9658",
+  "model_version": "0.1.0+9829f359",
+  "model_sha256": "32ec6bc66d70c26f50bc7b6f495d0852cdd1ee0fd68cbff97d823b34370bf836",
+  "metadata_sha256": "e52884eeede582322ecb7461e4c3f02d30310e5938871694873c558663174f5b"
+}

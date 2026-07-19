@@ -45,6 +45,7 @@ tests/                            deterministic unit and API tests
 requirements/verified-py311.lock  exact verified Python 3.11 environment
 artifacts/model.joblib            ready-to-serve fitted pipeline
 artifacts/model_metadata.json     hashes, versions, split, metrics, schema
+artifacts/model_release.json      champion alias, source run, version, and release hashes
 artifacts/*.json|*.csv            portable audit/experiment/benchmark evidence
 reports/data_audit.md             interpreted full-dataset audit
 reports/model_report.md           experiments, test metrics, errors, latency
@@ -55,6 +56,7 @@ Dockerfile                        non-root serving image
 docs/ARCHITECTURE.md              complete system and module architecture
 docs/REPOSITORY_LAYOUT.md         file classification and protection policy
 docs/GIT_MLFLOW_MAPPING.md        archive-tag to MLflow evidence mapping
+docs/BLIND_EVALUATION.md          sealed challenger-promotion procedure
 ```
 
 ## Requirements and installation
@@ -190,17 +192,18 @@ All normalization and TF-IDF fitting happens inside CV folds. The official TF-ID
 
 Full metrics, standard deviations, MLflow run IDs, and artifact sizes are in `artifacts/experiment_comparison.csv`.
 
-### Research branch index
+### Archived research index
 
-The production submission remains on `main`. Completed or exploratory work stays isolated so optional dependencies and alternative serving designs do not blur the formal model contract.
+The production submission remains on `main`, the only long-lived branch. Completed research is
+preserved by immutable `archive/*` tags and MLflow evidence instead of permanent experiment branches.
 
-| Branch | Scope | Headline result | Promotion status |
+| Archive tag | Scope | Headline result | Promotion status |
 | --- | --- | --- | --- |
-| [`experiment/linear-models`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/linear-models) | Logistic Regression C sweep and LinearSVC | Best CV macro-F1 0.6536 | Frozen; predefined improvement gate not met |
-| [`experiment/negative-imbalance`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/negative-imbalance) | Custom class weights, Negative thresholds, and fold-local oversampling | Held-out Negative recall 0.65, precision 0.5909 | Frozen; precision gate of 0.60 not met |
-| [`experiment/transformer-embeddings`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/transformer-embeddings) | Frozen multilingual MiniLM and Dutch RobBERT sentence embeddings with Logistic Regression | Did not pass the OOF promotion gates | Frozen; official model unchanged |
-| [`experiment/jina-embeddings`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/jina-embeddings) | Frozen Jina v3 classification embeddings with Logistic Regression | Best OOF macro-F1 0.7108 | Research only; no held-out promotion evaluation and non-commercial model license |
-| [`experiment/llm`](https://github.com/ylceadap/sentiment-analysis/tree/experiment/llm) | Direct DeepSeek V4 Flash few-shot classification | Held-out macro-F1 0.7506 | Separate architecture review required; external API, privacy, cost, latency, and repeated-test-set caveats |
+| `archive/linear-models/2026-07-19` | Logistic Regression C sweep and LinearSVC | Best CV macro-F1 0.6536 | Frozen; gate not met |
+| `archive/negative-imbalance/2026-07-19` | Class weights, thresholds, oversampling | Negative recall 0.65, precision 0.5909 | Frozen; precision gate not met |
+| `archive/transformer-embeddings/2026-07-19` | MiniLM and RobBERT embeddings | Best OOF macro-F1 0.5165 | Research only |
+| `archive/jina-embeddings/2026-07-19` | Jina v3 + Logistic Regression | Best OOF macro-F1 0.7108 | Non-commercial assignment research; no blind test |
+| `archive/llm/2026-07-19` | DeepSeek V4 Flash 24-shot experiment | Held-out macro-F1 0.7506 | Historical external evidence; not the UI prompt |
 
 Only a candidate that wins on training-only CV/OOF evidence, is frozen, passes a new blind evaluation, satisfies deployment constraints, and passes CI should be proposed for merge into `main`.
 
@@ -281,6 +284,9 @@ recommendation. The local model is always available and remains the formal outpu
 panel is disabled unless the server can load a key from an environment variable or an ignored
 local key file.
 
+The UI uses the `zero-shot-advisor-v1` runtime prompt. The historical MLflow 24-shot result remains a
+separate evidence record; research and challenger models are intentionally absent from this console.
+
 Interactive OpenAPI documentation, including English field descriptions and runnable request/response examples, is available at:
 
 ```text
@@ -339,7 +345,7 @@ make serve
 
 The LLM advisor uses an OpenAI-compatible chat completions call. Optional overrides are
 `DEEPSEEK_API_KEY`, `LLM_API_KEY`, `DEEPSEEK_API_KEY_FILE`, `LLM_API_KEY_FILE`,
-`LLM_PROVIDER`, `LLM_BASE_URL`, `LLM_MODEL`, and `LLM_TIMEOUT_SECONDS`.
+`LLM_PROVIDER`, `LLM_BASE_URL`, `LLM_MODEL`, `LLM_PROMPT_PROFILE`, and `LLM_TIMEOUT_SECONDS`.
 
 English input is accepted by the same model and carries an explicit warning:
 
@@ -394,6 +400,8 @@ Training writes live experiment state to a local SQLite backend, ignored by Git,
 
 ```bash
 make mlflow
+make mlflow-audit
+make model-release-verify
 # open http://127.0.0.1:5000
 ```
 
@@ -406,7 +414,7 @@ make docker-build
 make docker-run
 ```
 
-Then repeat the health and classify curl commands. The image uses Python 3.11 slim, installs only the core serving dependencies (not MLflow, pandas, pyarrow, matplotlib, or training tools), runs as a non-root user, includes a health check, and copies the model/metadata but excludes the raw CSV, PDF, tests, reports, Git data, and MLflow database.
+Then repeat the health and classify curl commands. The image uses Python 3.11 slim, installs only the core serving dependencies (not MLflow, pandas, pyarrow, matplotlib, or training tools), runs as a non-root user, includes a health check, and copies the model, metadata, and release manifest but excludes the raw CSV, PDF, tests, reports, Git data, and MLflow database.
 
 **Verification status:** the local development environment has no Docker engine, but GitHub Actions successfully built the image, started the container, and reached `/health` on 2026-07-18 ([CI run 1](https://github.com/ylceadap/sentiment-analysis/actions/runs/29649585086)).
 
@@ -415,7 +423,9 @@ Then repeat the health and classify curl commands. The image uses Python 3.11 sl
 - Git commits track implementation phases.
 - Raw data, split content, fitted model, and package versions are hashed/recorded.
 - `artifacts/model_metadata.json` includes the MLflow run, training timestamp, Git commit, language config, label classes, schema, split evidence, and held-out metrics.
+- `artifacts/model_release.json` binds that artifact to the Registry champion and source-run hashes.
 - `make mlflow-organize` reapplies the model-governance policy and catalogs completed branch evidence; see `docs/MODEL_REGISTRY.md`.
+- `make mlflow-audit` is read-only; `make model-release-export` is the explicit champion-to-Docker export step.
 - The original CSV remains unchanged and is rehashed during verification.
 - `joblib`/pickle artifacts can execute code while loading. Only load the repository's locally controlled artifact; never accept an untrusted uploaded model.
 - The submitted local model does not require secrets or hosted services. The optional LLM advisor

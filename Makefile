@@ -1,4 +1,4 @@
-.PHONY: install install-core install-locked install-embeddings audit train embedding-experiment jina-ordinal-logistic evaluate benchmark predict test coverage lint format serve mlflow mlflow-organize docker-build docker-run
+.PHONY: install install-core install-locked install-embeddings audit train embedding-experiment jina-ordinal-logistic evaluate benchmark predict test coverage lint format serve mlflow mlflow-organize mlflow-audit model-release-verify model-release-export blind-evaluate docker-build docker-run
 
 PYTHON := .venv/bin/python
 
@@ -61,6 +61,19 @@ mlflow:
 
 mlflow-organize:
 	$(PYTHON) scripts/organize_mlflow_registry.py
+
+mlflow-audit:
+	$(PYTHON) scripts/organize_mlflow_registry.py --audit-only
+
+model-release-verify:
+	$(PYTHON) scripts/manage_model_release.py verify --require-mlflow
+
+model-release-export:
+	$(PYTHON) scripts/manage_model_release.py manifest
+	$(PYTHON) scripts/manage_model_release.py export
+
+blind-evaluate:
+	$(PYTHON) -m dutch_sentiment.blind_evaluation --config configs/blind_evaluation.yaml --confirm-unseen
 
 docker-build:
 	docker build -t dutch-sentiment:latest .

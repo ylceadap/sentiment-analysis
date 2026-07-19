@@ -14,6 +14,7 @@ import httpx
 from ..constants import LABELS
 
 LLMStatus = Literal["ok", "unavailable", "error"]
+DEFAULT_PROMPT_PROFILE = "zero-shot-advisor-v1"
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,7 @@ class LLMRecommendationResult:
     status: LLMStatus
     provider: str
     model: str
+    prompt_profile: str = DEFAULT_PROMPT_PROFILE
     label: str | None = None
     rationale: str | None = None
     confidence: float | None = None
@@ -72,6 +74,7 @@ class LLMRecommender:
         provider: str = "deepseek",
         base_url: str = "https://api.deepseek.com",
         model: str = "deepseek-v4-flash",
+        prompt_profile: str = DEFAULT_PROMPT_PROFILE,
         timeout_seconds: float = 30.0,
     ) -> None:
         """Configure one OpenAI-compatible advisory endpoint without making a request."""
@@ -79,6 +82,7 @@ class LLMRecommender:
         self.provider = provider
         self.base_url = base_url.rstrip("/")
         self.model = model
+        self.prompt_profile = prompt_profile
         self.timeout_seconds = timeout_seconds
 
     @classmethod
@@ -98,6 +102,7 @@ class LLMRecommender:
             provider=os.getenv("LLM_PROVIDER", "deepseek"),
             base_url=os.getenv("LLM_BASE_URL", "https://api.deepseek.com"),
             model=os.getenv("LLM_MODEL", "deepseek-v4-flash"),
+            prompt_profile=os.getenv("LLM_PROMPT_PROFILE", DEFAULT_PROMPT_PROFILE),
             timeout_seconds=float(os.getenv("LLM_TIMEOUT_SECONDS", "30")),
         )
 
@@ -108,6 +113,7 @@ class LLMRecommender:
                 status="unavailable",
                 provider=self.provider,
                 model=self.model,
+                prompt_profile=self.prompt_profile,
                 warning=(
                     "LLM recommendation is unavailable because no server-side API key was "
                     "found in DEEPSEEK_API_KEY, LLM_API_KEY, DEEPSEEK_API_KEY_FILE, "
@@ -156,6 +162,7 @@ class LLMRecommender:
                 status="ok",
                 provider=self.provider,
                 model=str(body.get("model") or self.model),
+                prompt_profile=self.prompt_profile,
                 label=label,
                 rationale=rationale,
                 confidence=confidence,
@@ -170,6 +177,7 @@ class LLMRecommender:
                 status="error",
                 provider=self.provider,
                 model=self.model,
+                prompt_profile=self.prompt_profile,
                 latency_ms=round((perf_counter() - started) * 1000, 3),
                 warning=f"LLM recommendation failed: {type(exc).__name__}.",
             )

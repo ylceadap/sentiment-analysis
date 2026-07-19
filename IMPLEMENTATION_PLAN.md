@@ -232,3 +232,22 @@ configuration, MLflow lifecycle metadata, and immutable archive tags.
 
 **Status:** complete. `main` is the only long-lived branch; nine remote archive tags preserve the
 experiment tips, and `docs/GIT_MLFLOW_MAPPING.md` links them to eight MLflow evidence runs.
+
+## Phase 10 — Release integrity and challenger governance
+
+**Objective:** prevent Registry/serving drift, distinguish evidence from loadable models, and make any
+future promotion depend on a genuinely new blind test.
+
+- [x] Confirm the external MLflow backup is complete.
+- [x] Restore and verify `gh` access for the current system credential context.
+- [x] Bind the production model, metadata, Registry champion, and source run with a tracked manifest.
+- [x] Add an explicit champion export and read-only verification command.
+- [x] Add Registry/evidence/alias/archive/tier integrity auditing.
+- [x] Classify artifacts as deployable, reproducible, or evidence-only.
+- [x] Separate the UI's zero-shot DeepSeek profile from historical 24-shot evidence.
+- [x] Define a sealed, overlap-resistant new-blind-test workflow for frozen challengers.
+- [x] Keep research models out of the production UI and document that boundary.
+- [x] Add model-release verification before Docker CI.
+
+**Status:** implemented; challenger evaluation remains intentionally blocked until a genuinely new
+labeled dataset and at least one materialized frozen challenger are supplied.

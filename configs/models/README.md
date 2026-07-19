@@ -10,7 +10,11 @@ decision.
 | `tfidf_ordinal.yaml` | TF-IDF plus ordinal logistic boundaries | Frozen challenger |
 | `jina_logreg.yaml` | Jina v3 embeddings plus multiclass logistic regression | Research only |
 | `jina_ordinal.yaml` | Jina v3 embeddings plus ordinal logistic boundaries | Research only |
-| `llm_advisor.yaml` | External DeepSeek recommendation | Advisory only |
+| `llm_advisor.yaml` | External DeepSeek zero-shot runtime profile | Advisory only; distinct from 24-shot evidence |
+
+Artifact lifecycle is additionally recorded in MLflow as `deployable`, `reproducible`, or
+`evidence-only`. These terms describe what is physically preserved; deployment eligibility remains a
+separate governance decision.
 
 The legacy paths `configs/embedding_experiment.yaml` and
 `configs/jina_ordinal_logistic.yaml` are compatibility links to these canonical files.
