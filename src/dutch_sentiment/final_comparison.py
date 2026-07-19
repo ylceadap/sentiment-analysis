@@ -49,9 +49,9 @@ MODEL_ORDER = (
 def _restore_loaded_logistic_state(estimator: Any) -> Any:
     """Restore removed sklearn state required by older serialized multiclass heads."""
     candidates = [estimator]
-    get_params = getattr(estimator, "get_params", None)
-    if callable(get_params):
-        candidates.extend(get_params(deep=True).values())
+    # Avoid get_params(): newer sklearn asks the legacy child for the missing
+    # field before we have a chance to repair it.
+    candidates.extend(component for _, component in getattr(estimator, "steps", ()))
     for candidate in candidates:
         if not isinstance(candidate, LogisticRegression):
             continue
