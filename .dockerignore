@@ -1,6 +1,8 @@
 .git
 .gitignore
 .venv
+.cache
+.secrets
 __pycache__
 *.pyc
 .pytest_cache
@@ -13,7 +15,12 @@ Python_Engineer_Challenge_2.csv
 Python_Engineer_coding_challenge_1_1.pdf
 tests
 reports
+notebooks
+docs
+scripts
 configs
+*.pptx
+*.ndjson
 artifacts/*.csv
 artifacts/*.json
 !artifacts/model_metadata.json

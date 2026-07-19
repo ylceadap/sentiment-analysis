@@ -9,10 +9,12 @@ import pandas as pd
 
 
 def _read_json(path: Path) -> dict:
+    """Read one UTF-8 JSON evidence document."""
     return json.loads(path.read_text(encoding="utf-8")) if path.is_file() else {}
 
 
 def _format_metric(value: object) -> str:
+    """Format numeric report values consistently while preserving other values."""
     return f"{float(value):.4f}" if value is not None else "n/a"
 
 

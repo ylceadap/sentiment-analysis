@@ -8,6 +8,7 @@ from pathlib import Path
 
 
 def main() -> None:
+    """Print stored held-out metrics without re-evaluating the model."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--metrics", default="artifacts/final_metrics.json")
     args = parser.parse_args()

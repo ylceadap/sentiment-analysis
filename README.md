@@ -18,25 +18,30 @@ The emphasis is engineering method and honest evidence rather than maximizing on
 
 ## Architecture
 
-```text
-raw CSV (immutable)
-  -> schema/hash audit
-  -> local language identification
-  -> normalized deduplication
-  -> language + label stratified holdout and training CV
-  -> [normalizer -> word/character TF-IDF -> Logistic Regression]
-  -> joblib model + JSON metadata
-  -> FastAPI inference service
+```mermaid
+flowchart LR
+    data["Immutable CSV"] --> prepare["Audit, language annotation, normalize, deduplicate"]
+    prepare --> split["Stratified train / held-out split"]
+    split --> train["Training-only CV / OOF selection"]
+    train --> model["Serialized production pipeline"]
+    model --> service["InferenceService + FastAPI"]
+    train --> evidence["MLflow + portable reports"]
 ```
 
 Language identification is separate from the sklearn pipeline so responses can report language and attach the English reliability warning. Normalization, vectorization, and classification stay in one shared fitted pipeline so Dutch and English use exactly the same model and training/serving cannot drift.
+
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the complete production, experiment,
+module-dependency, artifact, MLflow, and Docker architecture.
 
 ## Repository map
 
 ```text
 configs/training.yaml             central experiment configuration
 src/dutch_sentiment/              audit, data, language, model, API, benchmark code
+src/dutch_sentiment/experiment_*  shared frozen-split, hash, metric, and gate utilities
+src/dutch_sentiment/ordinal.py    ordinal probability equations and diagnostics
 tests/                            deterministic unit and API tests
+requirements/verified-py311.lock  exact verified Python 3.11 environment
 artifacts/model.joblib            ready-to-serve fitted pipeline
 artifacts/model_metadata.json     hashes, versions, split, metrics, schema
 artifacts/*.json|*.csv            portable audit/experiment/benchmark evidence
@@ -46,11 +51,13 @@ IMPLEMENTATION_PLAN.md            phase checklist and validation commands
 DECISIONS.md                      alternatives, decisions, consequences
 REQUIREMENTS_TRACEABILITY.md      requirement-to-evidence mapping
 Dockerfile                        non-root serving image
+docs/ARCHITECTURE.md              complete system and module architecture
+docs/REPOSITORY_LAYOUT.md         file classification and protection policy
 ```
 
 ## Requirements and installation
 
-- Python 3.11 (verified with 3.11.7); Python 3.12 is allowed by project metadata but was not tested here.
+- Python 3.11 (verified with 3.11.7); project metadata intentionally matches this tested runtime.
 - A Unix-like shell and `make` for convenience; every target shows its underlying command.
 - Docker is optional.
 
@@ -67,6 +74,10 @@ python3 -m venv .venv
 
 Dependencies are constrained by compatible version ranges in `pyproject.toml`. The `train` extra contains MLflow/pandas/reporting tools; the Docker image installs only the smaller serving core. The verified environment resolved scikit-learn 1.9.0, Lingua 2.1.1, FastAPI 0.139.2, MLflow 3.14.0, and pytest 8.4.2.
 
+Use `make install-locked` to reproduce the complete macOS x86_64 Python 3.11 environment recorded
+in `requirements/verified-py311.lock`. Dependency groups in `pyproject.toml` remain authoritative for
+portable core, training, embedding, and development installations.
+
 ## Exact working commands
 
 ```bash
@@ -81,6 +92,38 @@ make lint        # Ruff lint and formatting checks
 make serve       # listen on 0.0.0.0:8000
 make mlflow      # open local MLflow UI on port 5000
 ```
+
+### Frozen sentence-embedding experiments
+
+This branch contains a train-only experiment with the revision-pinned Jina Embeddings v3 classification encoder. It trains one Logistic Regression classifier on all Dutch and English training rows, searches class weights and the Negative threshold only with five-fold out-of-fold predictions, and never evaluates the existing held-out test.
+
+```bash
+make install-embeddings
+make embedding-experiment
+```
+
+The first run downloads the encoder and creates an ignored local cache under `.cache/`; later runs reuse it. On this branch the experiment uses revision-pinned Jina Embeddings v3 with its `classification` adapter, a 1,024-token limit, and 512-dimensional output. It still trains one LogisticRegression on all Dutch and English rows and selects only from train-set OOF evidence. Jina v3 is CC-BY-NC-4.0, so this is explicitly a non-commercial research experiment.
+
+The Colab run outputs are tracked in `artifacts/jina_embedding_experiment_results.csv`, `artifacts/jina_embedding_experiment_decision.json`, `reports/jina_embedding_experiment.md`, and `reports/jina_embedding_validation.md`.
+
+This branch also contains a follow-up Colab experiment that keeps the same frozen Jina embeddings
+and compares the standard multiclass Logistic Regression head with a two-boundary ordinal Logistic
+Regression head:
+
+```bash
+make jina-ordinal-logistic
+```
+
+Run `notebooks/jina_ordinal_logistic_experiment.ipynb` on Colab GPU. It writes training-only OOF
+evidence to `artifacts/jina_ordinal_logistic/` and
+`reports/jina_ordinal_logistic_experiment.md`. It does not evaluate the reserved holdout rows,
+replace `artifacts/model.joblib`, or train a separate English model.
+
+The Colab run selected `jina_v3_classification__ordinal_composed_argmax_C_2`. On training-only
+OOF evidence it reached macro-F1 0.7299, Negative precision/recall/F1
+0.8089/0.7583/0.7828, ordinal MAE 0.2952, quadratic weighted kappa 0.5817, and severe error
+rate 0.0036. It passed every predefined OOF gate, but remains research-only because Jina v3 is
+CC-BY-NC-4.0 and no new blind test has been run.
 
 ## Train and predict: shortest workflow
 
@@ -331,11 +374,11 @@ Verified commands:
 
 ```bash
 make test
-# 26 passed, 1 third-party Starlette deprecation warning
+# 43 passed
 
 make coverage
-# 26 tests passed; 58% total branch coverage
-# Critical API, audit, data, language, metrics, model, service, and text logic is directly tested
+# 76% total branch coverage
+# Training orchestration, reporting, benchmark, shared experiments, and ordinal math are tested
 
 make lint
 # Ruff lint passed; all files formatted
@@ -370,6 +413,7 @@ Then repeat the health and classify curl commands. The image uses Python 3.11 sl
 - Git commits track implementation phases.
 - Raw data, split content, fitted model, and package versions are hashed/recorded.
 - `artifacts/model_metadata.json` includes the MLflow run, training timestamp, Git commit, language config, label classes, schema, split evidence, and held-out metrics.
+- `make mlflow-organize` reapplies the model-governance policy and catalogs completed branch evidence; see `docs/MODEL_REGISTRY.md`.
 - The original CSV remains unchanged and is rehashed during verification.
 - `joblib`/pickle artifacts can execute code while loading. Only load the repository's locally controlled artifact; never accept an untrusted uploaded model.
 - The submitted local model does not require secrets or hosted services. The optional LLM advisor

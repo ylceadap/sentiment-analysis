@@ -1,8 +1,9 @@
+from collections.abc import AsyncIterator
 from dataclasses import replace
 from pathlib import Path
 
+import httpx
 import pytest
-from fastapi.testclient import TestClient
 
 from dutch_sentiment.api import MAX_REVIEW_CHARACTERS, create_app
 from dutch_sentiment.constants import ENGLISH_RELIABILITY_WARNING
@@ -47,18 +48,27 @@ class FakeLLMRecommender:
 
 
 @pytest.fixture()
-def client() -> TestClient:
-    with TestClient(
-        create_app(service=FakeService(), llm_recommender=FakeLLMRecommender())
-    ) as test_client:
-        yield test_client
+def anyio_backend() -> str:
+    """Run async API tests on the installed asyncio backend only."""
+    return "asyncio"
 
 
-def test_health_and_successful_classification(client: TestClient) -> None:
-    health = client.get("/health")
+@pytest.fixture()
+async def client() -> AsyncIterator[httpx.AsyncClient]:
+    """Yield an in-process HTTP client with application lifespan enabled."""
+    app = create_app(service=FakeService(), llm_recommender=FakeLLMRecommender())
+    async with app.router.lifespan_context(app):
+        transport = httpx.ASGITransport(app=app, raise_app_exceptions=False)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as test_client:
+            yield test_client
+
+
+@pytest.mark.anyio
+async def test_health_and_successful_classification(client: httpx.AsyncClient) -> None:
+    health = await client.get("/health")
     assert health.status_code == 200
     assert health.json() == {"status": "ok", "model_version": "fake-v1", "model_ready": True}
-    response = client.post(
+    response = await client.post(
         "/classify", json={"review": "Deze film was verrassend goed.", "explain": True}
     )
     assert response.status_code == 200
@@ -69,15 +79,17 @@ def test_health_and_successful_classification(client: TestClient) -> None:
     assert body["explanation"] == {"supporting_word_features": []}
 
 
-def test_root_serves_interactive_web_app(client: TestClient) -> None:
-    response = client.get("/")
+@pytest.mark.anyio
+async def test_root_serves_interactive_web_app(client: httpx.AsyncClient) -> None:
+    response = await client.get("/")
     assert response.status_code == 200
     assert "Model and LLM Review" in response.text
     assert "/static/app.js" in response.text
 
 
-def test_recommendations_returns_model_and_llm_advice(client: TestClient) -> None:
-    response = client.post(
+@pytest.mark.anyio
+async def test_recommendations_returns_model_and_llm_advice(client: httpx.AsyncClient) -> None:
+    response = await client.post(
         "/recommendations", json={"review": "Deze film was verrassend goed.", "explain": False}
     )
     assert response.status_code == 200
@@ -88,8 +100,11 @@ def test_recommendations_returns_model_and_llm_advice(client: TestClient) -> Non
     assert body["agreement"] is True
 
 
-def test_openapi_documents_classification_contract_and_examples(client: TestClient) -> None:
-    response = client.get("/openapi.json")
+@pytest.mark.anyio
+async def test_openapi_documents_classification_contract_and_examples(
+    client: httpx.AsyncClient,
+) -> None:
+    response = await client.get("/openapi.json")
     assert response.status_code == 200
     schema = response.json()
     operation = schema["paths"]["/classify"]["post"]
@@ -108,34 +123,36 @@ def test_openapi_documents_classification_contract_and_examples(client: TestClie
 
 
 @pytest.mark.parametrize("review", ["", "   \n\t"])
-def test_empty_input_rejected(client: TestClient, review: str) -> None:
-    assert client.post("/classify", json={"review": review}).status_code == 422
+@pytest.mark.anyio
+async def test_empty_input_rejected(client: httpx.AsyncClient, review: str) -> None:
+    assert (await client.post("/classify", json={"review": review})).status_code == 422
 
 
-def test_missing_and_oversized_input_rejected(client: TestClient) -> None:
-    assert client.post("/classify", json={}).status_code == 422
-    response = client.post("/classify", json={"review": "a" * (MAX_REVIEW_CHARACTERS + 1)})
+@pytest.mark.anyio
+async def test_missing_and_oversized_input_rejected(client: httpx.AsyncClient) -> None:
+    assert (await client.post("/classify", json={})).status_code == 422
+    response = await client.post("/classify", json={"review": "a" * (MAX_REVIEW_CHARACTERS + 1)})
     assert response.status_code == 422
 
 
-def test_english_is_accepted_with_warning_and_other_errors_are_safe(
-    client: TestClient,
+@pytest.mark.anyio
+async def test_english_is_accepted_with_warning_and_other_errors_are_safe(
+    client: httpx.AsyncClient,
 ) -> None:
-    english = client.post("/classify", json={"review": "English review text"})
+    english = await client.post("/classify", json={"review": "English review text"})
     assert english.status_code == 200
     assert english.json()["detected_language"] == "english"
     assert english.json()["warnings"] == [ENGLISH_RELIABILITY_WARNING]
-    unsupported = client.post("/classify", json={"review": "French review text"})
+    unsupported = await client.post("/classify", json={"review": "French review text"})
     assert unsupported.status_code == 422
-    internal = client.post("/classify", json={"review": "laat explode gebeuren"})
+    internal = await client.post("/classify", json={"review": "laat explode gebeuren"})
     assert internal.status_code == 500
     assert "sensitive" not in internal.text
 
 
-def test_missing_model_fails_during_startup(tmp_path: Path) -> None:
+@pytest.mark.anyio
+async def test_missing_model_fails_during_startup(tmp_path: Path) -> None:
     app = create_app(model_path=tmp_path / "missing.joblib")
-    with (
-        pytest.raises(FileNotFoundError, match="Model artifact not found"),
-        TestClient(app),
-    ):
-        pass
+    with pytest.raises(FileNotFoundError, match="Model artifact not found"):
+        async with app.router.lifespan_context(app):
+            pass
