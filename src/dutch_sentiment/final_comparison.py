@@ -46,6 +46,23 @@ MODEL_ORDER = (
 )
 
 
+def _restore_loaded_logistic_state(estimator: Any) -> Any:
+    """Restore removed sklearn state required by older serialized multiclass heads."""
+    candidates = [estimator]
+    get_params = getattr(estimator, "get_params", None)
+    if callable(get_params):
+        candidates.extend(get_params(deep=True).values())
+    for candidate in candidates:
+        if not isinstance(candidate, LogisticRegression):
+            continue
+        classes = getattr(candidate, "classes_", ())
+        if len(classes) > 2 and not hasattr(candidate, "multi_class"):
+            # The frozen 1.9 artifact omitted this retired constructor field, while
+            # some runtimes still consult it when computing multiclass probabilities.
+            candidate.multi_class = "multinomial"
+    return estimator
+
+
 def _git_bytes(reference: str, path: str) -> bytes:
     """Read a required immutable artifact from Git without changing the worktree."""
     result = subprocess.run(
@@ -330,6 +347,7 @@ def run_comparison(config_path: str | Path, *, log_mlflow: bool = False) -> dict
     languages = heldout["detected_language"].astype(str).tolist()
 
     production = SentimentModel.load(config["production_artifact"])
+    _restore_loaded_logistic_state(production.pipeline)
     ordinal = _load_archived_model(config["ordinal_archive"], config["ordinal_artifact"])
     predictions: dict[str, tuple[list[str], list[dict[str, float]] | None]] = {
         "Current Production TF-IDF": (

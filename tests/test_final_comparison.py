@@ -4,8 +4,20 @@ import hashlib
 from pathlib import Path
 
 import pandas as pd
+from sklearn.linear_model import LogisticRegression
 
 from dutch_sentiment import final_comparison
+
+
+def test_restore_loaded_logistic_state_repairs_legacy_multiclass_head() -> None:
+    """A loaded multiclass head remains usable when sklearn omitted retired state."""
+    classifier = LogisticRegression()
+    classifier.classes_ = pd.Series(["Average", "Negative", "Positive"]).to_numpy()
+
+    restored = final_comparison._restore_loaded_logistic_state(classifier)
+
+    assert restored is classifier
+    assert classifier.multi_class == "multinomial"
 
 
 def test_deepseek_predictions_require_source_row_hash_and_actual_label(monkeypatch) -> None:
