@@ -27,8 +27,17 @@ const llmConfidenceRow = document.querySelector("#llm-confidence-row");
 const llmConfidence = document.querySelector("#llm-confidence");
 const llmWarning = document.querySelector("#llm-warning");
 const errorBox = document.querySelector("#error-box");
+const comparisonBody = document.querySelector("#comparison-body");
+const comparisonNote = document.querySelector("#comparison-note");
 
 const labels = ["Positive", "Average", "Negative"];
+const comparisonRoles = {
+  "Current Production TF-IDF": "Production",
+  "TF-IDF Ordinal": "Challenger",
+  "Jina Logistic": "Research",
+  "Jina Ordinal": "Research",
+  "DeepSeek V4 Flash 24-shot": "External evidence",
+};
 
 function setCharacterCount() {
   characterCount.textContent = `${reviewInput.value.length} / ${reviewInput.maxLength}`;
@@ -165,6 +174,71 @@ async function checkHealth() {
   }
 }
 
+function metricCell(value) {
+  const cell = document.createElement("td");
+  cell.className = "metric-value";
+  cell.textContent = Number(value).toFixed(4);
+  return cell;
+}
+
+function renderComparison(rows) {
+  comparisonBody.replaceChildren();
+  rows.forEach((item) => {
+    const row = document.createElement("tr");
+    if (item.model === "Current Production TF-IDF") {
+      row.classList.add("production-row");
+    }
+
+    const rank = document.createElement("td");
+    rank.className = "rank-cell";
+    rank.textContent = `#${item.rank}`;
+
+    const model = document.createElement("th");
+    model.scope = "row";
+    model.textContent = item.model;
+
+    const role = document.createElement("td");
+    const roleBadge = document.createElement("span");
+    roleBadge.className = `role-badge role-${comparisonRoles[item.model]
+      .toLowerCase()
+      .replaceAll(" ", "-")}`;
+    roleBadge.textContent = comparisonRoles[item.model];
+    role.append(roleBadge);
+
+    const negative = document.createElement("td");
+    negative.className = "metric-value";
+    negative.textContent = `${Number(item.negative_precision).toFixed(4)} / ${Number(
+      item.negative_recall,
+    ).toFixed(4)}`;
+
+    row.append(
+      rank,
+      model,
+      role,
+      metricCell(item.macro_f1),
+      metricCell(item.accuracy),
+      negative,
+    );
+    comparisonBody.append(row);
+  });
+}
+
+async function loadModelComparison() {
+  try {
+    const response = await fetch("/model-comparison");
+    if (!response.ok) {
+      throw new Error("Comparison evidence unavailable");
+    }
+    const data = await response.json();
+    renderComparison(data.ranking);
+  } catch {
+    comparisonBody.innerHTML =
+      '<tr><td colspan="6" class="table-message">Tracked comparison evidence is unavailable in this build.</td></tr>';
+    comparisonNote.textContent =
+      "The live inference contract is unchanged: only Production TF-IDF is the formal output.";
+  }
+}
+
 reviewInput.addEventListener("input", setCharacterCount);
 
 form.addEventListener("submit", async (event) => {
@@ -199,3 +273,4 @@ form.addEventListener("submit", async (event) => {
 
 setCharacterCount();
 checkHealth();
+loadModelComparison();

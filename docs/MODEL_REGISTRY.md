@@ -29,7 +29,10 @@ Presentation selection and deployment authority are independent. Exactly five Re
 `presentation.selected=true`; every other model carries `presentation.role=test-only`. This does not
 create five production models: `sentiment-production@champion` remains the sole served champion.
 Their unified result is stored in the `dutch-sentiment-final-comparison` experiment and the portable
-`artifacts/final_five/` evidence directory.
+`artifacts/final_five/` evidence directory. Final run
+`688b28b059dd477693b87104c32fbb9a` is attached to all five selected Registry records together with
+their rank, Macro-F1, and accuracy. The audited ranks are DeepSeek 24-shot (1), Jina Ordinal (2),
+Jina Logistic (3), TF-IDF Ordinal (4), and Production TF-IDF (5).
 
 Every registered model also has one `artifact.tier`:
 

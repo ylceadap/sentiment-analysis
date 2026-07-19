@@ -9,7 +9,7 @@ The challenge PDF is the authoritative source. `Required` and `Bonus` below refl
 | Create useful features | Required | Compared word and character TF-IDF feature sets | MLflow runs; comparison table; model report | Complete |
 | Experiments easy to revisit and compare | Required | Local SQLite MLflow plus exported comparison CSV/Markdown and configs | MLflow UI command; run IDs; model report | Complete |
 | Proper software design and OOP | Required | Focused loader/normalizer/language/model/service boundaries in a `src` package | Source review; direct unit tests | Complete |
-| At least one unit test for a class, preferably model class | Required | Model fit/predict, explanation, probability, deterministic and save/load tests | 55 passing tests; 77% total branch coverage | Complete |
+| At least one unit test for a class, preferably model class | Required | Model fit/predict, explanation, probability, deterministic and save/load tests | 70 passing tests; 75% total branch coverage | Complete |
 | REST POST `/classify` for one review | Required | FastAPI application factory and typed request/response | API tests; live curl 200 | Complete |
 | Response label is one of three exact labels | Required | Literal validation and model contract | Unit and API tests | Complete |
 | Inference latency considered | Required | Single-pass inference; cold/warm component and end-to-end benchmark with p50/p95 | `benchmark.json`; before/after evidence in README | Complete |
@@ -41,4 +41,4 @@ The challenge PDF is the authoritative source. `Required` and `Bonus` below refl
 | Govern all tracked models | One MLflow champion plus explicit benchmark/challenger/research/external tiers and eight evidence runs | Complete; external backup confirmed |
 | Prevent Registry/serving drift | Tracked release manifest, source-run export, three-way SHA-256 verification, and pre-Docker CI gate | Complete |
 | Prevent accidental challenger promotion | Sealed hash, known-data overlap rejection, minimum per-label support, and explicit unseen confirmation | Workflow complete; awaiting new blind data |
-| Keep UI lifecycle claims accurate | Production champion plus versioned zero-shot advisor only; research models excluded | Complete |
+| Keep UI lifecycle claims accurate | Production champion plus versioned zero-shot advisor are the only live paths; final five appear only in a read-only evidence table | Complete |

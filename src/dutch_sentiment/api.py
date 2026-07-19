@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import uuid
@@ -137,14 +138,39 @@ class RecommendationResponse(BaseModel):
     )
 
 
+class ModelComparisonRow(BaseModel):
+    """Expose the bounded metrics used by the presentation ranking."""
+
+    rank: int
+    model: str
+    accuracy: float
+    macro_f1: float
+    negative_precision: float
+    negative_recall: float
+
+
+class ModelComparisonResponse(BaseModel):
+    """Describe the frozen, reused-heldout five-model comparison."""
+
+    evaluation_scope: Literal["reused-heldout-presentation-comparison"]
+    heldout_rows: int
+    ranking: list[ModelComparisonRow]
+    production_model: Literal["Current Production TF-IDF"]
+
+
 def create_app(
     *,
     service: InferenceService | Any | None = None,
     llm_recommender: LLMRecommender | Any | None = None,
     model_path: str | Path | None = None,
+    comparison_path: str | Path | None = None,
 ) -> FastAPI:
     """Build an app that can inject a lightweight service in API tests."""
     resolved_path = Path(model_path or os.getenv("MODEL_PATH", "artifacts/model.joblib"))
+    resolved_comparison_path = Path(
+        comparison_path
+        or os.getenv("MODEL_COMPARISON_PATH", "artifacts/final_five/comparison.json")
+    )
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -181,6 +207,19 @@ def create_app(
         """Report readiness and the loaded model version."""
         return HealthResponse(
             status="ok", model_version=request.app.state.service.model_version, model_ready=True
+        )
+
+    @app.get("/model-comparison", response_model=ModelComparisonResponse)
+    async def model_comparison() -> ModelComparisonResponse:
+        """Return presentation evidence without implying five live inference models."""
+        if not resolved_comparison_path.is_file():
+            raise HTTPException(status_code=404, detail="Model comparison evidence is unavailable.")
+        result = json.loads(resolved_comparison_path.read_text(encoding="utf-8"))
+        return ModelComparisonResponse(
+            evaluation_scope=result["evaluation_scope"],
+            heldout_rows=int(result["data"]["heldout_rows"]),
+            ranking=[ModelComparisonRow(**row) for row in result["ranking"]],
+            production_model="Current Production TF-IDF",
         )
 
     @app.post(

@@ -251,3 +251,28 @@ future promotion depend on a genuinely new blind test.
 
 **Status:** implemented; challenger evaluation remains intentionally blocked until a genuinely new
 labeled dataset and at least one materialized frozen challenger are supplied.
+
+## Phase 11 — Frozen five-model reused-heldout presentation comparison
+
+**Objective:** compare exactly the five user-selected frozen candidates on the same unused-for-fit
+held-out rows, without calling the result a new blind test or changing the production champion.
+
+- [x] Stop the impractical local CPU Jina run and execute revision-pinned embedding generation on a
+  Colab T4 GPU.
+- [x] Validate the immutable 3,838/960 split hashes before inference.
+- [x] Evaluate Production TF-IDF, TF-IDF Ordinal, Jina Logistic, Jina Ordinal, and DeepSeek V4 Flash
+  24-shot against the same 960 rows.
+- [x] Preserve metrics, 960 aligned predictions, frozen Jina heads, hashes, and a Markdown report.
+- [x] Log final run `688b28b059dd477693b87104c32fbb9a` and attach rank/metrics to the five Registry records.
+- [x] Keep all other Registry models marked `test-only` and preserve Production TF-IDF as sole champion.
+- [x] Add a read-only `/model-comparison` endpoint and UI table without exposing research inference.
+
+**Measured result:** Macro-F1 ranking is DeepSeek 24-shot 0.7506, Jina Ordinal 0.7104, Jina Logistic
+0.6715, TF-IDF Ordinal 0.6406, and Production TF-IDF 0.6379.
+
+**Governance:** this is a reused-heldout presentation comparison. Parameters were frozen before the
+run, post-result tuning is prohibited, and the evidence does not authorize champion promotion.
+
+**Final verification:** 70 tests passed, total branch coverage is 75%, Ruff lint/format checks passed,
+the wheel and editable package installs succeeded, Registry/release audits passed, and desktop plus
+375px mobile UI paths were exercised against the live FastAPI service.

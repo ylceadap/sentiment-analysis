@@ -15,6 +15,7 @@ import joblib
 import mlflow
 import numpy as np
 import pandas as pd
+import sklearn
 import yaml
 from mlflow import MlflowClient
 from sklearn.linear_model import LogisticRegression
@@ -185,6 +186,7 @@ def _jina_predictions(
         {
             "heads_artifact": str(heads_path),
             "heads_sha256": sha256_file(heads_path),
+            "scikit_learn": sklearn.__version__,
             "ordinal_projection": projection,
         }
     )
@@ -272,6 +274,7 @@ def _write_report(summary: pd.DataFrame, result: dict[str, Any], path: Path) -> 
     table = summary.copy()
     numeric = table.select_dtypes(include="number").columns
     table[numeric] = table[numeric].round(4)
+    table = table.astype(object).where(pd.notna(table), "—")
     content = f"""# Final five-model comparison
 
 ## Interpretation
@@ -335,6 +338,25 @@ def _log_mlflow(result: dict[str, Any], output_dir: Path, config: dict[str, Any]
         return str(run.info.run_id)
 
 
+def log_existing_comparison(config_path: str | Path) -> dict[str, Any]:
+    """Log a downloaded, validated Colab result without recomputing embeddings."""
+    config = yaml.safe_load(Path(config_path).read_text(encoding="utf-8"))
+    output_dir = Path(config["output_dir"])
+    result_path = output_dir / "comparison.json"
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    if result.get("evaluation_scope") != "reused-heldout-presentation-comparison":
+        raise RuntimeError("Existing comparison has an unexpected evaluation scope")
+    if result.get("selected_models") != list(MODEL_ORDER):
+        raise RuntimeError("Existing comparison does not contain the frozen five-model set")
+    if result.get("data", {}).get("heldout_normalized_sha256") != config.get(
+        "expected_test_normalized_sha256"
+    ):
+        raise RuntimeError("Existing comparison held-out hash does not match the frozen config")
+    result["mlflow_run_id"] = _log_mlflow(result, output_dir, config)
+    result_path.write_text(json.dumps(result, indent=2, sort_keys=True), encoding="utf-8")
+    return result
+
+
 def run_comparison(config_path: str | Path, *, log_mlflow: bool = False) -> dict[str, Any]:
     """Run the frozen comparison, persist predictions/metrics, and optionally log MLflow."""
     config = yaml.safe_load(Path(config_path).read_text(encoding="utf-8"))
@@ -379,7 +401,9 @@ def run_comparison(config_path: str | Path, *, log_mlflow: bool = False) -> dict
         "production_champion_changed": False,
         "selected_models": list(MODEL_ORDER),
         "data": provenance,
-        "ranking": summary.where(pd.notna(summary), None).to_dict(orient="records"),
+        # Pandas float columns cannot retain Python None; JSON round-tripping
+        # converts non-finite probability metrics to portable JSON null values.
+        "ranking": json.loads(summary.to_json(orient="records")),
         "metrics": metrics,
         "jina_runtime": jina_runtime,
         "sources": {
@@ -406,8 +430,19 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default="configs/final_five_comparison.yaml")
     parser.add_argument("--log-mlflow", action="store_true")
+    parser.add_argument(
+        "--log-existing",
+        action="store_true",
+        help="Log an already generated Colab result without recomputing embeddings.",
+    )
     args = parser.parse_args()
-    result = run_comparison(args.config, log_mlflow=args.log_mlflow)
+    if args.log_existing and args.log_mlflow:
+        parser.error("--log-existing already logs MLflow; do not combine it with --log-mlflow")
+    result = (
+        log_existing_comparison(args.config)
+        if args.log_existing
+        else run_comparison(args.config, log_mlflow=args.log_mlflow)
+    )
     print(json.dumps(result["ranking"], indent=2))
 
 
