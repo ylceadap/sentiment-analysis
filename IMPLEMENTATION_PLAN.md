@@ -227,4 +227,8 @@ configuration, MLflow lifecycle metadata, and immutable archive tags.
 - [x] Add canonical production, challenger, research, and advisor configurations under
   `configs/models/` while preserving legacy paths.
 - [x] Verify the reorganized package with 55 passing tests and 77% total branch coverage.
-- [ ] Complete validation, merge the integration PR, and remove archived branches/worktrees.
+- [x] Complete validation, merge PR #4, remove archived branches/worktrees, and drop the redundant
+  pre-LLM stash after verifying its contents are present on `main`.
+
+**Status:** complete. `main` is the only long-lived branch; nine remote archive tags preserve the
+experiment tips, and `docs/GIT_MLFLOW_MAPPING.md` links them to eight MLflow evidence runs.
