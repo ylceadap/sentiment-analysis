@@ -97,8 +97,9 @@ def encode_or_load(
         model.half()
     shard_size = int(config.get("cache_shard_size", 0))
     if shard_size > 0:
-        # Match SentenceTransformer's global length sorting so batches minimize padding.
-        order = np.argsort([-model._text_length(review) for review in reviews])
+        # Approximate token length with character length so global sorting stays
+        # compatible across SentenceTransformer versions without a private API.
+        order = np.argsort([-len(review) for review in reviews], kind="stable")
         ordered_reviews = [reviews[index] for index in order]
         parts = cache.with_suffix(".sorted.parts")
         parts.mkdir(parents=True, exist_ok=True)
