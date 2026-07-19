@@ -75,7 +75,7 @@
             <article class="panel result-card" id="model-card">
               <div class="card-title">
                 <div>
-                  <span class="meta-label">Submitted model</span>
+                  <span class="meta-label">Formal production output</span>
                   <h2>Local TF-IDF Logistic Regression</h2>
                 </div>
                 <span class="latency" id="model-latency">-- ms</span>
@@ -106,7 +106,7 @@
             <article class="panel result-card" id="llm-card">
               <div class="card-title">
                 <div>
-                  <span class="meta-label">LLM advisor</span>
+                  <span class="meta-label">External advisor · not a production model</span>
                   <h2 id="llm-model-name">Optional external model</h2>
                 </div>
                 <span class="latency" id="llm-latency">-- ms</span>
@@ -137,6 +137,10 @@
           <div class="error hidden" id="error-box"></div>
         </section>
       </section>
+      <p class="governance-note">
+        Research-only Jina, RobBERT, ordinal, and benchmark models are intentionally not exposed in
+        this production console. Their evidence remains available in MLflow.
+      </p>
     </main>
     <script src="/static/app.js" defer></script>
   </body>

@@ -13,7 +13,7 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 RUN python -m pip install --no-cache-dir .
 
-COPY --chown=app:app artifacts/model.joblib artifacts/model_metadata.json ./artifacts/
+COPY --chown=app:app artifacts/model.joblib artifacts/model_metadata.json artifacts/model_release.json ./artifacts/
 
 USER app
 EXPOSE 8000

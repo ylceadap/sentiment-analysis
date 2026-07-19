@@ -1,6 +1,7 @@
 """Compatibility imports for the optional LLM advisor implementation."""
 
 from .models.llm_advisor import (
+    DEFAULT_PROMPT_PROFILE,
     LLMRecommendationResult,
     LLMRecommender,
     LLMStatus,
@@ -9,6 +10,7 @@ from .models.llm_advisor import (
 )
 
 __all__ = [
+    "DEFAULT_PROMPT_PROFILE",
     "LLMRecommendationResult",
     "LLMRecommender",
     "LLMStatus",

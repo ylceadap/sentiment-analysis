@@ -16,6 +16,7 @@ def test_llm_recommender_is_unavailable_without_api_key(tmp_path, monkeypatch) -
     recommender = LLMRecommender.from_environment()
     result = recommender.recommend("Deze film was goed.", detected_language="dutch")
     assert result.status == "unavailable"
+    assert result.prompt_profile == "zero-shot-advisor-v1"
     assert result.label is None
     assert "API_KEY" in str(result.warning)
 
@@ -47,6 +48,12 @@ def test_environment_key_takes_precedence_over_file(tmp_path, monkeypatch) -> No
     monkeypatch.setenv("DEEPSEEK_API_KEY", "env-secret")
     monkeypatch.setenv("LLM_API_KEY_FILE", str(key_file))
     assert LLMRecommender.from_environment().api_key == "env-secret"
+
+
+def test_runtime_prompt_profile_is_explicit(monkeypatch) -> None:
+    monkeypatch.setenv("LLM_PROMPT_PROFILE", "zero-shot-advisor-v2")
+    recommender = LLMRecommender.from_environment()
+    assert recommender.prompt_profile == "zero-shot-advisor-v2"
 
 
 def test_load_api_key_from_file_ignores_missing_or_blank_files(tmp_path) -> None:

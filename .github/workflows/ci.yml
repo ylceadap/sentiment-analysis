@@ -12,6 +12,27 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  model-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install serving dependencies
+        run: python -m pip install -e .
+
+      - name: Verify tracked production release
+        run: python scripts/manage_model_release.py verify
+
   test-and-lint:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -40,6 +61,7 @@ jobs:
         run: ruff format --check .
 
   docker:
+    needs: model-release
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -69,4 +91,4 @@ jobs:
             --request POST http://127.0.0.1:8000/classify \
             --header 'Content-Type: application/json' \
             --data '{"review":"Deze film was verrassend goed, met sterke acteurs.","explain":false}' \
-            | python -c 'import json, sys; result = json.load(sys.stdin); assert result["label"] in {"Positive", "Average", "Negative"}; assert set(result["probabilities"]) == {"Positive", "Average", "Negative"}; assert abs(sum(result["probabilities"].values()) - 1.0) < 1e-6; assert result["detected_language"] == "dutch"'
+            | python -c 'import json, sys; result = json.load(sys.stdin); release = json.load(open("artifacts/model_release.json")); assert result["label"] in {"Positive", "Average", "Negative"}; assert set(result["probabilities"]) == {"Positive", "Average", "Negative"}; assert abs(sum(result["probabilities"].values()) - 1.0) < 1e-6; assert result["detected_language"] == "dutch"; assert result["model_version"] == release["model_version"]'

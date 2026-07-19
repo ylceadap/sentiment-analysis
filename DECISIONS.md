@@ -133,3 +133,24 @@
 - **Consequences:** models can be compared from one checkout, the service has one stable contract,
   and old experiment code remains recoverable through remote archive tags.
 - **Limitations:** the local MLflow database still needs an independent backup or shared backend.
+
+## D017 — Export the champion to a verified serving artifact
+
+- **Alternatives considered:** query MLflow on every API startup; serve an unverified checked-in pickle;
+  export the champion's exact source-run artifact and bind it to a tracked release manifest.
+- **Decision:** keep the serving image independent of MLflow and verify `model.joblib`, metadata,
+  `model_release.json`, Registry alias, and source-run copies before release.
+- **Reasoning:** this preserves a small runtime while preventing Registry and Docker from drifting.
+- **Consequences:** CI checks the tracked release; local promotion additionally requires MLflow.
+- **Limitations:** the local Registry remains the source of promotion authority and needs its external backup.
+
+## D018 — Keep research models out of the production UI
+
+- **Alternatives considered:** expose all Registry entries in one selector; create a research UI; keep one
+  formal model plus a visibly advisory external comparison.
+- **Decision:** the production UI exposes only the verified TF-IDF champion and optional versioned
+  `zero-shot-advisor-v1`. Jina, RobBERT, ordinal, benchmark, and ablation models remain in MLflow.
+- **Reasoning:** model visibility must not imply production approval. The historical DeepSeek 24-shot
+  result is also kept separate because the runtime prompt is not that evaluated configuration.
+- **Consequences:** the UI contract is simple and honest; research comparison stays offline.
+- **Limitations:** adding an approved challenger to the UI requires a deliberate new endpoint and review.

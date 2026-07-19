@@ -38,4 +38,7 @@ The challenge PDF is the authoritative source. `Required` and `Bonus` below refl
 | Keep experiment logic reviewable | Shared `experiments/data.py`, `experiments/common.py`, `models/embeddings.py`, and `models/ordinal.py` modules | Complete |
 | Preserve branch evidence before cleanup | Remote `archive/*` tags plus `docs/GIT_MLFLOW_MAPPING.md` | Complete |
 | Document complete architecture | Mermaid data, inference, module, artifact, MLflow, and Docker diagrams in `docs/ARCHITECTURE.md` | Complete |
-| Govern all tracked models | One MLflow champion plus explicit benchmark/challenger/research/external tiers and eight evidence runs | Complete locally; MLflow needs external backup |
+| Govern all tracked models | One MLflow champion plus explicit benchmark/challenger/research/external tiers and eight evidence runs | Complete; external backup confirmed |
+| Prevent Registry/serving drift | Tracked release manifest, source-run export, three-way SHA-256 verification, and pre-Docker CI gate | Complete |
+| Prevent accidental challenger promotion | Sealed hash, known-data overlap rejection, minimum per-label support, and explicit unseen confirmation | Workflow complete; awaiting new blind data |
+| Keep UI lifecycle claims accurate | Production champion plus versioned zero-shot advisor only; research models excluded | Complete |

@@ -114,10 +114,10 @@ flowchart LR
     portable --> review["Git-reviewable evidence"]
 ```
 
-Docker copies only source code, the trusted production model, and model metadata. Raw data, reports,
-tests, caches, secrets, notebooks, MLflow state, and training dependencies remain outside the image.
-The current environment has no Docker executable, so image execution remains statically reviewed but
-not runtime-verified.
+Docker copies only source code, the trusted production model, metadata, and release manifest. Raw
+data, reports, tests, caches, secrets, notebooks, MLflow state, and training dependencies remain
+outside the image. GitHub Actions builds the image, starts the container, verifies health and
+classification, and checks that the reported model version matches the release manifest.
 
 ## Git and model lifecycle
 
@@ -129,8 +129,21 @@ flowchart LR
     experiment --> run["MLflow evidence run"]
     run --> registry["Champion / challenger / research alias"]
     tag --> cleanup["Delete long-lived experiment branch"]
-    registry --> service["Service loads champion only"]
+    registry --> release["Release manifest + source-run artifact\nthree-way SHA-256 verification"]
+    release --> service["Service loads verified model.joblib"]
 ```
 
 Model families are separated by packages and configuration, not by permanent Git branches. See
 `docs/GIT_MLFLOW_MAPPING.md` for the archived source-to-run mapping.
+
+The runtime deliberately serves the exported file rather than querying MLflow on every startup.
+`scripts/manage_model_release.py` proves that the file, metadata, tracked release manifest, Registry
+alias, and champion source-run copies agree. This keeps Docker independent of MLflow while preserving
+promotion authority in `sentiment-production@champion`.
+`make model-release-export` first regenerates the reviewable manifest from the current alias and then
+copies the exact source-run artifact; CI performs the file-only verification without needing MLflow.
+
+The browser calls `/recommendations`, which always invokes the formal production classifier and may
+also invoke the external `zero-shot-advisor-v1` DeepSeek profile. The historical 24-shot DeepSeek
+entry is evaluation evidence and is not the prompt used by the UI. Research-only Jina, RobBERT,
+ordinal, benchmark, and ablation models are not exposed through the production interface.

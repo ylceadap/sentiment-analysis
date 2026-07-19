@@ -39,6 +39,7 @@ class FakeLLMRecommender:
             status="ok",
             provider="fake",
             model="fake-llm",
+            prompt_profile="fake-zero-shot-v1",
             label="Positive",
             rationale=f"Matched {detected_language} positive language.",
             confidence=0.77,
@@ -84,6 +85,7 @@ async def test_root_serves_interactive_web_app(client: httpx.AsyncClient) -> Non
     response = await client.get("/")
     assert response.status_code == 200
     assert "Model and LLM Review" in response.text
+    assert "Research-only Jina" in response.text
     assert "/static/app.js" in response.text
 
 
@@ -97,6 +99,7 @@ async def test_recommendations_returns_model_and_llm_advice(client: httpx.AsyncC
     assert body["model_prediction"]["label"] == "Positive"
     assert body["llm_recommendation"]["status"] == "ok"
     assert body["llm_recommendation"]["label"] == "Positive"
+    assert body["llm_recommendation"]["prompt_profile"] == "fake-zero-shot-v1"
     assert body["agreement"] is True
 
 

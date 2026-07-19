@@ -25,6 +25,12 @@ Only `sentiment-production@champion` is approved for the submitted service. Alia
 registered-model names are descriptive; the governance tags are the authoritative eligibility
 record.
 
+Every registered model also has one `artifact.tier`:
+
+- `deployable`: a self-contained fitted artifact exists, even when governance forbids promotion;
+- `reproducible`: code/configuration and external revisions exist but the artifact is not standalone;
+- `evidence-only`: metrics and reports exist without locally stored model weights.
+
 ## Experiment evidence
 
 The `dutch-sentiment-research-evidence` experiment contains one immutable catalog run per completed
@@ -38,6 +44,11 @@ The top Jina entries are now also visible in the registry as research-only recor
 champions. The ordinal-logistic evidence run also retains its branch model artifact, but it remains a
 challenger because the reused holdout is not a new blind benchmark. Jina results remain research-only
 because no blind evaluation was run and Jina Embeddings v3 uses a non-commercial license.
+That license is acceptable for this non-commercial assignment research and remains recorded in tags.
+
+`sentiment-deepseek-v4-flash-24shot` is historical 24-shot experiment evidence. The production UI's
+optional advisor uses the explicitly versioned `zero-shot-advisor-v1` prompt, so it is not presented
+as the same evaluated configuration and has no Registry deployment authority.
 
 ## Reapply or audit
 
@@ -45,6 +56,8 @@ Run the idempotent policy script from the repository root:
 
 ```bash
 .venv/bin/python scripts/organize_mlflow_registry.py
+.venv/bin/python scripts/organize_mlflow_registry.py --audit-only
+.venv/bin/python scripts/manage_model_release.py verify --require-mlflow
 ```
 
 Open the local UI with `make mlflow`. The SQLite database and `mlruns/` artifacts are intentionally

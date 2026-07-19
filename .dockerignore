@@ -24,3 +24,4 @@ configs
 artifacts/*.csv
 artifacts/*.json
 !artifacts/model_metadata.json
+!artifacts/model_release.json

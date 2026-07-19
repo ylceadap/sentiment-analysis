@@ -101,7 +101,7 @@ function showModelResult(data) {
 function showLLMResult(data) {
   llmEmpty.classList.add("hidden");
   llmContent.classList.remove("hidden");
-  llmModelName.textContent = `${data.provider} / ${data.model}`;
+  llmModelName.textContent = `${data.provider} / ${data.model} / ${data.prompt_profile}`;
   llmLatency.textContent = formatLatency(data.latency_ms);
   llmStatus.textContent = data.status;
   llmStatus.className = `status-pill ${data.status}`;

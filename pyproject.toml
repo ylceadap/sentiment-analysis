@@ -52,6 +52,7 @@ sentiment-embedding-experiment = "dutch_sentiment.experiments.embedding:main"
 sentiment-jina-ordinal-logistic = "dutch_sentiment.experiments.jina_ordinal:main"
 sentiment-predict = "dutch_sentiment.predict:main"
 sentiment-serve = "dutch_sentiment.api:run"
+sentiment-blind-evaluate = "dutch_sentiment.blind_evaluation:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
