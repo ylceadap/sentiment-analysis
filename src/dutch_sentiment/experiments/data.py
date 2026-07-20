@@ -21,6 +21,9 @@ class FrozenExperimentData:
     reviews: list[str]
     labels: list[str]
     languages: list[str]
+    test_reviews: list[str]
+    test_labels: list[str]
+    test_languages: list[str]
     folds: list[tuple[np.ndarray, np.ndarray]]
     training_config: dict[str, Any]
     seed: int
@@ -60,6 +63,9 @@ def prepare_frozen_experiment(config: dict[str, Any]) -> FrozenExperimentData:
         reviews=reviews,
         labels=labels,
         languages=languages,
+        test_reviews=split.test["Reviews"].astype(str).tolist(),
+        test_labels=split.test["Label"].astype(str).tolist(),
+        test_languages=split.test["detected_language"].astype(str).tolist(),
         folds=list(splitter.split(reviews, strata)),
         training_config=training,
         seed=seed,
