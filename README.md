@@ -166,7 +166,7 @@ make serve
 
 ## API and UI
 
-Open the local interface at [http://localhost:8000](http://localhost:8000) after `make serve`.
+DEEPSEEK_API_KEY='your-deepseek-api-key' make serve
 
 ```bash
 curl -sS -X POST http://localhost:8000/classify \
