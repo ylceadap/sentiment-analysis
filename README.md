@@ -267,9 +267,21 @@ checksums. Large Jina/RobBERT downloads and provider weights are intentionally e
 ## Docker
 
 ```bash
-make docker-build
-make docker-run
+docker build -t dutch-sentiment:latest .
+docker run --rm -p 8000:8000 dutch-sentiment:latest
 ```
+
+Open <http://localhost:8000> for the UI, <http://localhost:8000/docs> for the API schema, or
+<http://localhost:8000/health> for the health check. Test inference with:
+
+```bash
+curl -sS -X POST http://localhost:8000/classify \
+  -H 'Content-Type: application/json' \
+  -d '{"review":"Deze film was verrassend goed.","explain":true}'
+```
+
+`make docker-build` and `make docker-run` are equivalent shortcuts. The optional live LLM advisor
+can be enabled by adding `-e DEEPSEEK_API_KEY='your-deepseek-api-key'` to `docker run`.
 
 The image installs only core serving dependencies, runs as a non-root user, and excludes raw data,
 tests, reports, Git data, research dependencies, and MLflow state. GitHub Actions has verified image
