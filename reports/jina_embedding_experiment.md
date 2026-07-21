@@ -39,6 +39,24 @@ Best experimental candidate: `jina_v3_classification__c2.0__negative_7__threshol
 
 ## Reproducibility and limitations
 
-Exact model revisions, split hashes, search grid, cache paths, and gates are in `configs/embedding_experiment.yaml`. Embeddings and model downloads are local-only. English slice results are directional: training has 388 English rows and only 8 English Negative rows. A future final decision requires a newly collected blind test.
+Exact model revisions, split hashes, search grid, cache paths, and gates are in `configs/models/jina_logreg.yaml`. Embeddings and model downloads are local-only. English slice results are directional: training has 388 English rows and only 8 English Negative rows. A future final decision requires a newly collected blind test.
 
 License note: Jina Embeddings v3 is CC-BY-NC-4.0. This branch is a non-commercial research experiment and is not automatically eligible for production promotion even if the metric gates pass.
+
+## Independent validation
+
+The exported CSV contains one official baseline and 30 unique candidates from the declared 3 × 2 × 5
+grid. Split hashes reproduce 3,838 training rows and 960 test rows; the experiment itself did not
+evaluate the test partition or replace the official model. Recomputing the five promotion gates
+reproduces five passes, and the selected candidate is unique.
+
+Compared with the official OOF baseline, the selected candidate changes Macro-F1 from 0.6472 to
+0.7108, accuracy from 0.6699 to 0.7024, and Negative F1 from 0.5975 to 0.7325. Negative precision
+falls from 0.7333 to 0.6196 while recall rises from 0.5042 to 0.8958.
+
+The assessment is **share with caveats**: these are training-set out-of-fold results, English has
+only 388 training rows and eight Negative examples, and a genuinely new blind set would be required
+for promotion. The pinned encoder revision is
+`ab036b023d30b4d1138c4c3bfa9f0c445ab455d6`; the observed remote-code dependency is
+`845308d0fd72a8406a3e378450e1a09522790419`. `trust_remote_code` executes third-party code and must
+be reviewed before future runs.

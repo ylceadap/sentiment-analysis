@@ -1,4 +1,4 @@
-.PHONY: install install-core install-locked install-embeddings audit train embedding-experiment jina-ordinal-logistic final-compare final-compare-log evaluate benchmark predict test coverage lint format serve mlflow mlflow-organize mlflow-audit model-release-verify model-release-export blind-evaluate docker-build docker-run
+.PHONY: install install-core install-locked install-embeddings install-finetune audit train embedding-experiment jina-ordinal-logistic robbert-finetune robbert-verify robbert-import robbert-improve robbert-improve-verify robbert-improve-import robbert-colab-bundle final-compare final-compare-log evaluate benchmark predict test coverage lint format serve mlflow mlflow-organize mlflow-audit model-release-verify model-release-export docker-build docker-run
 
 PYTHON := .venv/bin/python
 
@@ -18,6 +18,9 @@ install-locked:
 install-embeddings:
 	$(PYTHON) -m pip install -e '.[train,dev,embeddings]'
 
+install-finetune:
+	$(PYTHON) -m pip install -e '.[train,dev,finetune]'
+
 audit:
 	.venv/bin/sentiment-audit --data Python_Engineer_Challenge_2.csv
 
@@ -30,11 +33,36 @@ embedding-experiment:
 jina-ordinal-logistic:
 	$(PYTHON) -m dutch_sentiment.experiments.jina_ordinal --config configs/models/jina_ordinal.yaml
 
+robbert-finetune:
+	$(PYTHON) -m dutch_sentiment.experiments.robbert_finetune --config configs/models/robbert_v2.yaml
+
+robbert-verify:
+	@test -n "$(BUNDLE)" || (echo "Usage: make robbert-verify BUNDLE=/path/to/bundle" && exit 2)
+	$(PYTHON) -m dutch_sentiment.experiments.robbert_finetune --config configs/models/robbert_v2.yaml --verify-bundle "$(BUNDLE)"
+
+robbert-import:
+	@test -n "$(BUNDLE)" || (echo "Usage: make robbert-import BUNDLE=/path/to/bundle" && exit 2)
+	$(PYTHON) -m dutch_sentiment.experiments.robbert_finetune --config configs/models/robbert_v2.yaml --log-existing "$(BUNDLE)"
+
+robbert-improve:
+	$(PYTHON) -m dutch_sentiment.experiments.robbert_improvement --config configs/models/robbert_improvement.yaml
+
+robbert-improve-verify:
+	@test -n "$(BUNDLE)" || (echo "Usage: make robbert-improve-verify BUNDLE=/path/to/bundle" && exit 2)
+	$(PYTHON) -m dutch_sentiment.experiments.robbert_improvement --config configs/models/robbert_improvement.yaml --verify-bundle "$(BUNDLE)"
+
+robbert-improve-import:
+	@test -n "$(BUNDLE)" || (echo "Usage: make robbert-improve-import BUNDLE=/path/to/bundle" && exit 2)
+	$(PYTHON) -m dutch_sentiment.experiments.robbert_improvement --config configs/models/robbert_improvement.yaml --log-existing "$(BUNDLE)"
+
+robbert-colab-bundle:
+	$(PYTHON) scripts/build_colab_bundle.py --output robbert_colab_source.zip
+
 final-compare:
-	$(PYTHON) -m dutch_sentiment.final_comparison --config configs/final_five_comparison.yaml --log-mlflow
+	$(PYTHON) -m dutch_sentiment.final_comparison --config configs/final_model_comparison.yaml --log-mlflow
 
 final-compare-log:
-	$(PYTHON) -m dutch_sentiment.final_comparison --config configs/final_five_comparison.yaml --log-existing
+	$(PYTHON) -m dutch_sentiment.final_comparison --config configs/final_model_comparison.yaml --log-existing
 
 evaluate:
 	.venv/bin/sentiment-evaluate
@@ -77,9 +105,6 @@ model-release-verify:
 model-release-export:
 	$(PYTHON) scripts/manage_model_release.py manifest
 	$(PYTHON) scripts/manage_model_release.py export
-
-blind-evaluate:
-	$(PYTHON) -m dutch_sentiment.blind_evaluation --config configs/blind_evaluation.yaml --confirm-unseen
 
 docker-build:
 	docker build -t dutch-sentiment:latest .

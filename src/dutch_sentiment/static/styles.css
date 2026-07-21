@@ -134,8 +134,7 @@ h1 {
 .panel-header,
 .card-title,
 .label-row,
-.form-footer,
-.confidence-line {
+.form-footer {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -409,8 +408,7 @@ button svg,
   gap: 7px;
 }
 
-.probability-meta,
-.confidence-line {
+.probability-meta {
   color: var(--muted);
   font-size: 0.9rem;
   font-weight: 800;
@@ -440,18 +438,6 @@ button svg,
 
 .bar-fill.Negative {
   background: var(--negative);
-}
-
-.rationale {
-  color: var(--text);
-  line-height: 1.55;
-}
-
-.confidence-line {
-  align-items: center;
-  border-top: 1px solid var(--border);
-  margin-top: 16px;
-  padding-top: 14px;
 }
 
 .explanation {
@@ -679,8 +665,7 @@ tbody tr:last-child td {
   .panel-header,
   .card-title,
   .form-footer,
-  .label-row,
-  .confidence-line {
+  .label-row {
     align-items: stretch;
     flex-direction: column;
   }

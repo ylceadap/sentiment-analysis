@@ -7,7 +7,7 @@ import pytest
 
 from dutch_sentiment.api import MAX_REVIEW_CHARACTERS, create_app
 from dutch_sentiment.constants import ENGLISH_RELIABILITY_WARNING
-from dutch_sentiment.llm_recommender import LLMRecommendationResult
+from dutch_sentiment.models.llm_advisor import LLMRecommendationResult
 from dutch_sentiment.service import NonDutchReviewError, PredictionResult
 
 
@@ -34,15 +34,13 @@ class FakeService:
 
 
 class FakeLLMRecommender:
-    def recommend(self, review: str, *, detected_language: str) -> LLMRecommendationResult:
+    def recommend(self, review: str) -> LLMRecommendationResult:
         return LLMRecommendationResult(
             status="ok",
             provider="fake",
             model="fake-llm",
-            prompt_profile="fake-zero-shot-v1",
+            prompt_profile="fake-24-shot-v1",
             label="Positive",
-            rationale=f"Matched {detected_language} positive language.",
-            confidence=0.77,
             latency_ms=2.5,
             warning="LLM output is advisory only.",
         )
@@ -85,7 +83,7 @@ async def test_root_serves_interactive_web_app(client: httpx.AsyncClient) -> Non
     response = await client.get("/")
     assert response.status_code == 200
     assert "Model and LLM Review" in response.text
-    assert "Five-model held-out comparison" in response.text
+    assert "Seven-model test comparison" in response.text
     assert "Live UI: Production TF-IDF" in response.text
     assert "/static/app.js" in response.text
 
@@ -99,7 +97,7 @@ async def test_model_comparison_exposes_evidence_not_live_model_selection(
     body = response.json()
     assert body["evaluation_scope"] == "reused-heldout-presentation-comparison"
     assert body["heldout_rows"] == 960
-    assert len(body["ranking"]) == 5
+    assert len(body["ranking"]) == 7
     assert body["production_model"] == "Current Production TF-IDF"
     assert body["ranking"][0]["model"] == "DeepSeek V4 Flash 24-shot"
 
@@ -114,7 +112,7 @@ async def test_recommendations_returns_model_and_llm_advice(client: httpx.AsyncC
     assert body["model_prediction"]["label"] == "Positive"
     assert body["llm_recommendation"]["status"] == "ok"
     assert body["llm_recommendation"]["label"] == "Positive"
-    assert body["llm_recommendation"]["prompt_profile"] == "fake-zero-shot-v1"
+    assert body["llm_recommendation"]["prompt_profile"] == "fake-24-shot-v1"
     assert body["agreement"] is True
 
 

@@ -1,20 +1,6 @@
-"""Compatibility imports for the classical model implementation."""
+"""Compatibility aliases required to load previously published model artifacts."""
 
-from .models.classical import ModelInference, ModelSpec, SentimentModel, build_pipeline
-from .models.ordinal_classical import (
-    OrdinalSentimentModel,
-    SupportedSentimentModel,
-    build_ordinal_model,
-    load_sentiment_model,
-)
+from .models.classical import SentimentModel
+from .models.ordinal_classical import OrdinalSentimentModel
 
-__all__ = [
-    "ModelInference",
-    "ModelSpec",
-    "OrdinalSentimentModel",
-    "SentimentModel",
-    "SupportedSentimentModel",
-    "build_ordinal_model",
-    "build_pipeline",
-    "load_sentiment_model",
-]
+__all__ = ["OrdinalSentimentModel", "SentimentModel"]

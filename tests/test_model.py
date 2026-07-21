@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from dutch_sentiment.constants import LABELS
-from dutch_sentiment.model import ModelSpec, SentimentModel, build_pipeline
+from dutch_sentiment.models.classical import ModelSpec, SentimentModel, build_pipeline
 
 
 def _model() -> SentimentModel:

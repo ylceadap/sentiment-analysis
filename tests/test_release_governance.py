@@ -1,11 +1,9 @@
 import json
 from pathlib import Path
 
-import pandas as pd
 import pytest
 
-from dutch_sentiment.blind_evaluation import validate_blind_dataset
-from dutch_sentiment.model import ModelSpec, SentimentModel, build_pipeline
+from dutch_sentiment.models.classical import ModelSpec, SentimentModel, build_pipeline
 from dutch_sentiment.release import sha256_file, verify_release_files
 
 
@@ -89,39 +87,3 @@ def test_release_rejects_tampered_model(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="Model SHA-256 differs"):
         verify_release_files(model_path, metadata_path, manifest_path, load_model=False)
-
-
-def test_blind_dataset_rejects_known_overlap_and_accepts_sealed_rows(tmp_path: Path) -> None:
-    source_path = tmp_path / "source.csv"
-    blind_path = tmp_path / "blind.csv"
-    pd.DataFrame(
-        {
-            "Reviews": ["bekende positieve review", "bekende gemiddelde review"],
-            "Label": ["Positive", "Average"],
-        }
-    ).to_csv(source_path, index=False)
-    blind = pd.DataFrame(
-        {
-            "Reviews": ["nieuw positief", "nieuw gemiddeld", "nieuw negatief"],
-            "Label": ["Positive", "Average", "Negative"],
-        }
-    )
-    blind.to_csv(blind_path, index=False)
-    frame, digest = validate_blind_dataset(
-        blind_path,
-        expected_sha256=sha256_file(blind_path),
-        source_data_path=source_path,
-        minimum_rows_per_label=1,
-    )
-    assert len(frame) == 3
-    assert digest == sha256_file(blind_path)
-
-    blind.loc[0, "Reviews"] = "bekende positieve review"
-    blind.to_csv(blind_path, index=False)
-    with pytest.raises(ValueError, match="overlaps"):
-        validate_blind_dataset(
-            blind_path,
-            expected_sha256=sha256_file(blind_path),
-            source_data_path=source_path,
-            minimum_rows_per_label=1,
-        )

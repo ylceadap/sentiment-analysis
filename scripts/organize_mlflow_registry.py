@@ -186,7 +186,11 @@ MODEL_POLICIES = {
             "license.use": "provider-terms",
             "privacy.external_processing": "true",
             "weights.stored": "false",
-            "runtime.connected": "false",
+            "runtime.connected": "conditional-on-api-key",
+            "runtime.prompt_profile": "deterministic-24-shot-v1",
+            "runtime.prompt_sha256": (
+                "d4ca19fd4f4bb457a5d36ed4e90e1bcf925157a7f7f36496d3c8ab0c1fa0b908"
+            ),
         },
     ),
     "sentiment-jina-v3-logreg": RegisteredModelPolicy(
@@ -259,6 +263,63 @@ MODEL_POLICIES = {
         },
         source_catalog_id="ordinal-logistic-v1",
     ),
+    "sentiment-robbert-v2-logistic": RegisteredModelPolicy(
+        alias="presentation-test",
+        description=(
+            "End-to-end RobBERT v2 multiclass Logistic head trained in Colab. Retained as "
+            "presentation test evidence; it is not the served production model."
+        ),
+        tags={
+            **COMMON_LOCAL_TAGS,
+            "artifact.kind": "evidence-only-mlflow-entry",
+            "artifact.tier": "evidence-only",
+            "artifact.self_contained": "false",
+            "weights.stored": "drive",
+            "governance.tier": "challenger",
+            "governance.status": "presentation-test",
+            "deployment.eligible": "false",
+            "evaluation.scope": "reused-heldout",
+            "source.branch": "main",
+            "license.use": "mit",
+        },
+    ),
+    "sentiment-robbert-v2-ordinal": RegisteredModelPolicy(
+        alias="test-only",
+        description="End-to-end RobBERT v2 CORAL experiment retained as test-only evidence.",
+        tags={
+            **COMMON_LOCAL_TAGS,
+            "artifact.kind": "evidence-only-mlflow-entry",
+            "artifact.tier": "evidence-only",
+            "artifact.self_contained": "false",
+            "weights.stored": "drive",
+            "governance.tier": "experiment",
+            "governance.status": "test-only",
+            "deployment.eligible": "false",
+            "evaluation.scope": "reused-heldout",
+            "source.branch": "main",
+            "license.use": "mit",
+        },
+    ),
+    "sentiment-robbert-v2-improved": RegisteredModelPolicy(
+        alias="challenger-evaluation",
+        description=(
+            "Three-seed RobBERT v2 head-tail ensemble selected with repeated train-only CV. "
+            "Presented as challenger evidence without changing Production."
+        ),
+        tags={
+            **COMMON_LOCAL_TAGS,
+            "artifact.kind": "evidence-only-mlflow-entry",
+            "artifact.tier": "evidence-only",
+            "artifact.self_contained": "false",
+            "weights.stored": "drive",
+            "governance.tier": "challenger",
+            "governance.status": "challenger-evaluation",
+            "deployment.eligible": "false",
+            "evaluation.scope": "reused-heldout",
+            "source.branch": "main",
+            "license.use": "mit",
+        },
+    ),
 }
 
 PRESENTATION_SELECTED = {
@@ -267,6 +328,8 @@ PRESENTATION_SELECTED = {
     "sentiment-jina-v3-logreg": "research",
     "sentiment-jina-v3-ordinal-logistic": "research",
     "sentiment-deepseek-v4-flash-24shot": "external-api",
+    "sentiment-robbert-v2-logistic": "challenger",
+    "sentiment-robbert-v2-improved": "challenger",
 }
 
 PRESENTATION_REGISTRY_BY_DISPLAY_NAME = {
@@ -275,6 +338,8 @@ PRESENTATION_REGISTRY_BY_DISPLAY_NAME = {
     "Jina Logistic": "sentiment-jina-v3-logreg",
     "Jina Ordinal": "sentiment-jina-v3-ordinal-logistic",
     "DeepSeek V4 Flash 24-shot": "sentiment-deepseek-v4-flash-24shot",
+    "RobBERT v2 Logistic": "sentiment-robbert-v2-logistic",
+    "RobBERT v2 Improved Ensemble": "sentiment-robbert-v2-improved",
 }
 
 
@@ -303,7 +368,7 @@ def _final_comparison_tags(result_path: Path) -> dict[str, dict[str, str]]:
         raise RuntimeError("Final comparison has not been logged to MLflow")
     rows = result.get("ranking", [])
     if len(rows) != len(PRESENTATION_REGISTRY_BY_DISPLAY_NAME):
-        raise RuntimeError("Final comparison does not contain exactly five ranked models")
+        raise RuntimeError("Final comparison does not contain the selected presentation models")
     tags: dict[str, dict[str, str]] = {}
     for row in rows:
         registry_name = PRESENTATION_REGISTRY_BY_DISPLAY_NAME.get(str(row.get("model")))
@@ -380,7 +445,6 @@ EVIDENCE = (
             "artifacts/jina_embedding_experiment_decision.json",
             "artifacts/jina_embedding_experiment_results.csv",
             "reports/jina_embedding_experiment.md",
-            "reports/jina_embedding_validation.md",
         ),
         {
             "best_oof_macro_f1": 0.7108,
@@ -481,6 +545,9 @@ def _source_exists(source: str, root: Path) -> bool:
     if source.startswith("models:/m-"):
         model_id = source.removeprefix("models:/")
         return any(root.glob(f"mlruns/*/models/{model_id}/artifacts/MLmodel"))
+    if source.startswith("runs:/"):
+        run_id, _, artifact_path = source.removeprefix("runs:/").partition("/")
+        return any(root.glob(f"mlruns/*/{run_id}/artifacts/{artifact_path}"))
     return Path(source.removeprefix("file://")).exists()
 
 
@@ -715,7 +782,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--final-comparison",
         type=Path,
-        default=Path("artifacts/final_five/comparison.json"),
+        default=Path("artifacts/final_models/comparison.json"),
     )
     parser.add_argument(
         "--audit-only", action="store_true", help="Check policy without mutating MLflow state."

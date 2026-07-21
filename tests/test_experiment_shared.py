@@ -7,9 +7,7 @@ import numpy as np
 import pytest
 import yaml
 
-from dutch_sentiment.embedding_runtime import embedding_cache_path, encode_or_load
-from dutch_sentiment.experiment_data import prepare_frozen_experiment
-from dutch_sentiment.experiment_utils import (
+from dutch_sentiment.experiments.common import (
     aligned_probabilities,
     fold_summary,
     hash_reviews,
@@ -19,6 +17,8 @@ from dutch_sentiment.experiment_utils import (
     promotion_gate,
     select_by_gate,
 )
+from dutch_sentiment.experiments.data import prepare_frozen_experiment
+from dutch_sentiment.models.embeddings import embedding_cache_path, encode_or_load
 
 
 class ProbabilityEstimator:
@@ -139,7 +139,7 @@ def test_embedding_cache_hit_and_hash_mismatch(tmp_path: Path) -> None:
 
 def test_prepare_frozen_experiment_reproduces_documented_split() -> None:
     """The shared preparation helper reproduces the frozen training boundary."""
-    config = yaml.safe_load(Path("configs/embedding_experiment.yaml").read_text())
+    config = yaml.safe_load(Path("configs/models/jina_logreg.yaml").read_text())
     prepared = prepare_frozen_experiment(config)
     assert prepared.train_rows == 3838
     assert prepared.heldout_rows == 960

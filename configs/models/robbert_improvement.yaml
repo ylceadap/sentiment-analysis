@@ -1,0 +1,66 @@
+training_config: configs/training.yaml
+expected_train_normalized_sha256: aa986ef1d8f35ebf232a015fd0e61d3affb1efbe4a589ec4f8653ae01e8ab7c9
+expected_test_normalized_sha256: b76afd73eaeed79bf61903ab8475a08c4565cf523a55e8ae34448d2330e00cbb
+output_dir: artifacts/robbert_improvement
+mlflow_tracking_uri: sqlite:///mlflow.db
+mlflow_experiment: dutch-sentiment-robbert-improvement
+mlflow_catalog_id: robbert-v2-mixed-language-improvement-v2
+evaluate_test: true
+model:
+  model_id: pdelobelle/robbert-v2-dutch-base
+  revision: 271b8bf12b7e429434ce953efb432e8373e84453
+  license: mit
+  dropout: 0.1
+training:
+  max_length: 512
+  input_strategy: head_tail
+  loss: cross_entropy
+  batch_size: 4
+  evaluation_batch_size: 8
+  gradient_accumulation_steps: 8
+  learning_rate: 0.00002
+  max_epochs: 4
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  early_stopping_patience: 1
+  focal_gamma: 2.0
+  ordinal_lambda: 0.15
+  device: auto
+screening:
+  fold: 0
+  seed: 42
+  promote_top_k: 2
+  minimum_average_recall: 0.40
+  candidates:
+    - id: first-256-ce
+      input_strategy: first
+      max_length: 256
+      loss: cross_entropy
+    - id: last-256-ce
+      input_strategy: last
+      max_length: 256
+      loss: cross_entropy
+    - id: first-512-ce
+      input_strategy: first
+      max_length: 512
+      loss: cross_entropy
+    - id: head-tail-512-ce
+      input_strategy: head_tail
+      max_length: 512
+      loss: cross_entropy
+    - id: head-tail-512-mild-weight
+      input_strategy: head_tail
+      max_length: 512
+      loss: mild_class_weights
+    - id: head-tail-512-focal
+      input_strategy: head_tail
+      max_length: 512
+      loss: focal
+    - id: head-tail-512-ordinal-aware
+      input_strategy: head_tail
+      max_length: 512
+      loss: ordinal_aware
+      ordinal_lambda: 0.15
+confirmation:
+  folds: 5
+  seeds: [42, 73, 101]

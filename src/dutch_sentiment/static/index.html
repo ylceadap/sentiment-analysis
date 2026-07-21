@@ -124,11 +124,6 @@
                   <span class="prediction-label" id="llm-label">--</span>
                   <span class="status-pill" id="llm-status">--</span>
                 </div>
-                <p class="rationale" id="llm-rationale"></p>
-                <div class="confidence-line hidden" id="llm-confidence-row">
-                  <span>Confidence</span>
-                  <strong id="llm-confidence">--</strong>
-                </div>
                 <div class="warning hidden" id="llm-warning"></div>
               </div>
             </article>
@@ -142,7 +137,7 @@
         <div class="evidence-header">
           <div>
             <p class="eyebrow">Frozen presentation evidence</p>
-            <h2 id="comparison-title">Five-model held-out comparison</h2>
+            <h2 id="comparison-title">Seven-model test comparison</h2>
             <p>
               One shared 960-row reused held-out split. Ranking is descriptive evidence, not a new
               blind test or a production promotion decision.
@@ -153,7 +148,7 @@
         <div class="table-scroll" tabindex="0" aria-label="Scrollable final model comparison">
           <table>
             <caption class="sr-only">
-              Final five presentation models ranked by Macro-F1 on the reused held-out split.
+              Seven presentation models ranked by Macro-F1 on the shared test split.
             </caption>
             <thead>
               <tr>
@@ -173,8 +168,8 @@
           </table>
         </div>
         <p class="governance-note" id="comparison-note">
-          Live UI: Production TF-IDF plus the optional zero-shot LLM advisor. Jina, TF-IDF Ordinal,
-          and DeepSeek 24-shot are frozen evaluation evidence only.
+          Live UI: Production TF-IDF plus the optional LLM 24-shot advisor. Jina, ordinal, and
+          RobBERT entries remain frozen evaluation evidence; the LLM score is historical.
         </p>
       </section>
     </main>

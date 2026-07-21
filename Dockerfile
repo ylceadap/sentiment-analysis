@@ -14,7 +14,7 @@ COPY src ./src
 RUN python -m pip install --no-cache-dir .
 
 COPY --chown=app:app artifacts/model.joblib artifacts/model_metadata.json artifacts/model_release.json ./artifacts/
-COPY --chown=app:app artifacts/final_five/comparison.json ./artifacts/final_five/comparison.json
+COPY --chown=app:app artifacts/final_models/comparison.json ./artifacts/final_models/comparison.json
 
 USER app
 EXPOSE 8000

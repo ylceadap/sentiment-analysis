@@ -16,6 +16,13 @@ mlruns/
 mlflow.db
 artifacts/candidate*.joblib
 artifacts/*.tmp
+artifacts/robbert_v2/models/
+artifacts/robbert_v2/checkpoints/
+artifacts/robbert_v2/*.zip
+artifacts/robbert_improvement/models/
+artifacts/robbert_improvement/trials/
+artifacts/robbert_improvement/*.zip
+robbert_colab_source.zip
 *.log
 tmp/
 work/

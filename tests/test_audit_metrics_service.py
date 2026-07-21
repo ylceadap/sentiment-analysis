@@ -7,7 +7,7 @@ from dutch_sentiment.config import load_config
 from dutch_sentiment.constants import ENGLISH_RELIABILITY_WARNING
 from dutch_sentiment.language import LanguageResult, LanguageStatus
 from dutch_sentiment.metrics import classification_metrics
-from dutch_sentiment.model import ModelInference
+from dutch_sentiment.models.classical import ModelInference
 from dutch_sentiment.service import InferenceService, NonDutchReviewError
 
 
