@@ -35,7 +35,7 @@
 ## D005 — Use Git plus lightweight file/hash provenance without DVC
 
 - **Alternatives considered:** Git only; Git plus DVC; MLflow plus hashes/config/metadata without Git.
-- **Decision:** initialize Git because the user explicitly requested it. Combine focused commits with MLflow, raw/model hashes, configuration, split metadata, package versions, and model metadata; do not add DVC.
+- **Decision:** use Git for source history and combine focused commits with MLflow, raw/model hashes, configuration, split metadata, package versions, and model metadata; do not add DVC.
 - **Reasoning:** Git now provides useful code history, while DVC would remain decorative for one immutable supplied CSV.
 - **Consequences:** verified phases can be committed independently and the final model metadata can include a real commit when available.
 - **Limitations:** the raw CSV is tracked for challenge reproducibility, so repository size is larger than a code-only project.
@@ -43,7 +43,7 @@
 ## D006 — Docker runtime verification is environment-dependent
 
 - **Alternatives considered:** claim Docker compatibility from inspection; install Docker; supply and statically review a Dockerfile.
-- **Decision:** create and inspect a serving image definition, but report runtime verification as unavailable unless a Docker executable becomes available.
+- **Decision:** define a minimal serving image and verify its build, startup, `/health`, and `/classify` contract in GitHub Actions.
 - **Reasoning:** Docker is not installed in the current environment and successful container execution must not be fabricated.
 - **Consequences:** local API verification remains required; Docker commands will still be documented.
 - **Limitations:** the original machine still cannot run Docker locally.
@@ -84,7 +84,7 @@
 ## D011 — Separate serving dependencies from training dependencies
 
 - **Alternatives considered:** install the full analytics stack in Docker; maintain a duplicate requirements file; use optional dependency groups.
-- **Decision:** keep FastAPI, Lingua, sklearn, and serialization libraries in core dependencies; move MLflow, pandas, PyYAML, and tabulate to the `train` extra. Development installation uses `.[train,dev]`, while Docker installs core only.
+- **Decision:** keep FastAPI, Lingua, sklearn, and serialization libraries in core dependencies; move MLflow, pandas, PyYAML, and tabulate to the `train` extra. Full development installation uses `.[train,finetune,dev]` so the RobBERT tensor tests are available, while Docker installs core only.
 - **Reasoning:** the existing local environment was 837 MB and unnecessarily pulled MLflow, pyarrow, matplotlib, and database tooling into the serving image.
 - **Consequences:** smaller and lower-risk serving images without duplicating version constraints.
 - **Limitations:** audit/training commands require the documented `train` extra.
@@ -93,7 +93,7 @@
 
 - **Alternatives considered:** keep filtering English; train separate language models; train one model on all supplied rows with language-aware evaluation.
 - **Decision:** supersede D008's training filter. Retain every deduplicated supplied row, use one shared feature/model pipeline, jointly stratify language and label for holdout/CV, and accept both Dutch and English at inference. English responses include a reliability warning.
-- **Reasoning:** the supplied dataset contains 485 consistently detected English reviews, Dutch and English share useful lexical/character patterns, and a single mixed model follows the user's explicit scope without pretending the small English segment supports a separate model.
+- **Reasoning:** the supplied dataset contains 485 consistently detected English reviews, Dutch and English share useful lexical/character patterns, and a single mixed model uses the supplied evidence without pretending the small English segment supports a separate model.
 - **Consequences:** the training population grows from 4,313 to 4,798 deduplicated reviews; overall and per-language held-out metrics are both required; English requests no longer receive HTTP 422.
 - **Limitations:** English labels are highly imbalanced—only 10 raw English Negative rows—so English and especially English-Negative metrics remain descriptive rather than conclusive. Confidently detected languages other than Dutch or English remain unsupported.
 
@@ -154,7 +154,7 @@
   test evidence.
 - **Reasoning:** model visibility must not imply production approval. Reusing the evaluated prompt
   makes the online DeepSeek configuration traceable without promoting it over the local champion.
-- **Consequences:** the inference contract stays simple and honest while the requested final ranking
+- **Consequences:** the inference contract stays simple and honest while the frozen final ranking
   is visible without implying deployment approval.
 - **Limitations:** the displayed DeepSeek metric remains historical and provider behavior can change;
   adding another approved challenger to the UI requires a deliberate new endpoint and review.
