@@ -166,7 +166,9 @@ make serve
 
 ## API and UI
 
-DEEPSEEK_API_KEY='your-deepseek-api-key' make serve
+To run the UI with the optional live LLM advisor, run
+`DEEPSEEK_API_KEY='your-deepseek-api-key' make serve`, then open
+[http://localhost:8000](http://localhost:8000).
 
 ```bash
 curl -sS -X POST http://localhost:8000/classify \
