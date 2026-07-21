@@ -17,7 +17,7 @@ serving path over selecting the largest model.
 - Research models are visible as evidence but are not loaded by the production service.
 - No genuinely new blind dataset currently exists; the final ranking reuses the fixed test split.
 
-> **Interview summary:** [Open the one-page A4 experiment report (PDF)](reports/sentiment_final_one_page_report.pdf)
+> **Project summary:** [Open the one-page A4 experiment report (PDF)](reports/sentiment_final_one_page_report.pdf)
 > for the data flow, seven-model ranking, operating metrics, and governance decision at a glance.
 
 ## Language scope decision
@@ -279,7 +279,7 @@ build, container startup, and `/health`; the development machine does not have a
   confusion matrix, error analysis, and latency.
 - [`reports/final_model_comparison.md`](reports/final_model_comparison.md): unified seven-model result.
 - [`reports/sentiment_final_one_page_report.pdf`](reports/sentiment_final_one_page_report.pdf):
-  interview-ready one-page A4 experiment summary; the editable PPTX is stored beside it.
+  concise one-page A4 experiment summary; the editable PPTX is stored beside it.
 - [`reports/jina_embedding_experiment.md`](reports/jina_embedding_experiment.md) and
   [`reports/jina_ordinal_logistic_experiment.md`](reports/jina_ordinal_logistic_experiment.md): Jina
   research evidence.
