@@ -1,434 +1,264 @@
 # Dutch Movie Review Sentiment
 
-A production-minded, CPU-friendly solution to the supplied Python Engineer challenge. It trains one shared Dutch-primary model on every supplied Dutch and English review, compares reproducible classical NLP experiments, serves the selected model through FastAPI, and preserves data/model evidence with Git, SHA-256 hashes, MLflow, configuration, and metadata.
+A production-minded sentiment-classification project for Dutch-primary movie reviews. It trains one
+shared model on all supplied Dutch and English rows, serves a verified TF-IDF champion through
+FastAPI, and preserves classical, embedding, transformer, ordinal, and LLM experiment evidence in
+portable artifacts and MLflow.
 
-The emphasis is engineering method and honest evidence rather than maximizing one accuracy number.
+The project prioritizes reproducibility, minority-class behavior, honest evaluation, and a small CPU
+serving path over selecting the largest model.
 
-## What is included
+## Project at a glance
 
-- Conservative Unicode/HTML/whitespace normalization inside the serialized sklearn pipeline.
-- Local Lingua language identification; the submitted model has no hosted API or LLM dependency.
-- Optional server-side LLM advisor for manual comparison when an API key is configured.
-- Normalized deduplication and deterministic language×label-stratified holdout splitting.
-- Five-fold comparison of Dummy, word TF-IDF, character TF-IDF, combined features, class weighting, and rating masking.
-- Balanced multinomial Logistic Regression with native probabilities and optional linear feature contributions.
-- FastAPI `POST /classify` and `GET /health` endpoints.
-- Repeated cold/warm component, service, explanation, and HTTP latency benchmarks.
-- Pytest, coverage, Ruff, a non-root Dockerfile, MLflow tracking, and machine-readable model metadata.
+- Input: 4,800 supplied reviews; two normalized duplicate extras removed.
+- Fixed split: 3,838 training rows and 960 test rows.
+- Production/UI model: class-balanced word + character TF-IDF Logistic Regression.
+- Optional UI comparison: frozen 24-shot external LLM advisor.
+- Research models are visible as evidence but are not loaded by the production service.
+- No genuinely new blind dataset currently exists; the final ranking reuses the fixed test split.
+
+> **Interview summary:** [Open the one-page A4 experiment report (PDF)](reports/sentiment_final_one_page_report.pdf)
+> for the data flow, seven-model ranking, operating metrics, and governance decision at a glance.
+
+## Language scope decision
+
+The original brief asked for Dutch-only reviews, but the supplied CSV also contains 485 consistently
+detected English reviews. The project therefore tested whether retaining them would affect the
+primary Dutch result.
+
+| Training scope evaluated on Dutch rows | Accuracy | Macro-F1 | Negative F1 |
+| --- | ---: | ---: | ---: |
+| Dutch-only baseline | 0.6477 | 0.6311 | 0.5918 |
+| Shared Dutch + English model | 0.6489 | 0.6381 | 0.6139 |
+
+- **Empirical check:** Dutch accuracy changes by only +0.0012 and Macro-F1 by +0.0071. Retaining
+  English does not materially degrade the Dutch benchmark, although this is not evidence that
+  English supervision is intrinsically superior.
+- **Shared signal:** Dutch and English are West Germanic languages using the Latin script. Word and
+  character TF-IDF can reuse cognates, borrowed sentiment terms, punctuation, rating expressions,
+  and character patterns without treating the languages as interchangeable.
+- **Data sufficiency:** a separate English model would have only 388 training rows and eight English
+  Negative examples. One shared model uses all supplied data while language-specific metrics remain
+  visible.
+
+English predictions carry an explicit reliability warning. Other confidently detected languages
+remain unsupported.
+
+## Final model comparison
+
+| Rank | Presentation model | Macro-F1 | Accuracy | Governance |
+| ---: | --- | ---: | ---: | --- |
+| 1 | LLM few-shot (24-shot) | 0.7506 | 0.7208 | External advisor |
+| 2 | Jina Ordinal | 0.7104 | 0.6896 | Research only |
+| 3 | Jina Logistic | 0.6715 | 0.6719 | Research only |
+| 4 | RobBERT v2 Improved Ensemble | 0.6615 | 0.6771 | Challenger evaluation |
+| 5 | TF-IDF Ordinal | 0.6406 | 0.6500 | Frozen challenger |
+| 6 | TF-IDF Logistic | 0.6379 | 0.6531 | Production benchmark |
+| 7 | RobBERT v2 Logistic | 0.6252 | 0.6354 | Test evidence |
+
+See [`reports/final_model_comparison.md`](reports/final_model_comparison.md) for all metrics and
+[`docs/MODEL_GOVERNANCE.md`](docs/MODEL_GOVERNANCE.md) for lifecycle and deployment boundaries.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    data["Immutable CSV"] --> prepare["Audit, language annotation, normalize, deduplicate"]
-    prepare --> split["Stratified train / held-out split"]
-    split --> train["Training-only CV / OOF selection"]
-    train --> model["Serialized production pipeline"]
-    model --> service["InferenceService + FastAPI"]
-    train --> evidence["MLflow + portable reports"]
+    data["Immutable CSV"] --> prepare["Audit, normalize, language annotation, deduplicate"]
+    prepare --> split["Frozen train/test split"]
+    split --> cv["Training-only CV / OOF selection"]
+    cv --> champion["Verified TF-IDF champion"]
+    cv --> research["Jina, ordinal and RobBERT evidence"]
+    champion --> service["InferenceService + FastAPI + UI"]
+    research --> evidence["Portable artifacts + MLflow"]
+    advisor["Frozen external LLM prompt"] --> service
 ```
 
-Language identification is separate from the sklearn pipeline so responses can report language and attach the English reliability warning. Normalization, vectorization, and classification stay in one shared fitted pipeline so Dutch and English use exactly the same model and training/serving cannot drift.
-
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the complete production, experiment,
-module-dependency, artifact, MLflow, and Docker architecture.
+Normalization, TF-IDF features, and classification are serialized in one sklearn pipeline. Language
+identification remains outside the pipeline so the API can report language and attach an English
+reliability warning. The complete system and module diagrams are in
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Repository map
 
 ```text
-configs/training.yaml             shared data and classical-training configuration
-configs/models/                   one canonical configuration per model family
-src/dutch_sentiment/models/       classical, ordinal, embedding, and LLM implementations
-src/dutch_sentiment/experiments/  experiment data, shared gates, and research orchestration
-src/dutch_sentiment/*.py          stable API, service, CLI, and compatibility imports
-tests/                            deterministic unit and API tests
-requirements/verified-py311.lock  exact verified Python 3.11 environment
-artifacts/model.joblib            ready-to-serve fitted pipeline
-artifacts/model_metadata.json     hashes, versions, split, metrics, schema
-artifacts/model_release.json      champion alias, source run, version, and release hashes
-artifacts/*.json|*.csv            portable audit/experiment/benchmark evidence
-reports/data_audit.md             interpreted full-dataset audit
-reports/model_report.md           experiments, test metrics, errors, latency
-IMPLEMENTATION_PLAN.md            phase checklist and validation commands
-DECISIONS.md                      alternatives, decisions, consequences
-REQUIREMENTS_TRACEABILITY.md      requirement-to-evidence mapping
-Dockerfile                        non-root serving image
-docs/ARCHITECTURE.md              complete system and module architecture
-docs/REPOSITORY_LAYOUT.md         file classification and protection policy
-docs/GIT_MLFLOW_MAPPING.md        archive-tag to MLflow evidence mapping
-docs/BLIND_EVALUATION.md          sealed challenger-promotion procedure
+src/dutch_sentiment/             API, service, CLI and stable production modules
+src/dutch_sentiment/models/      model-family implementations
+src/dutch_sentiment/experiments/ shared experiment mechanics and research orchestration
+configs/models/                  one canonical configuration per model family
+artifacts/model.joblib           verified production pipeline
+artifacts/model_metadata.json    hashes, versions, split, metrics and schema
+artifacts/model_release.json     champion/source-run release binding
+artifacts/final_models/          aligned seven-model comparison evidence
+reports/                         generated audits and experiment reports
+tests/                           deterministic unit and API tests
+notebooks/                       Colab entry points for GPU experiments
 ```
 
-## Requirements and installation
+## Installation
 
-- Python 3.11 (verified with 3.11.7); project metadata intentionally matches this tested runtime.
-- A Unix-like shell and `make` for convenience; every target shows its underlying command.
-- Docker is optional.
-
-```bash
-make install
-```
-
-Equivalent commands:
+The verified serving and development runtime is Python 3.11.
 
 ```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install -e '.[train,dev]'
 ```
 
-Dependencies are constrained by compatible version ranges in `pyproject.toml`. The `train` extra contains MLflow/pandas/reporting tools; the Docker image installs only the smaller serving core. The verified environment resolved scikit-learn 1.9.0, Lingua 2.1.1, FastAPI 0.139.2, MLflow 3.14.0, and pytest 8.4.2.
+`make install-locked` reproduces the recorded macOS x86_64 Python 3.11 environment. Portable
+dependency groups in `pyproject.toml` remain authoritative for other platforms. Embedding and
+RobBERT experiments require their documented optional dependencies and normally run on Colab GPU.
 
-Use `make install-locked` to reproduce the complete macOS x86_64 Python 3.11 environment recorded
-in `requirements/verified-py311.lock`. Dependency groups in `pyproject.toml` remain authoritative for
-portable core, training, embedding, and development installations.
+### Evaluator quick start
 
-## Exact working commands
+Clone the repository rather than downloading a source ZIP so Git provenance remains available:
 
 ```bash
-make audit       # regenerate reports/data_audit.md and artifacts/data_audit.json
-make train       # run CV experiments, MLflow tracking, select, fit, and evaluate once
-make evaluate    # print stored held-out metrics; does not evaluate the test set again
-make benchmark   # regenerate repeated latency evidence and refresh model report
+git clone https://github.com/ylceadap/sentiment-analysis.git
+cd sentiment-analysis
+python3.11 -m venv .venv
+.venv/bin/python -m pip install -e .
+.venv/bin/python scripts/manage_model_release.py verify
 make predict REVIEW='Deze film was verrassend goed.'
-make test        # run pytest
-make coverage    # run pytest with branch coverage
-make lint        # Ruff lint and formatting checks
-make serve       # listen on 0.0.0.0:8000
-make mlflow      # open local MLflow UI on port 5000
+make serve
 ```
 
-### Frozen sentence-embedding experiments
+Open <http://localhost:8000> for the UI. This path uses the tracked Production TF-IDF artifact and
+does not require retraining, MLflow, Google Drive, Colab, research-model weights, or an API key. The
+external LLM panel is optional and remains unavailable unless the evaluator explicitly configures a
+server-side key.
 
-The repository contains a train-only experiment with the revision-pinned Jina Embeddings v3 classification encoder. It trains one Logistic Regression classifier on all Dutch and English training rows, searches class weights and the Negative threshold only with five-fold out-of-fold predictions, and never evaluates the existing held-out test.
+For source checks and tests, install the development groups instead:
 
 ```bash
-make install-embeddings
-make embedding-experiment
+.venv/bin/python -m pip install -e '.[train,dev]'
+make lint
+make test
 ```
 
-The first run downloads the encoder and creates an ignored local cache under `.cache/`; later runs reuse it. The experiment uses revision-pinned Jina Embeddings v3 with its `classification` adapter, a 1,024-token limit, and 512-dimensional output. It still trains one LogisticRegression on all Dutch and English rows and selects only from train-set OOF evidence. Jina v3 is CC-BY-NC-4.0, so this is explicitly a non-commercial research experiment.
+The verified local result is 79 passing tests. Jina and RobBERT training paths additionally require
+their optional dependencies, GPU/Colab runtime, and the documented external model revisions.
 
-The Colab run outputs are tracked in `artifacts/jina_embedding_experiment_results.csv`, `artifacts/jina_embedding_experiment_decision.json`, `reports/jina_embedding_experiment.md`, and `reports/jina_embedding_validation.md`.
-
-The repository also contains a follow-up Colab experiment that keeps the same frozen Jina embeddings
-and compares the standard multiclass Logistic Regression head with a two-boundary ordinal Logistic
-Regression head:
+## Main commands
 
 ```bash
-make jina-ordinal-logistic
+make audit       # regenerate data-audit evidence
+make train       # train/evaluate the classical production workflow
+make evaluate    # print stored test metrics without retraining
+make benchmark   # refresh latency evidence and production model report
+make predict REVIEW='Deze film was verrassend goed.'
+make serve       # start API and UI on port 8000
+make test
+make coverage
+make lint
+make mlflow      # open the local MLflow UI on port 5000
 ```
 
-Run `notebooks/jina_ordinal_logistic_experiment.ipynb` on Colab GPU. It writes training-only OOF
-evidence to `artifacts/jina_ordinal_logistic/` and
-`reports/jina_ordinal_logistic_experiment.md`. It does not evaluate the reserved holdout rows,
-replace `artifacts/model.joblib`, or train a separate English model.
-
-The Colab run selected `jina_v3_classification__ordinal_composed_argmax_C_2`. On training-only
-OOF evidence it reached macro-F1 0.7299, Negative precision/recall/F1
-0.8089/0.7583/0.7828, ordinal MAE 0.2952, quadratic weighted kappa 0.5817, and severe error
-rate 0.0036. It passed every predefined OOF gate, but remains research-only because Jina v3 is
-CC-BY-NC-4.0 and no new blind test has been run.
-
-## Train and predict: shortest workflow
-
-Train from the supplied CSV and regenerate the fitted model, metadata, comparison table, and report:
+The shortest production workflow is:
 
 ```bash
 make install
 make audit
 make train
 make benchmark
-```
-
-Predict locally without starting a server:
-
-```bash
-.venv/bin/sentiment-predict \
-  --model artifacts/model.joblib \
-  --review 'Deze film was verrassend goed.' \
-  --explain
-```
-
-The same operation is available through `make predict REVIEW='...'` or the REST API described below.
-
-The direct audit command is:
-
-```bash
-.venv/bin/sentiment-audit \
-  --data Python_Engineer_Challenge_2.csv \
-  --output reports/data_audit.md \
-  --json-output artifacts/data_audit.json
-```
-
-## Data audit: important findings
-
-- 4,800 rows; columns `Reviews` and `Label`; no missing or blank required values.
-- Raw SHA-256: `2788b987e2c9fa4fd6459a1798a6e7d1dd63ddb5618c10907712d39042cc4be2`.
-- Positive 2,250 (46.88%), Average 2,250 (46.88%), Negative 300 (6.25%).
-- Rows are completely label-ordered in three contiguous runs, making sequential splitting invalid.
-- Two exact/normalized duplicate extras and no conflicting-label normalized groups.
-- 2,908 rows contain HTML breaks, 1,261 contain zero-width characters, 122 match conservative mojibake patterns, and 411 match the documented rating regex.
-- Lingua candidates: 4,315 Dutch and 485 English. All are retained in one shared model. English contains 151 Positive, 324 Average, and only 10 Negative rows.
-- Maximum source review length is 7,654 characters; the API limit is 8,000 and input is never silently truncated.
-
-Detector output is not treated as annotated ground truth. The bounded manual samples and limitations are in `reports/data_audit.md`.
-
-## Leakage-safe evaluation
-
-Two same-label normalized duplicate extras are removed. With seed 42, language×label stratification places 3,838 rows in the training/CV partition and 960 in the originally held-out test partition. Training contains 3,450 Dutch and 388 English rows; test contains 863 Dutch and 97 English rows. Test label supports are Positive 450, Average 450, and Negative 60. Normalized review hashes prove the partitions are disjoint.
-
-All normalization and TF-IDF fitting happens inside CV folds. The official TF-IDF workflow used the test set once after selecting the best mean CV macro-F1. Later isolated research branches reused the same fixed partition for comparisons, so it remains leakage-free with respect to model fitting but is not a new blind set for future promotion decisions.
-
-## Experiment comparison
-
-| Experiment | Features | Balanced | Ratings masked | CV macro-F1 mean ± std | CV balanced accuracy |
-| --- | --- | ---: | ---: | ---: | ---: |
-| combined_balanced_ratings | word + char | yes | no | **0.6472 ± 0.0269** | **0.6220** |
-| combined_balanced_masked_ratings | word + char | yes | yes | 0.6459 ± 0.0257 | 0.6207 |
-| combined_logreg | word + char | no | no | 0.4922 ± 0.0140 | 0.4837 |
-| char_logreg | char | no | no | 0.4721 ± 0.0066 | 0.4724 |
-| word_logreg | word | no | no | 0.4474 ± 0.0105 | 0.4609 |
-| dummy_prior | ignored baseline features | no | no | 0.2127 ± 0.0001 | 0.3333 |
-
-Full metrics, standard deviations, MLflow run IDs, and artifact sizes are in `artifacts/experiment_comparison.csv`.
-
-### Final five presentation models
-
-The frozen presentation set is Production TF-IDF, TF-IDF Ordinal, Jina Logistic, Jina Ordinal, and
-DeepSeek V4 Flash 24-shot. `make final-compare` evaluates all five against the same 960-row held-out
-split, saves aligned row-level predictions and metrics under `artifacts/final_five/`, and logs one
-MLflow comparison run. This split was not used for fitting, but it has been reported previously, so
-the result is explicitly a reused-heldout comparison rather than a new blind test. See
-`reports/final_five_model_comparison.md` for full metrics and caveats.
-
-| Rank | Frozen presentation model | Macro-F1 | Accuracy | Negative precision / recall |
-| ---: | --- | ---: | ---: | ---: |
-| 1 | DeepSeek V4 Flash 24-shot | **0.7506** | 0.7208 | 0.7746 / 0.9167 |
-| 2 | Jina Ordinal | **0.7104** | 0.6896 | 0.7273 / 0.8000 |
-| 3 | Jina Logistic | **0.6715** | 0.6719 | 0.5408 / 0.8833 |
-| 4 | TF-IDF Ordinal | **0.6406** | 0.6500 | 0.6379 / 0.6167 |
-| 5 | Current Production TF-IDF | **0.6379** | 0.6531 | 0.7209 / 0.5167 |
-
-The comparison is stored in MLflow run `688b28b059dd477693b87104c32fbb9a`. Ranking does not change
-deployment authority: `sentiment-production@champion` remains the only formal production model.
-
-### Archived research index
-
-The production submission remains on `main`, the only long-lived branch. Completed research is
-preserved by immutable `archive/*` tags and MLflow evidence instead of permanent experiment branches.
-
-| Archive tag | Scope | Headline result | Promotion status |
-| --- | --- | --- | --- |
-| `archive/linear-models/2026-07-19` | Logistic Regression C sweep and LinearSVC | Best CV macro-F1 0.6536 | Frozen; gate not met |
-| `archive/negative-imbalance/2026-07-19` | Class weights, thresholds, oversampling | Negative recall 0.65, precision 0.5909 | Frozen; precision gate not met |
-| `archive/transformer-embeddings/2026-07-19` | MiniLM and RobBERT embeddings | Best OOF macro-F1 0.5165 | Research only |
-| `archive/jina-embeddings/2026-07-19` | Jina v3 + Logistic Regression | Best OOF macro-F1 0.7108 | Non-commercial assignment research; no blind test |
-| `archive/llm/2026-07-19` | DeepSeek V4 Flash 24-shot experiment | Held-out macro-F1 0.7506 | Historical external evidence; not the UI prompt |
-
-Only a candidate that wins on training-only CV/OOF evidence, is frozen, passes a new blind evaluation, satisfies deployment constraints, and passes CI should be proposed for merge into `main`.
-
-### Rating-leakage result
-
-Masking ratings reduced mean macro-F1 by 0.0014, much less than either experiment's fold-to-fold standard deviation. Retaining ratings therefore won the predefined selection metric, but the model does not appear heavily dependent on them. Ratings are legitimate review content and a plausible direct label cue; both interpretations remain documented.
-
-## Selected model and held-out metrics
-
-The selected model combines word unigrams/bigrams and character 3–5-grams with class-balanced Logistic Regression. It was favored for macro-F1, minority-class behavior, native probabilities, size, CPU latency, simple serialization, and inspectable coefficients.
-
-| Metric | Held-out value |
-| --- | ---: |
-| Accuracy | 0.6531 |
-| Balanced accuracy | 0.6137 |
-| Macro precision | 0.6744 |
-| Macro recall | 0.6137 |
-| Macro-F1 | **0.6379** |
-| Weighted F1 | 0.6525 |
-| Log loss | 0.7216 |
-| Multiclass Brier score | 0.4462 |
-| Expected calibration error, 10 bins | 0.0470 |
-| Mean prediction confidence | 0.6103 |
-
-| Class | Precision | Recall | F1 | Support |
-| --- | ---: | ---: | ---: | ---: |
-| Positive | 0.6682 | 0.6356 | 0.6515 | 450 |
-| Average | 0.6339 | 0.6889 | 0.6603 | 450 |
-| Negative | **0.7209** | **0.5167** | **0.6019** | 60 |
-
-Negative is the smallest class; 31/60 held-out Negative reviews were correctly classified, 19 became Average, and 10 became Positive. See `reports/model_report.md` for the full confusion matrix and bounded error analysis.
-
-The probability metrics are descriptive evidence on 960 held-out rows. Logistic Regression provides native probabilities, but the model was not separately calibrated; ECE should not be treated as a guarantee for operational thresholds.
-
-### One model, evaluated by language
-
-| Detected language | Support | Accuracy | Balanced accuracy | Macro-F1 | Negative F1 / support |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Dutch | 863 | 0.6489 | 0.6158 | **0.6381** | 0.6139 / 58 |
-| English | 97 | 0.6907 | 0.3615 | **0.3289** | 0.0000 / 2 |
-
-These are evaluation slices of the same model, not separately trained models. English accuracy is dominated by 65 Average examples: the model predicted 64 correctly, but only 3/30 English Positive and 0/2 English Negative examples correctly. This is why every confident English prediction carries a reliability warning.
-
-## Latency evidence
-
-Measured on macOS x86_64, Python 3.11.7, using three short/medium/long Dutch samples, 10 warm-ups, and 100 iterations (HTTP: 50):
-
-| Path | Mean ms | p50 ms | p95 ms | Max ms |
-| --- | ---: | ---: | ---: | ---: |
-| Normalization + model | 3.906 | 3.819 | 6.288 | 6.569 |
-| Language detection + model | 5.143 | 4.835 | 8.174 | 8.945 |
-| Service end-to-end | 5.666 | 5.320 | 8.807 | 9.711 |
-| Explanation enabled | 6.499 | 5.950 | 9.477 | 10.684 |
-| HTTP `/classify` | 8.045 | 7.571 | 11.146 | 11.778 |
-
-- Lingua constructor: 0.369 ms, but its lazy first inference/model load: 1,610.091 ms.
-- Serialized model load: 630.598 ms; first model prediction: 12.543 ms.
-- Artifact: 2,935,649 bytes; SHA-256 `32ec6bc66d70c26f50bc7b6f495d0852cdd1ee0fd68cbff97d823b34370bf836`.
-
-The shared-language model remains within the same small CPU-serving envelope. The API warms Lingua and the explanation feature-name cache during lifespan startup, so readiness includes the cold initialization cost instead of passing it to the first request.
-
-## REST API
-
-Start the API:
-
-```bash
 make serve
 ```
 
-The default browser entry point is a small interactive app for manual inference:
+## API and UI
 
-```text
-http://localhost:8000/
-```
-
-The browser app compares the submitted local model with an optional advisory LLM
-recommendation. The local model is always available and remains the formal output. The LLM
-panel is disabled unless the server can load a key from an environment variable or an ignored
-local key file.
-
-The UI uses the `zero-shot-advisor-v1` runtime prompt. The historical MLflow 24-shot result remains a
-separate evidence record. The console shows the five-model ranking as a read-only evidence table,
-but research and challenger models are not live inference choices.
-
-Interactive OpenAPI documentation, including English field descriptions and runnable request/response examples, is available at:
-
-```text
-http://localhost:8000/docs
-```
-
-Health:
-
-```bash
-curl -sS http://localhost:8000/health
-```
-
-```json
-{"status":"ok","model_version":"0.1.0+...","model_ready":true}
-```
-
-Classify one Dutch or English review:
+Open the local interface at [http://localhost:8000](http://localhost:8000) after `make serve`.
 
 ```bash
 curl -sS -X POST http://localhost:8000/classify \
   -H 'Content-Type: application/json' \
-  -d '{"review":"Deze film was verrassend goed, met sterke acteurs en een mooi einde.","explain":false}'
+  -d '{"review":"Deze film was verrassend goed.","explain":false}'
 ```
 
-The response contains one exact allowed label plus native Logistic Regression probabilities:
+The response contains exactly one of `Positive`, `Average`, or `Negative`, aligned probabilities,
+detected language, model version, latency, warnings, and optional linear feature contributions.
+Blank input, unexpected fields, unsupported confidently detected languages, and text over 8,000
+characters return HTTP 422. Logs contain request metadata, not full review text.
 
-```json
-{
-  "label": "Average",
-  "model_version": "0.1.0+...",
-  "detected_language": "dutch",
-  "probabilities": {"Average": 0.5469199, "Negative": 0.1340675, "Positive": 0.3190127},
-  "latency_ms": 5.32,
-  "warnings": [],
-  "explanation": null
-}
-```
+The `/recommendations` route always runs the formal TF-IDF champion and may additionally call the
+frozen external advisor when a server-side API key is configured. Research models do not appear as
+live inference options. The `/model-comparison` route reads bounded static evidence and never loads
+research weights.
 
-Set `"explain": true` to receive supporting/opposing word n-grams plus separately labeled technical character n-grams. These are linear contributions, not causal explanations.
+## Evaluation policy
 
-Compare the submitted model with the optional LLM advisor:
+The source CSV is label-ordered, so sequential splitting is invalid. After normalized deduplication,
+the project uses a deterministic language×label-stratified split with disjoint review hashes. All
+preprocessing and feature fitting occur inside training folds.
+
+The official TF-IDF workflow evaluated the test split only after CV selection. Later frozen research
+candidates were compared on the same partition. Their scores remain valid comparative evidence
+because test labels were not used for fitting, but repeated inspection means the partition is not a
+new blind promotion test. A future promotion requires a new dataset whose source, rubric, hash, and
+candidate list are sealed before evaluation.
+
+Negative is the smallest class: 300 raw and 60 test examples. English contains only ten raw Negative
+rows and two in the test split, so English minority-class metrics are descriptive rather than
+conclusive.
+
+## Model families
+
+- **TF-IDF Logistic:** self-contained CPU production champion with word and character features.
+- **TF-IDF Ordinal:** local challenger using ordered class boundaries.
+- **Jina Logistic / Ordinal:** frozen external encoder plus task-specific heads; non-commercial
+  research under CC-BY-NC-4.0, not end-to-end fine-tuning.
+- **RobBERT v2 Logistic / CORAL:** paired end-to-end Colab experiment; Logistic is presentation
+  evidence and CORAL remains test-only.
+- **RobBERT v2 Improved:** head-tail 512 weighted three-seed ensemble; challenger evidence with
+  weights retained in the verified Drive bundle.
+- **LLM few-shot:** historical frozen 24-shot external result; the optional UI advisor reuses the
+  same prompt profile but has no deployment authority.
+
+Model configuration and lifecycle summaries are indexed in
+[`configs/models/README.md`](configs/models/README.md). Detailed RobBERT evidence is consolidated in
+[`reports/robbert_experiments.md`](reports/robbert_experiments.md).
+
+## MLflow and release integrity
+
+Training writes live state to local SQLite and exports portable JSON, CSV, and Markdown evidence.
+`mlflow.db` and `mlruns/` are intentionally outside Git and require a separate backup.
 
 ```bash
-curl -sS -X POST http://localhost:8000/recommendations \
-  -H 'Content-Type: application/json' \
-  -d '{"review":"Deze film was verrassend goed, met sterke acteurs en een mooi einde.","explain":false}'
-```
-
-Enable the LLM panel for local manual use by putting the key in the ignored local secrets file:
-
-```bash
-mkdir -p .secrets
-printf '%s\n' 'your-deepseek-key' > .secrets/deepseek_api_key
-make serve
-```
-
-The LLM advisor uses an OpenAI-compatible chat completions call. Optional overrides are
-`DEEPSEEK_API_KEY`, `LLM_API_KEY`, `DEEPSEEK_API_KEY_FILE`, `LLM_API_KEY_FILE`,
-`LLM_PROVIDER`, `LLM_BASE_URL`, `LLM_MODEL`, `LLM_PROMPT_PROFILE`, and `LLM_TIMEOUT_SECONDS`.
-
-English input is accepted by the same model and carries an explicit warning:
-
-```json
-{
-  "label": "Average",
-  "model_version": "0.1.0+9829f359",
-  "detected_language": "english",
-  "probabilities": {"Average": 0.4985972, "Negative": 0.1243259, "Positive": 0.3770768},
-  "latency_ms": 16.38,
-  "warnings": [
-    "English predictions are supported, but less reliable because English training data is limited and highly class-imbalanced."
-  ],
-  "explanation": null
-}
-```
-
-### Validation and language policy
-
-- Missing, blank, whitespace-only, extra-field, or longer-than-8,000-character input returns HTTP 422.
-- Confident Dutch and English input is accepted. Confidently identified languages outside that training scope return HTTP 422:
-
-```json
-{"detail":"The review was confidently detected as an unsupported language; submit a Dutch or English review."}
-```
-
-- Text shorter than 20 characters is treated as internally ambiguous and allowed through instead of being falsely rejected. The response still returns the detector's top `detected_language`; an English top candidate receives the same reliability warning. This trades some unsupported-language false acceptance for safer behavior on valid short input such as “Goed”.
-- Unexpected prediction failures return a generic HTTP 500 without the internal exception.
-- Logs include request ID, length, detected language, label, latency, and error category—not full review text.
-
-## Tests and quality
-
-Verified commands:
-
-```bash
-make test
-# 70 passed
-
-make coverage
-# 75% total branch coverage
-# API, final comparison, training, reporting, shared experiments, and ordinal paths are tested
-
-make lint
-# Ruff lint passed; all files formatted
-```
-
-The remaining uncovered lines are concentrated in heavyweight research CLI loops and failure-only
-branches. Critical request, transformation, language, model, final-comparison, audit, metric, and
-artifact contracts have direct tests.
-
-## MLflow
-
-Training writes live experiment state to a local SQLite backend, ignored by Git, and exports portable run IDs/metrics to CSV and JSON.
-
-```bash
-make mlflow
+make mlflow-organize
 make mlflow-audit
-make model-release-verify
-# open http://127.0.0.1:5000
 ```
 
-The legacy MLflow directory file store was not used because installed MLflow 3.14 puts it in maintenance mode.
+The service loads the exported `artifacts/model.joblib` instead of querying MLflow at startup.
+Release verification binds the model, metadata, release manifest, Registry champion, and source-run
+hashes. Only `sentiment-production@champion` is authorized for the submitted service.
+
+There are two verification levels:
+
+```bash
+# Evaluator: verifies the tracked model, metadata, release manifest, and SHA-256 hashes.
+.venv/bin/python scripts/manage_model_release.py verify
+
+# Maintainer: additionally verifies the private local MLflow champion and immutable source run.
+make model-release-verify
+```
+
+The maintainer command needs the local `mlflow.db` and `mlruns/`, which are intentionally excluded
+from Git. A portable, read-only evidence bundle is available here:
+
+- [Download the Dutch sentiment MLflow evidence bundle from Google Drive](https://drive.google.com/file/d/1rx-zibo20mmJDgMDhI9YYreBfdM07F5I/view?usp=sharing)
+- Sharing permission: anyone with the link can **view/download**, not edit.
+- Archive: `dutch_sentiment_mlflow_evidence_2026-07-21.zip` (94.4 MB).
+- Archive SHA-256: `53ca2f2685e24670c182348f658d692ea0eec3ed3dcc049e2df22dad2e8faf72`.
+
+After downloading and extracting it, use Python 3.11:
+
+```bash
+python3.11 -m venv .venv
+.venv/bin/python -m pip install 'mlflow>=3,<4'
+.venv/bin/python prepare_and_launch.py
+```
+
+Then open <http://127.0.0.1:5000>. The included launcher updates artifact paths only inside the
+downloaded copy, so the UI remains portable and the original project/Drive evidence is unchanged.
+The bundle contains six experiments, 58 runs, Registry metadata, aliases, compact artifacts, and
+checksums. Large Jina/RobBERT downloads and provider weights are intentionally excluded.
 
 ## Docker
 
@@ -437,31 +267,35 @@ make docker-build
 make docker-run
 ```
 
-Then repeat the health and classify curl commands. The image uses Python 3.11 slim, installs only the core serving dependencies (not MLflow, pandas, pyarrow, matplotlib, or training tools), runs as a non-root user, includes a health check, and copies the model, metadata, and release manifest but excludes the raw CSV, PDF, tests, reports, Git data, and MLflow database.
+The image installs only core serving dependencies, runs as a non-root user, and excludes raw data,
+tests, reports, Git data, research dependencies, and MLflow state. GitHub Actions has verified image
+build, container startup, and `/health`; the development machine does not have a local Docker engine.
 
-**Verification status:** the local development environment has no Docker engine, but GitHub Actions successfully built the image, started the container, and reached `/health` on 2026-07-18 ([CI run 1](https://github.com/ylceadap/sentiment-analysis/actions/runs/29649585086)).
+## Evidence and documentation
 
-## Traceability and security
+- [`reports/data_audit.md`](reports/data_audit.md): source quality, distribution, duplicates, language
+  evidence, and limitations.
+- [`reports/model_report.md`](reports/model_report.md): production experiments, test metrics,
+  confusion matrix, error analysis, and latency.
+- [`reports/final_model_comparison.md`](reports/final_model_comparison.md): unified seven-model result.
+- [`reports/sentiment_final_one_page_report.pdf`](reports/sentiment_final_one_page_report.pdf):
+  interview-ready one-page A4 experiment summary; the editable PPTX is stored beside it.
+- [`reports/jina_embedding_experiment.md`](reports/jina_embedding_experiment.md) and
+  [`reports/jina_ordinal_logistic_experiment.md`](reports/jina_ordinal_logistic_experiment.md): Jina
+  research evidence.
+- [`reports/robbert_experiments.md`](reports/robbert_experiments.md): initial and improved RobBERT
+  results.
+- [`DECISIONS.md`](DECISIONS.md): architectural and modeling decisions.
+- [`REQUIREMENTS_TRACEABILITY.md`](REQUIREMENTS_TRACEABILITY.md): challenge requirements to evidence.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): complete data, module, runtime, and artifact flows.
+- [`docs/MODEL_GOVERNANCE.md`](docs/MODEL_GOVERNANCE.md): Git, MLflow, Registry, and deployment policy.
 
-- Git commits track implementation phases.
-- Raw data, split content, fitted model, and package versions are hashed/recorded.
-- `artifacts/model_metadata.json` includes the MLflow run, training timestamp, Git commit, language config, label classes, schema, split evidence, and held-out metrics.
-- `artifacts/model_release.json` binds that artifact to the Registry champion and source-run hashes.
-- `make mlflow-organize` reapplies the model-governance policy and catalogs completed branch evidence; see `docs/MODEL_REGISTRY.md`.
-- `make mlflow-audit` is read-only; `make model-release-export` is the explicit champion-to-Docker export step.
-- The original CSV remains unchanged and is rehashed during verification.
-- `joblib`/pickle artifacts can execute code while loading. Only load the repository's locally controlled artifact; never accept an untrusted uploaded model.
-- The submitted local model does not require secrets or hosted services. The optional LLM advisor
-  reads a server-side key from environment variables or the ignored `.secrets/deepseek_api_key`
-  file and should be used only for manual comparison.
+## Limitations
 
-## Limitations and sensible next steps
-
-- Lingua can misclassify mixed, translated, short, or named-entity-heavy text.
-- Sparse n-grams do not deeply understand sarcasm, negation scope, or long-range composition.
-- English has only 485 raw rows, including 10 Negative rows; its held-out macro-F1 is 0.3289 and English Negative support is only 2.
-- Negative remains scarce overall: 300 raw and 60 held-out rows.
+- Sparse n-grams do not deeply model sarcasm, negation scope, or long-range composition.
+- Language detection can be unreliable for short, mixed, translated, or named-entity-heavy text.
 - Source labels and their possible derivation from ratings were not independently verified.
-- There are no timestamps/source IDs for drift or lineage analysis.
-- Startup capacity and readiness time should account for Lingua's approximately 1.6-second cold loading cost.
-- A compact multilingual transformer is a future experiment only after collecting a larger adjudicated benchmark and defining latency/cost constraints.
+- The dataset has no timestamps or source identifiers for drift analysis.
+- Jina is restricted to non-commercial research; RobBERT challengers require a heavier runtime.
+- External LLM behavior can change even when the local prompt is frozen.
+- No new blind dataset is available for another promotion decision.

@@ -86,6 +86,35 @@ def test_common_metrics_include_ordinal_and_language_evidence() -> None:
     assert set(metrics["by_language"]) == {"dutch", "english"}
 
 
+def test_robbert_predictions_require_frozen_row_identity(tmp_path: Path) -> None:
+    """Completed RobBERT predictions are reused only when test identity matches."""
+    heldout = pd.DataFrame(
+        [{"Reviews": "Goede film", "Label": "Positive", "detected_language": "dutch"}]
+    )
+    path = tmp_path / "predictions.csv"
+    pd.DataFrame(
+        [
+            {
+                "row_index": 0,
+                "review_sha256": hashlib.sha256(b"Goede film").hexdigest(),
+                "actual": "Positive",
+                "detected_language": "dutch",
+                "multiclass_logistic_prediction": "Positive",
+                "multiclass_logistic_p_positive": 0.8,
+                "multiclass_logistic_p_average": 0.15,
+                "multiclass_logistic_p_negative": 0.05,
+            }
+        ]
+    ).to_csv(path, index=False)
+
+    predictions, probabilities = final_comparison._robbert_predictions(
+        heldout, path, "RobBERT v2 Logistic"
+    )
+
+    assert predictions == ["Positive"]
+    assert probabilities == [{"Positive": 0.8, "Average": 0.15, "Negative": 0.05}]
+
+
 def test_report_discloses_reused_holdout(tmp_path: Path) -> None:
     """The presentation report cannot imply that reused evidence is a new blind test."""
     summary = pd.DataFrame(
@@ -204,6 +233,11 @@ def test_run_comparison_writes_ranked_evidence_and_logs_mlflow(tmp_path: Path, m
         ),
     )
     monkeypatch.setattr(final_comparison, "_deepseek_predictions", lambda *args: labels)
+    monkeypatch.setattr(
+        final_comparison,
+        "_robbert_predictions",
+        lambda *args: (labels, model.predict_proba(labels)),
+    )
     monkeypatch.setattr(final_comparison, "_log_mlflow", lambda *args: "final-run")
     output_dir = tmp_path / "artifacts"
     report_path = tmp_path / "report.md"
@@ -218,6 +252,8 @@ def test_run_comparison_writes_ranked_evidence_and_logs_mlflow(tmp_path: Path, m
                 "ordinal_artifact: ordinal.joblib",
                 "deepseek_archive: deepseek",
                 "deepseek_predictions: predictions.csv",
+                "robbert_v2_predictions: robbert-v2.csv",
+                "robbert_improvement_predictions: robbert-improved.csv",
             ]
         )
     )
@@ -225,7 +261,7 @@ def test_run_comparison_writes_ranked_evidence_and_logs_mlflow(tmp_path: Path, m
     result = final_comparison.run_comparison(config_path, log_mlflow=True)
 
     assert result["mlflow_run_id"] == "final-run"
-    assert len(result["ranking"]) == 5
+    assert len(result["ranking"]) == 7
     assert (output_dir / "comparison.csv").is_file()
     assert (output_dir / "heldout_predictions.csv").is_file()
     assert report_path.is_file()

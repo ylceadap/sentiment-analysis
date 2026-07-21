@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from dutch_sentiment.jina_ordinal_logistic_experiment import (
+from dutch_sentiment.experiments.jina_ordinal import (
     _gate_candidate,
     _select_thresholds,
 )

@@ -119,11 +119,9 @@ class LLMRecommendationResponse(BaseModel):
     provider: str
     model: str
     prompt_profile: str = Field(
-        description="Versioned runtime prompt; historical 24-shot evidence uses another profile."
+        description="Versioned frozen 24-shot prompt used by the optional external advisor."
     )
     label: Label | None = None
-    rationale: str | None = None
-    confidence: float | None = None
     latency_ms: float | None = None
     warning: str | None = None
 
@@ -150,7 +148,7 @@ class ModelComparisonRow(BaseModel):
 
 
 class ModelComparisonResponse(BaseModel):
-    """Describe the frozen, reused-heldout five-model comparison."""
+    """Describe the frozen, reused-heldout presentation-model comparison."""
 
     evaluation_scope: Literal["reused-heldout-presentation-comparison"]
     heldout_rows: int
@@ -169,7 +167,7 @@ def create_app(
     resolved_path = Path(model_path or os.getenv("MODEL_PATH", "artifacts/model.joblib"))
     resolved_comparison_path = Path(
         comparison_path
-        or os.getenv("MODEL_COMPARISON_PATH", "artifacts/final_five/comparison.json")
+        or os.getenv("MODEL_COMPARISON_PATH", "artifacts/final_models/comparison.json")
     )
 
     @asynccontextmanager
@@ -278,8 +276,7 @@ def create_app(
         """Compare the formal classifier with the optional advisory LLM."""
         model_prediction = await classify(payload, request)
         llm_result: LLMRecommendationResult = request.app.state.llm_recommender.recommend(
-            payload.review,
-            detected_language=model_prediction.detected_language,
+            payload.review
         )
         agreement = (
             model_prediction.label == llm_result.label if llm_result.status == "ok" else None

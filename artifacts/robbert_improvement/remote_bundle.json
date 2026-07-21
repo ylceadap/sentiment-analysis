@@ -1,0 +1,14 @@
+{
+  "storage": "google-drive",
+  "directory": "MyDrive/Workspace365_assignment/robbert_improvement",
+  "full_bundle_file": "robbert_improvement_bundle.zip",
+  "full_bundle_drive_file_id": "1hChiLUGbxMwqc6BcYL8bc3f02oc679dW",
+  "full_bundle_size_bytes": 1304020704,
+  "evidence_bundle_file": "robbert_improvement_evidence.zip",
+  "evidence_bundle_drive_file_id": "1fD1VLyWjavMHBvbeGXRc_vbzEwlpCg8L",
+  "evidence_bundle_size_bytes": 1295722,
+  "evidence_bundle_sha256": "6ee28d97ecfda674404323cb1d79d6c814a11b703e0425c5620bd66b487a62f1",
+  "local_policy": "Evidence, predictions, trials, configuration, and checksums are synchronized locally and to MLflow; three large seed weights remain in the verified Drive bundle.",
+  "production_changed": false,
+  "ui_changed": false
+}

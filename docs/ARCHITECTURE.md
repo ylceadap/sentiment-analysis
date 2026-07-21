@@ -1,7 +1,8 @@
 # System Architecture
 
-The repository has one production inference path and two research-only experiment paths. Every path
-shares immutable data boundaries, normalization, label order, metrics, and hash verification.
+The repository has one production inference path plus classical, embedding, and transformer
+experiment paths. Every path shares immutable data boundaries, normalization, label order, metrics,
+and hash verification.
 
 ## End-to-end data and model flow
 
@@ -15,6 +16,8 @@ flowchart LR
 
     split -->|"training rows only"| cv["Fixed 5-fold OOF indices"]
     split -->|"single formal evaluation"| heldout["Held-out evidence"]
+    split -->|"fixed fold 0 validation"| robbert["RobBERT v2 fine-tuning\nColab GPU"]
+    split -->|"train-only staged search"| robbertv2["RobBERT improvement\n7 screens → top 2"]
 
     cv --> classical["Word + character TF-IDF\nLogistic Regression candidates"]
     cv --> jina["Revision-pinned Jina embeddings\nresearch-only cache"]
@@ -24,7 +27,14 @@ flowchart LR
     classical --> selection["Macro-F1 selection\nminority and stability guardrails"]
     multiclass --> research["OOF research comparison"]
     ordinal --> research
-    heldout --> comparison["Frozen five-model presentation comparison"]
+    robbert --> robbertlog["Three-class logistic head"]
+    robbert --> robbertord["CORAL ordinal head"]
+    robbertlog --> robbertevidence["Full-train refit + one test evaluation\nportable bundle + MLflow"]
+    robbertord --> robbertevidence
+    robbertv2 --> robustcv["5 folds × 3 seeds\nOOF mean + stability"]
+    robustcv --> robbertfinal["3-seed full-train ensemble\none test evaluation"]
+    robbertfinal --> evidence
+    heldout --> comparison["Frozen seven-model presentation comparison"]
     classical --> comparison
     multiclass --> comparison
     ordinal --> comparison
@@ -81,6 +91,7 @@ flowchart TB
     service --> language["language.py\nlocal detection"]
     service --> contract["models/base.py\nserving protocol"]
     contract --> model["models/classical.py\nTF-IDF production model"]
+    modelcompat["model.py\nminimal artifact-load aliases"] --> model
     model --> text["text.py\nnormalization"]
     api --> advisor["models/llm_advisor.py\nexternal advisory model"]
 
@@ -96,6 +107,14 @@ flowchart TB
     ordinalexp --> runtime
     ordinalexp --> utilities
     ordinalexp --> ordinalmath["models/ordinal.py\nmonotonic projection and equations"]
+    robbertexp["experiments/robbert_finetune.py\nvalidation, refit, bundle and MLflow import"] --> prepared
+    robbertexp --> robbertmodel["models/robbert.py\ntrainable encoder + logistic/CORAL heads"]
+    robbertexp --> utilities
+    robbertexp --> metrics
+    robbertimprove["experiments/robbert_improvement.py\nstaged screen, repeated CV, ensemble, resume"] --> prepared
+    robbertimprove --> robbertmodel
+    robbertimprove --> utilities
+    robbertimprove --> metrics
     finalcompare["final_comparison.py\nfive frozen candidates on reused held-out"] --> prepared
     finalcompare --> runtime
     finalcompare --> ordinalmath
@@ -125,7 +144,7 @@ flowchart LR
 ```
 
 Docker copies only source code, the trusted production model, metadata, release manifest, and the
-bounded final-five comparison JSON used by the read-only UI table. Raw
+bounded presentation-comparison JSON used by the read-only UI table. Raw
 data, reports, tests, caches, secrets, notebooks, MLflow state, and training dependencies remain
 outside the image. GitHub Actions builds the image, starts the container, verifies health and
 classification, and checks that the reported model version matches the release manifest.
@@ -145,7 +164,7 @@ flowchart LR
 ```
 
 Model families are separated by packages and configuration, not by permanent Git branches. See
-`docs/GIT_MLFLOW_MAPPING.md` for the archived source-to-run mapping.
+`docs/MODEL_GOVERNANCE.md` for the archived source-to-run mapping and Registry policy.
 
 The runtime deliberately serves the exported file rather than querying MLflow on every startup.
 `scripts/manage_model_release.py` proves that the file, metadata, tracked release manifest, Registry
@@ -155,7 +174,30 @@ promotion authority in `sentiment-production@champion`.
 copies the exact source-run artifact; CI performs the file-only verification without needing MLflow.
 
 The browser calls `/recommendations`, which always invokes the formal production classifier and may
-also invoke the external `zero-shot-advisor-v1` DeepSeek profile. The historical 24-shot DeepSeek
-entry is evaluation evidence and is not the prompt used by the UI. `/model-comparison` reads the
-tracked bounded result JSON for the static ranking table; it never loads research models. Jina and
-ordinal models are not live inference choices. RobBERT, benchmarks, and ablations remain test-only.
+also invoke the external `deterministic-24-shot-v1` DeepSeek profile. It uses the exact frozen prompt
+from the historical 24-shot evaluation, while the metric shown in `/model-comparison` remains static
+evidence from that fixed run. `/model-comparison` reads the tracked bounded result JSON; it never
+loads research models. Jina, ordinal, and RobBERT models are not live inference choices. The two
+original RobBERT v2 candidates remain test-only evidence. The improvement path keeps one mixed
+Dutch/English model, compares explicit token-selection and loss policies using train-only evidence,
+and persists every fold/seed trial for Colab resume. Head-tail 512 with mild class weights won
+repeated validation; its three-seed ensemble reached test Macro-F1 0.6615. It remains a challenger
+evaluation and is not loaded by the service.
+
+## Repository and artifact policy
+
+| Category | Paths | Policy |
+| --- | --- | --- |
+| Source | `src/`, `tests/`, `scripts/` | Review, lint, test, and version in Git |
+| Configuration | `configs/`, `pyproject.toml`, `Makefile`, `Dockerfile` | One canonical configuration per model family; never store secrets |
+| Immutable inputs | Supplied CSV and challenge PDF | Never rewrite; verify by hash |
+| Production artifacts | `artifacts/model.joblib`, metadata, release manifest | Preserve and verify before serving |
+| Durable evidence | Selected JSON/CSV, Markdown reports, final PPTX/PDF | Version only when supporting a documented decision |
+| Reproducible outputs | Coverage, renders, inspection output, caches | Ignore and regenerate |
+| Local state | `.venv/`, `.cache/`, `mlruns/`, `mlflow.db` | Ignore; back up MLflow independently |
+| Sensitive files | `.secrets/` | Ignore; never inspect, package, or commit |
+
+Presentation sources are durable content artifacts; generated slide inspection and render files are
+ignored. Model downloads and embedding matrices remain local under `.cache/`. `main` is the only
+long-lived branch; completed experiment branches can be removed after an archive tag and MLflow
+evidence mapping have been verified.

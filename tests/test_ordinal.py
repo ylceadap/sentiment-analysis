@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dutch_sentiment.ordinal import (
+from dutch_sentiment.models.ordinal import (
     boundary_threshold_labels,
     compose_ordinal_probabilities,
     probability_argmax_labels,

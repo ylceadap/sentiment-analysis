@@ -1,4 +1,4 @@
-"""Evaluate the five frozen presentation models on the same reused held-out split."""
+"""Evaluate the frozen presentation models on the same reused held-out split."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ from .experiments.common import aligned_probabilities, hash_values
 from .experiments.jina_ordinal import _calibrated_boundary_classifier
 from .language import DutchLanguageDetector
 from .metrics import classification_metrics
-from .model import SentimentModel, load_sentiment_model
+from .models.classical import SentimentModel
 from .models.embeddings import encode_or_load
 from .models.ordinal import (
     ORDERED_LABELS,
@@ -36,6 +36,7 @@ from .models.ordinal import (
     project_monotonic_boundaries,
     with_ordinal_diagnostics,
 )
+from .models.ordinal_classical import load_sentiment_model
 from .text import normalize_text
 
 MODEL_ORDER = (
@@ -44,7 +45,24 @@ MODEL_ORDER = (
     "Jina Logistic",
     "Jina Ordinal",
     "DeepSeek V4 Flash 24-shot",
+    "RobBERT v2 Logistic",
+    "RobBERT v2 Improved Ensemble",
 )
+
+ROBERTA_COLUMN_MAP = {
+    "RobBERT v2 Logistic": {
+        "prediction": "multiclass_logistic_prediction",
+        "positive": "multiclass_logistic_p_positive",
+        "average": "multiclass_logistic_p_average",
+        "negative": "multiclass_logistic_p_negative",
+    },
+    "RobBERT v2 Improved Ensemble": {
+        "prediction": "prediction",
+        "positive": "p_positive",
+        "average": "p_average",
+        "negative": "p_negative",
+    },
+}
 
 
 def _restore_loaded_logistic_state(estimator: Any) -> Any:
@@ -228,6 +246,43 @@ def _deepseek_predictions(heldout: pd.DataFrame, config: dict[str, Any]) -> list
     return predictions
 
 
+def _robbert_predictions(
+    heldout: pd.DataFrame, path: str | Path, model_name: str
+) -> tuple[list[str], list[dict[str, float]]]:
+    """Load and identity-check one completed RobBERT test prediction bundle."""
+    columns = ROBERTA_COLUMN_MAP[model_name]
+    archived = pd.read_csv(path).sort_values("row_index").reset_index(drop=True)
+    expected = heldout.reset_index(drop=True)
+    if archived["row_index"].tolist() != list(range(len(expected))):
+        raise RuntimeError(f"{model_name} row indices do not match the frozen test order")
+    if archived["actual"].astype(str).tolist() != expected["Label"].astype(str).tolist():
+        raise RuntimeError(f"{model_name} actual labels do not match the frozen test split")
+    if (
+        archived["detected_language"].astype(str).tolist()
+        != expected["detected_language"].astype(str).tolist()
+    ):
+        raise RuntimeError(f"{model_name} language values do not match the frozen test split")
+    if "review_sha256" in archived:
+        if "Reviews" in expected:
+            hashes = expected["Reviews"].astype(str).map(_review_sha256).tolist()
+        else:
+            hashes = expected["review_sha256"].astype(str).tolist()
+        if archived["review_sha256"].astype(str).tolist() != hashes:
+            raise RuntimeError(f"{model_name} review hashes do not match the frozen test split")
+    predictions = archived[columns["prediction"]].astype(str).tolist()
+    if any(label not in LABELS for label in predictions):
+        raise RuntimeError(f"{model_name} contains an unsupported prediction label")
+    probabilities = [
+        {
+            "Positive": float(row[columns["positive"]]),
+            "Average": float(row[columns["average"]]),
+            "Negative": float(row[columns["negative"]]),
+        }
+        for _, row in archived.iterrows()
+    ]
+    return predictions, probabilities
+
+
 def _metrics(
     labels: list[str],
     predictions: list[str],
@@ -275,12 +330,13 @@ def _write_report(summary: pd.DataFrame, result: dict[str, Any], path: Path) -> 
     numeric = table.select_dtypes(include="number").columns
     table[numeric] = table[numeric].round(4)
     table = table.astype(object).where(pd.notna(table), "—")
-    content = f"""# Final five-model comparison
+    model_count = len(summary)
+    content = f"""# Final model comparison
 
 ## Interpretation
 
-All five frozen candidates were evaluated against the same {result["data"]["heldout_rows"]}-row
-held-out split. The split was never used to fit any of the five models, but it has appeared in prior
+All {model_count} frozen candidates were evaluated against the same {result["data"]["heldout_rows"]}-row
+test split. The split was never used to fit any candidate, but it has appeared in prior
 project reports. Therefore this is a **reused-heldout presentation comparison**, not a new blind test
 and not authorization to tune parameters after seeing the ranking.
 
@@ -290,10 +346,11 @@ Ranking metric: held-out Macro-F1, descending.
 
 ## Governance
 
-- Selected for presentation: exactly the five rows above.
+- Selected for presentation: exactly the {model_count} rows above.
 - Production remains `Current Production TF-IDF`; this comparison does not change the champion.
 - Jina models are research-only under CC-BY-NC-4.0 and use a pinned external encoder.
 - DeepSeek is an archived external API result; provider weights are not stored locally.
+- The two RobBERT entries are completed test evidence; neither changes the production model.
 - All other registered models remain benchmark, ablation, baseline, or test-only evidence.
 - `parameters_frozen_before_evaluation=true`; `post_evaluation_tuning_allowed=false`.
 """
@@ -302,7 +359,7 @@ Ranking metric: held-out Macro-F1, descending.
 
 
 def _log_mlflow(result: dict[str, Any], output_dir: Path, config: dict[str, Any]) -> str:
-    """Log one idempotent evidence run containing the complete five-model result."""
+    """Log one idempotent evidence run containing the complete presentation result."""
     tracking_uri = str(config["mlflow_tracking_uri"])
     mlflow.set_tracking_uri(tracking_uri)
     client = MlflowClient(tracking_uri)
@@ -327,7 +384,7 @@ def _log_mlflow(result: dict[str, Any], output_dir: Path, config: dict[str, Any]
         "production_champion_changed": "false",
     }
     with mlflow.start_run(
-        experiment_id=experiment_id, run_name="final-five-heldout", tags=tags
+        experiment_id=experiment_id, run_name="final-model-comparison", tags=tags
     ) as run:
         for row in result["ranking"]:
             prefix = row["model"].lower().replace(" ", "_").replace("-", "_")
@@ -347,11 +404,67 @@ def log_existing_comparison(config_path: str | Path) -> dict[str, Any]:
     if result.get("evaluation_scope") != "reused-heldout-presentation-comparison":
         raise RuntimeError("Existing comparison has an unexpected evaluation scope")
     if result.get("selected_models") != list(MODEL_ORDER):
-        raise RuntimeError("Existing comparison does not contain the frozen five-model set")
+        raise RuntimeError("Existing comparison does not contain the frozen presentation set")
     if result.get("data", {}).get("heldout_normalized_sha256") != config.get(
         "expected_test_normalized_sha256"
     ):
         raise RuntimeError("Existing comparison held-out hash does not match the frozen config")
+    result["mlflow_run_id"] = _log_mlflow(result, output_dir, config)
+    result_path.write_text(json.dumps(result, indent=2, sort_keys=True), encoding="utf-8")
+    return result
+
+
+def merge_completed_robbert_results(config_path: str | Path) -> dict[str, Any]:
+    """Extend stored comparison evidence with identity-checked completed RobBERT runs."""
+    config = yaml.safe_load(Path(config_path).read_text(encoding="utf-8"))
+    output_dir = Path(config["output_dir"])
+    result_path = output_dir / "comparison.json"
+    predictions_path = output_dir / "heldout_predictions.csv"
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    frame = pd.read_csv(predictions_path)
+    if result.get("data", {}).get("heldout_normalized_sha256") != config.get(
+        "expected_test_normalized_sha256"
+    ):
+        raise RuntimeError("Stored comparison does not match the configured frozen test split")
+    heldout = frame.rename(columns={"Label": "Label"})
+    labels = frame["Label"].astype(str).tolist()
+    languages = frame["detected_language"].astype(str).tolist()
+    additions = {
+        "RobBERT v2 Logistic": _robbert_predictions(
+            heldout, config["robbert_v2_predictions"], "RobBERT v2 Logistic"
+        ),
+        "RobBERT v2 Improved Ensemble": _robbert_predictions(
+            heldout,
+            config["robbert_improvement_predictions"],
+            "RobBERT v2 Improved Ensemble",
+        ),
+    }
+    for name, (model_predictions, probabilities) in additions.items():
+        result["metrics"][name] = _metrics(labels, model_predictions, languages, probabilities)
+        frame[name] = model_predictions
+    summary = (
+        pd.DataFrame([_summary_row(name, result["metrics"][name]) for name in MODEL_ORDER])
+        .sort_values("macro_f1", ascending=False)
+        .reset_index(drop=True)
+    )
+    summary.insert(0, "rank", np.arange(1, len(summary) + 1))
+    result.update(
+        {
+            "selected_models": list(MODEL_ORDER),
+            "ranking": json.loads(summary.to_json(orient="records")),
+        }
+    )
+    result.setdefault("sources", {}).update(
+        {
+            "robbert_v2_logistic": config["robbert_v2_predictions"],
+            "robbert_v2_improved": config["robbert_improvement_predictions"],
+        }
+    )
+    result.pop("mlflow_run_id", None)
+    summary.to_csv(output_dir / "comparison.csv", index=False)
+    frame.to_csv(predictions_path, index=False)
+    _write_report(summary, result, Path(config["report_path"]))
+    result_path.write_text(json.dumps(result, indent=2, sort_keys=True), encoding="utf-8")
     result["mlflow_run_id"] = _log_mlflow(result, output_dir, config)
     result_path.write_text(json.dumps(result, indent=2, sort_keys=True), encoding="utf-8")
     return result
@@ -381,6 +494,14 @@ def run_comparison(config_path: str | Path, *, log_mlflow: bool = False) -> dict
     jina, jina_runtime = _jina_predictions(train, heldout, config, output_dir)
     predictions.update(jina)
     predictions["DeepSeek V4 Flash 24-shot"] = (_deepseek_predictions(heldout, config), None)
+    predictions["RobBERT v2 Logistic"] = _robbert_predictions(
+        heldout, config["robbert_v2_predictions"], "RobBERT v2 Logistic"
+    )
+    predictions["RobBERT v2 Improved Ensemble"] = _robbert_predictions(
+        heldout,
+        config["robbert_improvement_predictions"],
+        "RobBERT v2 Improved Ensemble",
+    )
 
     metrics = {
         name: _metrics(labels, model_predictions, languages, probabilities)
@@ -389,8 +510,8 @@ def run_comparison(config_path: str | Path, *, log_mlflow: bool = False) -> dict
     summary = pd.DataFrame([_summary_row(name, metrics[name]) for name in MODEL_ORDER])
     summary = summary.sort_values("macro_f1", ascending=False).reset_index(drop=True)
     summary.insert(0, "rank", np.arange(1, len(summary) + 1))
-    prediction_frame = heldout[["source_row", "Reviews", "Label", "detected_language"]].copy()
-    prediction_frame["review_sha256"] = prediction_frame["Reviews"].map(_review_sha256)
+    prediction_frame = heldout[["source_row", "Label", "detected_language"]].copy()
+    prediction_frame["review_sha256"] = heldout["Reviews"].map(_review_sha256)
     for name in MODEL_ORDER:
         prediction_frame[name] = predictions[name][0]
 
@@ -409,6 +530,8 @@ def run_comparison(config_path: str | Path, *, log_mlflow: bool = False) -> dict
         "sources": {
             "tfidf_ordinal": f"{config['ordinal_archive']}:{config['ordinal_artifact']}",
             "deepseek": f"{config['deepseek_archive']}:{config['deepseek_predictions']}",
+            "robbert_v2_logistic": config["robbert_v2_predictions"],
+            "robbert_v2_improved": config["robbert_improvement_predictions"],
         },
     }
     summary.to_csv(output_dir / "comparison.csv", index=False)
@@ -426,23 +549,31 @@ def run_comparison(config_path: str | Path, *, log_mlflow: bool = False) -> dict
 
 
 def main() -> None:
-    """Run the final five-model comparison CLI."""
+    """Run the final presentation-model comparison CLI."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--config", default="configs/final_five_comparison.yaml")
+    parser.add_argument("--config", default="configs/final_model_comparison.yaml")
     parser.add_argument("--log-mlflow", action="store_true")
     parser.add_argument(
         "--log-existing",
         action="store_true",
         help="Log an already generated Colab result without recomputing embeddings.",
     )
+    parser.add_argument(
+        "--merge-robbert",
+        action="store_true",
+        help="Add completed RobBERT prediction bundles to stored comparison evidence.",
+    )
     args = parser.parse_args()
     if args.log_existing and args.log_mlflow:
         parser.error("--log-existing already logs MLflow; do not combine it with --log-mlflow")
-    result = (
-        log_existing_comparison(args.config)
-        if args.log_existing
-        else run_comparison(args.config, log_mlflow=args.log_mlflow)
-    )
+    if args.log_existing and args.merge_robbert:
+        parser.error("--log-existing and --merge-robbert are mutually exclusive")
+    if args.merge_robbert:
+        result = merge_completed_robbert_results(args.config)
+    elif args.log_existing:
+        result = log_existing_comparison(args.config)
+    else:
+        result = run_comparison(args.config, log_mlflow=args.log_mlflow)
     print(json.dumps(result["ranking"], indent=2))
 
 

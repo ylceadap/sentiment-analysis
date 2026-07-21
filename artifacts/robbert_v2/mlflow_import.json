@@ -1,0 +1,10 @@
+{
+  "artifact_retention": "evidence-only",
+  "mlflow_run_id": "74b1a804f3694d66a0a8c7c9360c1e6d",
+  "registered_models": [
+    "sentiment-robbert-v2-logistic@test-only",
+    "sentiment-robbert-v2-ordinal@test-only"
+  ],
+  "trained_weights_retained_locally": false,
+  "reason": "Neither candidate exceeded the current Production TF-IDF Macro-F1; the ordinal head predicted no Average test examples. Metrics, predictions, configuration, histories, and checksums are retained while approximately 934 MB of failed-candidate weights are not duplicated locally."
+}

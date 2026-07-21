@@ -22,9 +22,6 @@ const llmContent = document.querySelector("#llm-content");
 const llmLabel = document.querySelector("#llm-label");
 const llmStatus = document.querySelector("#llm-status");
 const llmModelName = document.querySelector("#llm-model-name");
-const llmRationale = document.querySelector("#llm-rationale");
-const llmConfidenceRow = document.querySelector("#llm-confidence-row");
-const llmConfidence = document.querySelector("#llm-confidence");
 const llmWarning = document.querySelector("#llm-warning");
 const errorBox = document.querySelector("#error-box");
 const comparisonBody = document.querySelector("#comparison-body");
@@ -37,6 +34,8 @@ const comparisonRoles = {
   "Jina Logistic": "Research",
   "Jina Ordinal": "Research",
   "DeepSeek V4 Flash 24-shot": "External evidence",
+  "RobBERT v2 Improved Ensemble": "Challenger",
+  "RobBERT v2 Logistic": "Test evidence",
 };
 
 function setCharacterCount() {
@@ -115,23 +114,7 @@ function showLLMResult(data) {
   llmStatus.textContent = data.status;
   llmStatus.className = `status-pill ${data.status}`;
 
-  if (data.status === "ok") {
-    applyLabel(llmLabel, data.label);
-    llmRationale.textContent = data.rationale || "No rationale returned.";
-    if (typeof data.confidence === "number") {
-      llmConfidence.textContent = formatPercent(data.confidence);
-      llmConfidenceRow.classList.remove("hidden");
-    } else {
-      llmConfidenceRow.classList.add("hidden");
-    }
-  } else {
-    applyLabel(llmLabel, null);
-    llmRationale.textContent =
-      data.status === "unavailable"
-        ? "The server is running without LLM credentials."
-        : "The LLM request failed. The submitted local model result is still valid.";
-    llmConfidenceRow.classList.add("hidden");
-  }
+  applyLabel(llmLabel, data.status === "ok" ? data.label : null);
 
   if (data.warning) {
     llmWarning.textContent = data.warning;
@@ -199,10 +182,11 @@ function renderComparison(rows) {
 
     const role = document.createElement("td");
     const roleBadge = document.createElement("span");
-    roleBadge.className = `role-badge role-${comparisonRoles[item.model]
+    const roleName = comparisonRoles[item.model] ?? "Evidence";
+    roleBadge.className = `role-badge role-${roleName
       .toLowerCase()
       .replaceAll(" ", "-")}`;
-    roleBadge.textContent = comparisonRoles[item.model];
+    roleBadge.textContent = roleName;
     role.append(roleBadge);
 
     const negative = document.createElement("td");

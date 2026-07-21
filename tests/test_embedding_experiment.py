@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from dutch_sentiment.embedding_experiment import _gate_candidate, threshold_predictions
-from dutch_sentiment.embedding_runtime import embedding_cache_path
+from dutch_sentiment.experiments.embedding import _gate_candidate, threshold_predictions
+from dutch_sentiment.models.embeddings import embedding_cache_path
 
 
 def test_negative_threshold_overrides_argmax() -> None:

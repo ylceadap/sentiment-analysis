@@ -148,12 +148,38 @@
 
 - **Alternatives considered:** expose all Registry entries in one selector; create a research UI; keep one
   formal model plus a visibly advisory external comparison.
-- **Decision:** the production UI runs only the verified TF-IDF champion and optional versioned
-  `zero-shot-advisor-v1`. It may display the frozen five-model ranking as read-only evidence, but
-  Jina, TF-IDF Ordinal, and historical DeepSeek 24-shot are never live inference choices. RobBERT,
-  benchmark, and ablation models remain MLflow-only test evidence.
-- **Reasoning:** model visibility must not imply production approval. The historical DeepSeek 24-shot
-  result is also kept separate because the runtime prompt is not that evaluated configuration.
+- **Decision:** the production UI runs only the verified TF-IDF champion and optional external
+  `deterministic-24-shot-v1` advisor. The advisor reuses the exact frozen DeepSeek prompt; Jina and
+  TF-IDF Ordinal remain non-live evidence. RobBERT, benchmark, and ablation models remain MLflow-only
+  test evidence.
+- **Reasoning:** model visibility must not imply production approval. Reusing the evaluated prompt
+  makes the online DeepSeek configuration traceable without promoting it over the local champion.
 - **Consequences:** the inference contract stays simple and honest while the requested final ranking
   is visible without implying deployment approval.
-- **Limitations:** adding an approved challenger to the UI requires a deliberate new endpoint and review.
+- **Limitations:** the displayed DeepSeek metric remains historical and provider behavior can change;
+  adding another approved challenger to the UI requires a deliberate new endpoint and review.
+
+## D019 — Add blind-evaluation code only when a real dataset exists
+
+- **Alternatives considered:** retain an executable scaffold with an all-zero placeholder hash; keep
+  only the policy until a genuinely unseen dataset is available.
+- **Decision:** keep the promotion requirement, but do not maintain code, configuration, or CLI paths
+  that cannot currently run. Before a future blind evaluation, freeze the source, label rubric,
+  dataset hash, and candidate list, then implement and review the evaluator.
+- **Reasoning:** a non-runnable scaffold adds surface area without providing evidence or safety.
+- **Consequences:** the current repository states the gate honestly and has no misleading command.
+
+## D020 — Improve RobBERT with staged mixed-language validation
+
+- **Alternatives considered:** split Dutch and English models; rerun first-256 only; exhaustively run
+  every combination; screen cheaply and confirm finalists.
+- **Decision:** keep one mixed-language model, screen seven explicit input/loss variants on training
+  fold 0, require Average recall of at least 0.40, then confirm the best two with 5-fold × 3-seed
+  validation. Select only from OOF evidence and evaluate the chosen three-seed ensemble once on the
+  existing test split.
+- **Reasoning:** the original run used too little validation evidence and discarded review endings.
+  Staging makes head-tail/last-token and loss effects auditable while bounding the Colab workload.
+- **Consequences:** every fold/seed trial is resumable, all three final weights and predictions are
+  retained, and the prior failed CORAL result remains untouched as historical evidence.
+- **Limitations:** earlier experiments already viewed the supplied test labels, so the final number is
+  comparative evidence rather than a new blind-test claim.
