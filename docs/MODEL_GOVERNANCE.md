@@ -53,6 +53,7 @@ branch.
 | TF-IDF ordinal logistic | `archive/ordinal-logistic/2026-07-19` | `7503f9e` | `9db0c255fb9f4c46b7fb7654953d934c` |
 | Jina ordinal logistic | `archive/jina-ordinal-logistic/2026-07-19` | `f52ad65` | `c030142c6d3e46f78beb730c680a54e8` |
 | Alternate Jina ordinal lineage | `archive/jina-ordinal-from-ordinal/2026-07-19` | `d1e14fb` | Covered by Jina/ordinal evidence |
+| RobBERT v2 Colab | `archive/robbert-v2-colab/2026-07-21` | `4e375ff` | `74b1a804f3694d66a0a8c7c9360c1e6d` |
 
 The alternate lineage is retained only for ancestry recovery. It is not a separate trained model.
 A branch may be deleted only after its archive tag is available on `origin` and the associated
