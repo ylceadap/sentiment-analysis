@@ -4,7 +4,7 @@ PYTHON := .venv/bin/python
 
 install:
 	python3 -m venv .venv
-	$(PYTHON) -m pip install -e '.[train,dev]'
+	$(PYTHON) -m pip install -e '.[train,finetune,dev]'
 
 install-core:
 	python3 -m venv .venv

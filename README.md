@@ -100,7 +100,7 @@ The verified serving and development runtime is Python 3.11.
 
 ```bash
 python3 -m venv .venv
-.venv/bin/python -m pip install -e '.[train,dev]'
+.venv/bin/python -m pip install -e '.[train,finetune,dev]'
 ```
 
 `make install-locked` reproduces the recorded macOS x86_64 Python 3.11 environment. Portable
@@ -129,13 +129,15 @@ server-side key.
 For source checks and tests, install the development groups instead:
 
 ```bash
-.venv/bin/python -m pip install -e '.[train,dev]'
+.venv/bin/python -m pip install -e '.[train,finetune,dev]'
 make lint
 make test
 ```
 
-The verified local result is 79 passing tests. Jina and RobBERT training paths additionally require
-their optional dependencies, GPU/Colab runtime, and the documented external model revisions.
+The `finetune` extra supplies PyTorch for the lightweight RobBERT tensor unit tests; running the
+actual RobBERT training workflows additionally requires a GPU/Colab runtime. The verified local
+result is 79 passing tests. Jina experiments require the separate `embeddings` extra and the
+documented external model revisions.
 
 ## Main commands
 

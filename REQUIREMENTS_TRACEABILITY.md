@@ -1,10 +1,10 @@
 # Requirements Traceability
 
-The challenge PDF is the authoritative source. `Required` and `Bonus` below reflect its wording; additional safeguards come from the execution brief.
+The challenge PDF is the authoritative source. `Required` and `Bonus` below reflect its wording; the additional safeguards document the project's engineering quality gates.
 
 | Requirement | Priority | Planned implementation | Verification/evidence | Status |
 | --- | --- | --- | --- | --- |
-| Consider Dutch-language reviews only | Required | Dutch remains primary, but user explicitly expanded scope to all supplied Dutch and English rows; one shared model reports language and warns on English | Language tests; per-language held-out metrics; English API test | User-approved scope extension from literal Dutch-only wording |
+| Consider Dutch-language reviews only | Required | Dutch remains primary; an explicit documented scope decision retains the supplied Dutch and English rows in one shared model, with language reporting and an English reliability warning | Language tests; per-language test metrics; English API test | Documented scope extension from literal Dutch-only wording |
 | Return exactly Positive, Average, or Negative | Required | Typed label contract in model and API | Model/API tests; OpenAPI schema | Complete |
 | Create useful features | Required | Compared word and character TF-IDF feature sets | MLflow runs; comparison table; model report | Complete |
 | Experiments easy to revisit and compare | Required | Local SQLite MLflow plus exported comparison CSV/Markdown and configs | MLflow UI command; run IDs; model report | Complete |
@@ -15,7 +15,7 @@ The challenge PDF is the authoritative source. `Required` and `Bonus` below refl
 | Inference latency considered | Required | Single-pass inference; cold/warm component and end-to-end benchmark with p50/p95 | `benchmark.json`; before/after evidence in README | Complete |
 | Prediction explanation | Bonus | Optional local linear feature contributions with source labels | Model test and live API example | Complete |
 | Data/model versioning | Bonus | Git, raw/model SHA-256, MLflow run, config, split hashes, versioned metadata | Git log; `model_metadata.json`; reports | Complete |
-| Serve in Docker | Bonus | Non-root API image excluding the raw dataset | GitHub Actions image build, container startup, and `/health` check | Complete; verified in [CI run 1](https://github.com/ylceadap/sentiment-analysis/actions/runs/29649585086) |
+| Serve in Docker | Bonus | Non-root API image excluding the raw dataset | GitHub Actions image build, container startup, and `/health` check | Complete; verified in [latest submitted-main CI](https://github.com/ylceadap/sentiment-analysis/actions/runs/29825567280) |
 | Small usable app and run instructions | Required | FastAPI service, task commands, evaluator-focused README | Live health/classify checks; README | Complete |
 
 ## Expanded engineering safeguards
